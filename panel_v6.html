@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Folkart Panel">
   <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
 <title>Folkart ● Teknik Panel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,18 +28,18 @@
   --font:'IBM Plex Sans',sans-serif; --mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:15px;line-height:1.6;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:17px;line-height:1.6;}
 
 /* BUTONLAR */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:5px;
-  font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+  font-family:var(--font);font-size:17px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
 .btn-primary{background:var(--blue-l);color:#fff;}
 .btn-primary:hover{background:var(--blue);}
 .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2);}
 .btn-ghost:hover{border-color:var(--blue-l);color:var(--blue-l);}
 .btn-danger{background:rgba(224,82,82,.15);border:1px solid rgba(224,82,82,.3);color:var(--red);}
 .btn-danger:hover{background:rgba(224,82,82,.25);}
-.btn-sm{padding:4px 10px;font-size:13px;}
+.btn-sm{padding:4px 10px;font-size:16px;}
 .btn-archive{background:rgba(58,181,106,.12);border:1px solid rgba(58,181,106,.3);color:var(--green);}
 .btn-archive:hover{background:rgba(58,181,106,.22);}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
@@ -48,29 +48,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 #login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;}
 .login-wrap{width:380px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:36px 32px 28px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
 .login-logo{margin-bottom:28px;text-align:center;}
-.login-logo .wordmark{font-size:15px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;}
+.login-logo .wordmark{font-size:17px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;}
 .login-logo .wordmark em{color:var(--gold);font-style:normal;}
-.login-logo p{font-size:13px;color:var(--text3);margin-top:5px;}
+.login-logo p{font-size:16px;color:var(--text3);margin-top:5px;}
 .login-field{margin-bottom:14px;}
-.login-field label{display:block;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
-.login-field input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:15px;padding:9px 12px;border-radius:5px;outline:none;transition:border-color .15s;}
+.login-field label{display:block;font-size:16px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
+.login-field input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font);font-size:17px;padding:9px 12px;border-radius:5px;outline:none;transition:border-color .15s;}
 .login-field input:focus{border-color:var(--blue-l);}
-#login-err{background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:9px 12px;font-size:14px;color:var(--red);margin-bottom:14px;display:none;}
-.login-btn{width:100%;padding:10px;font-size:15px;justify-content:center;margin-top:4px;}
-.login-footer{text-align:center;margin-top:20px;font-size:13px;color:var(--text3);}
+#login-err{background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:9px 12px;font-size:17px;color:var(--red);margin-bottom:14px;display:none;}
+.login-btn{width:100%;padding:10px;font-size:17px;justify-content:center;margin-top:4px;}
+.login-footer{text-align:center;margin-top:20px;font-size:16px;color:var(--text3);}
 
 /* HEADER */
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:90;}
-.logo{font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+.logo{font-size:17px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
 .logo em{color:var(--gold);font-style:normal;}
-.hd{font-size:13px;color:var(--text3);margin-left:14px;padding-left:14px;border-left:1px solid var(--border);}
+.hd{font-size:16px;color:var(--text3);margin-left:14px;padding-left:14px;border-left:1px solid var(--border);}
 .h-right{display:flex;align-items:center;gap:10px;}
-.live{display:flex;align-items:center;gap:5px;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);border-radius:4px;padding:3px 9px;font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;}
+.live{display:flex;align-items:center;gap:5px;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);border-radius:4px;padding:3px 9px;font-size:16px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;}
 .live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:13px;cursor:pointer;transition:border-color .15s;}
+.user-chip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:16px;cursor:pointer;transition:border-color .15s;}
 .user-chip:hover{border-color:var(--border2);}
-.u-av{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.u-av{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;}
 .u-av.admin{background:var(--red);}.u-av.satinalma{background:var(--blue-l);}
 .u-av.dizayn{background:var(--purple);}.u-av.santiye{background:var(--green);}
 .u-av.planlama{background:var(--gold);}.u-av.izleyici{background:var(--text3);}
@@ -202,7 +202,7 @@ main {
 /* FORM ALANLARI */
 select,input[type=text],input[type=date],input[type=number],input[type=email],input[type=password],textarea{
   background:var(--surface2);border:1px solid var(--border);color:var(--text);
-  font-family:var(--font);font-size:14px;padding:7px 10px;border-radius:4px;outline:none;transition:border-color .15s;}
+  font-family:var(--font);font-size:17px;padding:7px 10px;border-radius:4px;outline:none;transition:border-color .15s;}
 select:focus,input:focus,textarea:focus{border-color:var(--blue-l);}
 select option{background:var(--surface2);}input[type=date]{color-scheme:dark;}
 textarea{resize:vertical;width:100%;}input.err,select.err{border-color:var(--red);}
@@ -214,35 +214,35 @@ textarea{resize:vertical;width:100%;}input.err,select.err{border-color:var(--red
 .kpi.bl::before{background:var(--blue-l)}.kpi.go::before{background:var(--gold)}
 .kpi.rd::before{background:var(--red)}.kpi.gn::before{background:var(--green)}
 .kpi.yw::before{background:var(--yellow)}.kpi.pu::before{background:var(--purple)}
-.kpi-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
-.kpi-v{font-family:var(--mono);font-size:30px;font-weight:500;line-height:1;}
+.kpi-lbl{font-size:16px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
+.kpi-v{font-family:var(--mono);font-size:34px;font-weight:500;line-height:1;}
 .kpi-v.bl{color:var(--blue-l)}.kpi-v.go{color:var(--gold)}.kpi-v.rd{color:var(--red)}
 .kpi-v.gn{color:var(--green)}.kpi-v.yw{color:var(--yellow)}.kpi-v.pu{color:var(--purple)}
-.kpi-sub{font-size:12px;color:var(--text3);margin-top:5px;}
+.kpi-sub{font-size:16px;color:var(--text3);margin-top:5px;}
 
 /* KARTLAR */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;}
-.card-t{font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.card-t{font-size:16px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
 .ct-dot{width:7px;height:7px;border-radius:2px;}
 .sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
-.st{font-size:14px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;}
+.st{font-size:17px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;}
 .st span{color:var(--blue-l);margin-right:6px;}
 .fr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
 
 /* TABLO */
 .tw{overflow-x:auto;border-radius:7px;border:1px solid var(--border);}
-table{width:100%;border-collapse:collapse;font-size:14px;}
+table{width:100%;border-collapse:collapse;font-size:17px;}
 thead tr{background:var(--surface2);}
-th{padding:9px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;}
+th{padding:9px 12px;text-align:left;font-size:16px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;}
 tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
 tbody tr:last-child{border-bottom:none;}tbody tr:hover{background:var(--surface2);}
 td{padding:10px 12px;vertical-align:middle;}
-.mono{font-family:var(--mono);font-size:13px;}
+.mono{font-family:var(--mono);font-size:16px;}
 
 /* CHIP */
-.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:3px;font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:3px;font-size:16px;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
 .chip-dot{width:4px;height:4px;border-radius:50%;}
 .c-haz{background:rgba(45,125,210,.15);color:#5BA3E0;border:1px solid rgba(45,125,210,.25);}
 .c-haz .chip-dot{background:#5BA3E0;}
@@ -269,12 +269,12 @@ td{padding:10px 12px;vertical-align:middle;}
 
 /* PROGRESS */
 .pb{width:100%;min-width:90px;}
-.pb-lbl{font-family:var(--mono);font-size:12px;color:var(--text2);margin-bottom:2px;}
+.pb-lbl{font-family:var(--mono);font-size:16px;color:var(--text2);margin-bottom:2px;}
 .pb-track{height:4px;border-radius:2px;background:var(--border);}
 .pb-fill{height:100%;border-radius:2px;transition:width .4s ease;}
 
 /* DELAY */
-.dl{font-family:var(--mono);font-size:12px;font-weight:700;padding:2px 6px;border-radius:3px;}
+.dl{font-family:var(--mono);font-size:16px;font-weight:700;padding:2px 6px;border-radius:3px;}
 .dl-ok{color:var(--green);background:var(--green-glow);}
 .dl-warn{color:var(--yellow);background:rgba(224,172,58,.1);}
 .dl-crit{color:var(--red);background:var(--red-glow);}
@@ -282,23 +282,23 @@ td{padding:10px 12px;vertical-align:middle;}
 /* PIPELINE */
 .pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
 .pipe-col{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
-.pipe-hd{padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;justify-content:space-between;}
+.pipe-hd{padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:16px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;justify-content:space-between;}
 .pipe-body{padding:8px;}
 .pipe-card{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:9px 11px;margin-bottom:6px;cursor:pointer;transition:border-color .1s;}
 .pipe-card:hover{border-color:var(--blue-l);}
-.pc-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;}
-.pc-proj{font-size:12px;color:var(--text3);}
+.pc-name{font-size:17px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.pc-proj{font-size:16px;color:var(--text3);}
 .pc-id{font-family:var(--mono);font-size:9px;color:var(--blue-l);margin-top:4px;}
 
 /* AKSAKLIK */
 .ak-item{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:5px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:opacity .1s;}
 .ak-item:hover{opacity:.85;}.ak-item.warn{border-left-color:var(--yellow);}
-.ak-title{font-size:15px;font-weight:600;}.ak-sub{font-size:13px;color:var(--text2);margin-top:2px;}
-.ak-meta{font-size:12px;color:var(--text3);margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;}
+.ak-title{font-size:17px;font-weight:600;}.ak-sub{font-size:16px;color:var(--text2);margin-top:2px;}
+.ak-meta{font-size:16px;color:var(--text3);margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;}
 
 /* ARŞİV */
 .arc-banner{background:rgba(58,181,106,.06);border:1px solid rgba(58,181,106,.2);border-radius:7px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
-.arc-title{font-size:15px;font-weight:600;color:var(--green);}.arc-sub{font-size:13px;color:var(--text2);margin-top:2px;}
+.arc-title{font-size:17px;font-weight:600;color:var(--green);}.arc-sub{font-size:16px;color:var(--text2);margin-top:2px;}
 
 /* BAR CHART */
 .chart{display:flex;gap:5px;align-items:flex-end;height:90px;padding:8px 0 0;}
@@ -313,22 +313,22 @@ td{padding:10px 12px;vertical-align:middle;}
 .overlay.on{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:10px;width:700px;max-width:100%;padding:0;}
 .modal-hd{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
-.modal-title{font-size:16px;font-weight:700;}.modal-sub{font-size:13px;color:var(--text3);margin-top:3px;}
+.modal-title{font-size:18px;font-weight:700;}.modal-sub{font-size:16px;color:var(--text3);margin-top:3px;}
 .modal-body{padding:20px 24px;}.modal-ft{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
-.close-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:17px;line-height:1;}
+.close-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;}
 .close-btn:hover{color:var(--text);}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
 .form-full{grid-column:1/-1;}
 .fl{display:flex;flex-direction:column;gap:5px;}
-.fl label{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.fl label{font-size:16px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
 .fl select,.fl input,.fl textarea{width:100%;}
-.form-sec{font-size:12px;font-weight:700;color:var(--blue-l);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.form-sec{font-size:16px;font-weight:700;color:var(--blue-l);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .range-row{display:flex;align-items:center;gap:10px;}
 .range-row input[type=range]{flex:1;accent-color:var(--blue-l);}
-.range-val{font-family:var(--mono);font-size:14px;color:var(--blue-l);min-width:30px;text-align:right;}
+.range-val{font-family:var(--mono);font-size:17px;color:var(--blue-l);min-width:30px;text-align:right;}
 .dg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
 .di{background:var(--surface2);border-radius:5px;padding:9px 12px;}
-.di-k{font-size:12px;color:var(--text3);margin-bottom:3px;}.di-v{font-size:14px;font-weight:500;}
+.di-k{font-size:16px;color:var(--text3);margin-bottom:3px;}.di-v{font-size:17px;font-weight:500;}
 .tl{position:relative;padding-left:22px;}
 .tl::before{content:'';position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--border);}
 .tl-item{position:relative;margin-bottom:16px;}
@@ -336,7 +336,7 @@ td{padding:10px 12px;vertical-align:middle;}
 .tl-dot.done{background:var(--green);border-color:var(--green);}
 .tl-dot.act{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-glow);}
 .tl-dot.late{background:var(--red);border-color:var(--red);box-shadow:0 0 0 3px var(--red-glow);}
-.tl-t{font-size:14px;font-weight:500;}
+.tl-t{font-size:17px;font-weight:500;}
 .tag{font-size:9px;padding:1px 5px;border-radius:2px;margin-left:5px;font-weight:700;}
 .tag-done{background:var(--green-glow);color:var(--green);}
 .tag-late{background:var(--red-glow);color:var(--red);}
@@ -345,31 +345,31 @@ td{padding:10px 12px;vertical-align:middle;}
 /* VERİ GİRİŞİ */
 .vg-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start;}
 .vg-sidebar{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;position:sticky;top:70px;}
-.vg-sidebar h4{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding:0 4px;}
-.cat-btn{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:3px;text-align:left;font-family:var(--font);}
+.vg-sidebar h4{font-size:16px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;padding:0 4px;}
+.cat-btn{display:flex;align-items:center;gap:9px;width:100%;padding:9px 10px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:17px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:3px;text-align:left;font-family:var(--font);}
 .cat-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border);}
 .cat-btn.on{background:var(--surface2);color:var(--text);border-color:var(--border2);}
-.cat-ico{width:26px;height:26px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.cat-ico{width:26px;height:26px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;}
 .cat-ico.blue{background:rgba(45,125,210,.15);}.cat-ico.purple{background:rgba(176,139,255,.15);}
 .cat-ico.amber{background:rgba(242,165,22,.15);}.cat-ico.green{background:rgba(58,181,106,.15);}
 .vg-form-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
 .vg-form-hd{padding:18px 22px 14px;border-bottom:1px solid var(--border);}
-.vg-form-hd h3{font-size:16px;font-weight:700;}.vg-form-hd p{font-size:13px;color:var(--text3);margin-top:3px;}
+.vg-form-hd h3{font-size:18px;font-weight:700;}.vg-form-hd p{font-size:16px;color:var(--text3);margin-top:3px;}
 .vg-form-body{padding:20px 22px;}
-.fsec{font-size:12px;font-weight:700;color:var(--blue-l);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.fsec{font-size:16px;font-weight:700;color:var(--blue-l);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .frow.c3{grid-template-columns:1fr 1fr 1fr;}.frow.c1{grid-template-columns:1fr;}
 .ff{display:flex;flex-direction:column;gap:4px;}
-.ff label{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.ff label{font-size:16px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
 .ff input,.ff select,.ff textarea{width:100%;}
-.ff .hint{font-size:12px;color:var(--text3);margin-top:2px;}
-.ff .calc{font-size:12px;color:var(--green);font-family:var(--mono);margin-top:2px;}
+.ff .hint{font-size:16px;color:var(--text3);margin-top:2px;}
+.ff .calc{font-size:16px;color:var(--green);font-family:var(--mono);margin-top:2px;}
 .vg-actions{padding:14px 22px;border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px;}
 .day-row{display:flex;align-items:center;gap:8px;}
-.day-row input{flex:1;}.day-lbl{font-size:13px;color:var(--text3);white-space:nowrap;}
+.day-row input{flex:1;}.day-lbl{font-size:16px;color:var(--text3);white-space:nowrap;}
 
 /* P6 */
-.sync-btn{display:flex;align-items:center;gap:8px;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);border-radius:6px;padding:10px 16px;font-size:14px;color:var(--green);font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.sync-btn{display:flex;align-items:center;gap:8px;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);border-radius:6px;padding:10px 16px;font-size:17px;color:var(--green);font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
 .sync-btn:hover{background:rgba(58,181,106,.2);}
 .sync-spin{display:none;width:14px;height:14px;border:2px solid rgba(58,181,106,.3);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -382,18 +382,18 @@ td{padding:10px 12px;vertical-align:middle;}
 
 /* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;}
-.toast-item{background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:10px 16px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideIn .2s ease;}
+.toast-item{background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:10px 16px;font-size:17px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideIn .2s ease;}
 @keyframes slideIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 .toast-item.ok{border-left:3px solid var(--green);color:var(--green);}
 .toast-item.err{border-left:3px solid var(--red);color:var(--red);}
 .toast-item.info{border-left:3px solid var(--blue-l);color:var(--blue-l);}
 
 /* MISC */
-.loading{padding:50px;text-align:center;color:var(--text3);font-size:14px;}
+.loading{padding:50px;text-align:center;color:var(--text3);font-size:17px;}
 .spin{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--blue-l);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
-.empty{text-align:center;padding:40px;color:var(--text3);font-size:14px;}
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:17px;}
 .sep{height:1px;background:var(--border);margin:14px 0;}
-.tag-pill{display:inline-block;padding:2px 7px;border-radius:3px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);margin:2px;}
+.tag-pill{display:inline-block;padding:2px 7px;border-radius:3px;font-size:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);margin:2px;}
 .hidden{display:none!important;}
 </style>
 </head>
@@ -409,8 +409,8 @@ td{padding:10px 12px;vertical-align:middle;}
 
     <!-- Sekme geçişi -->
     <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:18px">
-      <button id="lt-giris" onclick="loginTab('giris')" style="flex:1;padding:9px 0;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid var(--blue-l);color:var(--text);cursor:pointer">Giriş Yap</button>
-      <button id="lt-kayit" onclick="loginTab('kayit')" style="flex:1;padding:9px 0;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">Hesap Talebi</button>
+      <button id="lt-giris" onclick="loginTab('giris')" style="flex:1;padding:9px 0;font-size:15px;font-weight:600;background:none;border:none;border-bottom:2px solid var(--blue-l);color:var(--text);cursor:pointer">Giriş Yap</button>
+      <button id="lt-kayit" onclick="loginTab('kayit')" style="flex:1;padding:9px 0;font-size:15px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer">Hesap Talebi</button>
     </div>
 
     <!-- GİRİŞ FORMU -->
@@ -458,7 +458,7 @@ td{padding:10px 12px;vertical-align:middle;}
     <div class="hd" id="hd-proje-adi">Teknik Proje Paneli</div>
   </div>
   <div class="h-right">
-    <span id="clk" style="font-family:var(--mono);font-size:11px;color:var(--text3)"></span>
+    <span id="clk" style="font-family:var(--mono);font-size:13px;color:var(--text3)"></span>
     <button class="btn btn-ghost btn-sm" onclick="if(CRole==='admin'||CRole==='satinalma'){openCsvModal();}else{toast('Excel import yetkisi yok','err');}">📥 Veri Aktar</button>
     <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Dışa Aktar</button>
     <button class="btn btn-primary btn-sm" onclick="if(CRole==='admin'||CRole==='satinalma'||CRole==='dizayn'){openForm();}else{toast('Yeni ihale açma yetkisi yok','err');}">＋ Yeni İhale</button>
@@ -492,7 +492,7 @@ td{padding:10px 12px;vertical-align:middle;}
 <div class="view on" id="view-ozet">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
     <select id="oz-proje" onchange="loadDashboard()"><option value="">Tüm Projeler</option></select>
-    <span style="font-size:10px;color:var(--text3)" id="oz-ts">—</span>
+    <span style="font-size:13px;color:var(--text3)" id="oz-ts">—</span>
   </div>
   <div class="kpis">
     <div class="kpi bl"><div class="kpi-lbl">Aktif İhale</div><div class="kpi-v bl" id="kv-top">—</div><div class="kpi-sub">Tamamlanan/iptal hariç</div></div>
@@ -604,19 +604,19 @@ td{padding:10px 12px;vertical-align:middle;}
       <h4>Birim Seç</h4>
       <button class="cat-btn on" id="cat-ihale" onclick="setCat('ihale')">
         <div class="cat-ico blue">📋</div>
-        <div><div style="font-weight:600">İhale Girişi</div><div style="font-size:10px;color:var(--text3)">Satın Alma</div></div>
+        <div><div style="font-weight:600">İhale Girişi</div><div style="font-size:13px;color:var(--text3)">Satın Alma</div></div>
       </button>
       <button class="cat-btn" id="cat-dizayn" onclick="setCat('dizayn')">
         <div class="cat-ico purple">📐</div>
-        <div><div style="font-weight:600">Dizayn Girişi</div><div style="font-size:10px;color:var(--text3)">Dizayn Ofisi</div></div>
+        <div><div style="font-weight:600">Dizayn Girişi</div><div style="font-size:13px;color:var(--text3)">Dizayn Ofisi</div></div>
       </button>
       <button class="cat-btn" id="cat-aksaklik" onclick="setCat('aksaklik')">
         <div class="cat-ico green">⚠️</div>
-        <div><div style="font-weight:600">Aksaklık Bildir</div><div style="font-size:10px;color:var(--text3)">Tüm Birimler</div></div>
+        <div><div style="font-weight:600">Aksaklık Bildir</div><div style="font-size:13px;color:var(--text3)">Tüm Birimler</div></div>
       </button>
       <div class="sep"></div>
       <h4>İzinleriniz</h4>
-      <div id="perm-info" style="font-size:11px;color:var(--text3);line-height:2">—</div>
+      <div id="perm-info" style="font-size:13px;color:var(--text3);line-height:2">—</div>
     </div>
     <div id="vg-forms">
       <!-- İHALE FORMU -->
@@ -753,7 +753,7 @@ td{padding:10px 12px;vertical-align:middle;}
   <div class="sh"><div class="st"><span>▸</span>Primavera P6 Senkronizasyon</div>
     <button class="sync-btn" id="sync-btn" onclick="doP6Sync()"><div class="sync-spin" id="sync-spin"></div>🔄 Şimdi Senkronize Et</button></div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
-    <div class="kpi bl"><div class="kpi-lbl">Son Senkron</div><div class="kpi-v" style="font-size:16px" id="p6-last">—</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">Son Senkron</div><div class="kpi-v" style="font-size:17px" id="p6-last">—</div></div>
     <div class="kpi yw"><div class="kpi-lbl">Bekleyen Uyumsuzluk</div><div class="kpi-v yw" id="p6-unm">—</div></div>
     <div class="kpi gn"><div class="kpi-lbl">P6 Eşleşmeli İhale</div><div class="kpi-v gn" id="p6-sync">—</div></div>
   </div>
@@ -783,11 +783,11 @@ td{padding:10px 12px;vertical-align:middle;}
         <button class="btn btn-primary btn-sm" onclick="sapKaynakAktiflestir()">SAP'ı Veri Kaynağı Yap</button>
         <button class="btn btn-ghost btn-sm" onclick="sapKaynakSupabase()">Supabase'e Dön</button>
       </div>
-      <div id="sap-test-sonuc" style="font-size:11px;color:var(--text3);margin-top:10px"></div>
+      <div id="sap-test-sonuc" style="font-size:13px;color:var(--text3);margin-top:10px"></div>
     </div>
     <div class="card">
       <div class="card-t"><div class="ct-dot" style="background:var(--blue-l)"></div>Eşleştirme Planı (SAP → Panel)</div>
-      <div style="font-size:11px;color:var(--text2);line-height:1.9">
+      <div style="font-size:13px;color:var(--text2);line-height:1.9">
         <div>SAP Proje (PSP) → <strong>proje</strong></div>
         <div>WBS / Aktivite → <strong>takvim_no / paket</strong></div>
         <div>Milestone tarihleri → <strong>M1–M8 planlanan/gerçekleşen</strong></div>
@@ -796,7 +796,7 @@ td{padding:10px 12px;vertical-align:middle;}
         <div>Sözleşme tutarı → <strong>sözleşme_bedeli</strong></div>
       </div>
       <div class="sep"></div>
-      <div style="font-size:10px;color:var(--text3)">Not: Gerçek bağlantı IT tarafından SAP servis uçları sağlandığında <code>DataSource._sapIhaleleriGetir()</code> içinde tamamlanacak.</div>
+      <div style="font-size:13px;color:var(--text3)">Not: Gerçek bağlantı IT tarafından SAP servis uçları sağlandığında <code>DataSource._sapIhaleleriGetir()</code> içinde tamamlanacak.</div>
     </div>
   </div>
 </div>
@@ -840,7 +840,7 @@ td{padding:10px 12px;vertical-align:middle;}
       <!-- Onay Bekleyenler — sadece admin görür -->
       <div class="card" id="kart-onay" style="display:none">
         <div class="card-t">⏳ Onay Bekleyen Hesaplar <span class="nbadge" id="nb-onay" style="display:none;background:var(--red)">0</span></div>
-        <div id="onay-list"><div style="color:var(--text3);font-size:12px;padding:10px">Yükleniyor...</div></div>
+        <div id="onay-list"><div style="color:var(--text3);font-size:14px;padding:10px">Yükleniyor...</div></div>
       </div>
       <!-- Kullanıcı Yönetimi — sadece admin görür -->
       <div class="card" id="kart-kullanici" style="display:none">
@@ -855,7 +855,7 @@ td{padding:10px 12px;vertical-align:middle;}
       <!-- Sistem Bilgisi -->
       <div class="card">
         <div class="card-t"><div class="ct-dot" style="background:var(--gold)"></div>Sistem Bilgisi</div>
-        <div style="font-size:12px;color:var(--text2);line-height:2">
+        <div style="font-size:14px;color:var(--text2);line-height:2">
           <div>Veritabanı: <span style="color:var(--green)">Supabase PostgreSQL</span></div>
           <div>Auth: <span style="color:var(--green)">Row Level Security</span></div>
           <div>P6 Entegrasyonu: <span style="color:var(--gold)">EPPM Web Services</span></div>
@@ -923,35 +923,35 @@ td{padding:10px 12px;vertical-align:middle;}
     <div class="form-sec">Dizayn Ilerleme</div>
     <div class="form-grid">
       <div class="fl">
-        <label>Dizayn Ilerleme (%) <span id="dizayn-rol-not" style="color:var(--text3);font-size:10px;font-weight:400"></span></label>
+        <label>Dizayn Ilerleme (%) <span id="dizayn-rol-not" style="color:var(--text3);font-size:13px;font-weight:400"></span></label>
         <div class="range-row">
           <input type="range" id="f-dizayn" min="0" max="100" step="5" value="0"
             oninput="document.getElementById('dv').textContent=this.value+'%'">
           <span class="range-val" id="dv">0%</span>
         </div>
-        <div class="hint" style="font-size:10px;color:var(--text3);margin-top:4px">%100 olduğunda "Şantiye Onayına Gönder" ile şantiyeye iletin. Şantiye onayı olmadan dizayn süreci kapanmaz.</div>
+        <div class="hint" style="font-size:13px;color:var(--text3);margin-top:4px">%100 olduğunda "Şantiye Onayına Gönder" ile şantiyeye iletin. Şantiye onayı olmadan dizayn süreci kapanmaz.</div>
       </div>
       <div class="fl" id="dizayn-gonder-wrap" style="display:none">
         <label>Dizayn → Şantiye</label>
-        <div id="dizayn-onay-durum" style="font-size:11px;margin-bottom:6px"></div>
+        <div id="dizayn-onay-durum" style="font-size:13px;margin-bottom:6px"></div>
         <button class="btn btn-primary btn-sm" id="btn-dizayn-gonder" type="button" onclick="dizaynSantiyeyeGonder()">📤 Şantiye Onayına Gönder</button>
       </div>
     </div>
 
     <!-- Notlar — append-only -->
     <div class="form-sec">Notlar</div>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin-bottom:10px;max-height:130px;overflow-y:auto;font-size:12px;line-height:1.7;color:var(--text2)" id="f-aciklama-mevcut">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;margin-bottom:10px;max-height:130px;overflow-y:auto;font-size:14px;line-height:1.7;color:var(--text2)" id="f-aciklama-mevcut">
       (henuz not yok)
     </div>
     <div class="fl">
-      <label style="font-size:10px;color:var(--text3)">Yeni Not Ekle (adınız otomatik eklenecek)</label>
+      <label style="font-size:13px;color:var(--text3)">Yeni Not Ekle (adınız otomatik eklenecek)</label>
       <textarea id="f-aciklama-yeni" rows="2" placeholder="Yeni notunuzu buraya yazin…"></textarea>
     </div>
 
     <!-- Davet Edilen Firmalar — satinalma/admin -->
     <div class="form-sec" style="margin-top:12px">Firma</div>
     <div class="fl">
-      <label>Firmalar (virgülle ayirin) <span id="firma-rol-not" style="color:var(--text3);font-size:10px;font-weight:400"></span></label>
+      <label>Firmalar (virgülle ayirin) <span id="firma-rol-not" style="color:var(--text3);font-size:13px;font-weight:400"></span></label>
       <input type="text" id="f-firmalar" placeholder="Firma adı">
     </div>
 
@@ -1000,37 +1000,37 @@ td{padding:10px 12px;vertical-align:middle;}
   <div class="modal-hd"><div><div class="modal-title">📥 Veri Aktarımı — CSV veya Excel</div><div class="modal-sub">Excel şablonunu doldurun ve buradan yükleyin</div></div><button class="close-btn" onclick="closeOv('ov-csv')">✕</button></div>
   <div class="modal-body">
     <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px">
-      <button id="imp-tab-xl" onclick="impTab('xl')" style="padding:8px 18px;font-size:11px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid var(--blue-l);background:transparent;color:var(--blue-l);font-family:var(--font)">📊 Excel (.xlsx)</button>
-      <button id="imp-tab-csv" onclick="impTab('csv')" style="padding:8px 18px;font-size:11px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;background:transparent;color:var(--text3);font-family:var(--font)">📄 CSV</button>
+      <button id="imp-tab-xl" onclick="impTab('xl')" style="padding:8px 18px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid var(--blue-l);background:transparent;color:var(--blue-l);font-family:var(--font)">📊 Excel (.xlsx)</button>
+      <button id="imp-tab-csv" onclick="impTab('csv')" style="padding:8px 18px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;background:transparent;color:var(--text3);font-family:var(--font)">📄 CSV</button>
     </div>
     <div id="imp-xl">
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--gold-glow);border:1px solid rgba(242,165,22,.3);border-radius:6px;padding:12px 14px;margin-bottom:14px">
-        <div><div style="font-size:12px;font-weight:700;color:var(--gold)">⬇ Aktarım Şablonu</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Dropdown doğrulama ve kılavuz dahil</div></div>
+        <div><div style="font-size:14px;font-weight:700;color:var(--gold)">⬇ Aktarım Şablonu</div><div style="font-size:13px;color:var(--text2);margin-top:3px">Dropdown doğrulama ve kılavuz dahil</div></div>
         <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📥 Şablonu İndir</button>
       </div>
       <div class="csv-zone" id="xl-drop" onclick="document.getElementById('xl-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleXlDrop(event)">
         <input type="file" id="xl-file" accept=".xlsx,.xls" style="display:none" onchange="handleXlFile(event)">
         <div style="font-size:28px;margin-bottom:8px">📊</div>
-        <div style="font-size:12px;color:var(--text2);font-weight:600">Excel dosyasını buraya sürükleyin</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:4px">.xlsx veya .xls</div>
+        <div style="font-size:14px;color:var(--text2);font-weight:600">Excel dosyasını buraya sürükleyin</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px">.xlsx veya .xls</div>
       </div>
       <div id="xl-status" style="display:none;margin-top:10px"></div>
     </div>
     <div id="imp-csv" style="display:none">
-      <div style="background:var(--surface2);border-radius:5px;padding:11px 14px;margin-bottom:12px;font-size:10px;color:var(--text2);line-height:1.8">
+      <div style="background:var(--surface2);border-radius:5px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);line-height:1.8">
         <strong style="color:var(--text)">Sütun sırası (A→T):</strong><br>
         <span style="font-family:var(--mono);color:var(--blue-l)">İhaleNo | Proje | PaketAdı | İmalatGrubu | Durum | P6Kodu | İmalatBaşlangıç | HedefDevir | DizaynSüresi | TalepSüresi | İhaleHazırlık | İhaleSüresi | İhaleKarar | SözleşmeSüresi | ÜretimMobilizasyon | Dizayn% | Şantiye% | Gecikme | BlokenBirim | Açıklama | Firmalar | SözleşmeTutarı | Yüklenici | ParaBirimi | SözleşmeBaşlangıç | SözleşmeBitiş</span>
       </div>
-      <textarea id="csv-paste" rows="6" placeholder="Excel'den kopyalayıp buraya yapıştırın…" style="width:100%;font-family:var(--mono);font-size:11px;"></textarea>
-      <div style="text-align:center;color:var(--text3);font-size:11px;margin:10px 0">— veya —</div>
+      <textarea id="csv-paste" rows="6" placeholder="Excel'den kopyalayıp buraya yapıştırın…" style="width:100%;font-family:var(--mono);font-size:13px;"></textarea>
+      <div style="text-align:center;color:var(--text3);font-size:13px;margin:10px 0">— veya —</div>
       <div class="csv-zone" id="csv-drop" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
         <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleFile(event)">
         <div style="font-size:24px;margin-bottom:8px">📂</div>
-        <div style="font-size:12px;color:var(--text2)">CSV dosyası sürükleyin</div>
+        <div style="font-size:14px;color:var(--text2)">CSV dosyası sürükleyin</div>
       </div>
     </div>
     <div id="csv-preview-area" style="display:none;margin-top:14px">
-      <div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px" id="csv-count"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px" id="csv-count"></div>
       <div class="csv-preview tw"><table id="csv-preview-table"></table></div>
     </div>
   </div>
@@ -1046,7 +1046,7 @@ td{padding:10px 12px;vertical-align:middle;}
 <div class="modal" style="width:460px">
   <div class="modal-hd"><div><div class="modal-title" style="color:var(--red)">İhaleyi İptal Et</div><div class="modal-sub" id="iptal-sub"></div></div><button class="close-btn" onclick="closeOv('ov-iptal')">✕</button></div>
   <div class="modal-body">
-    <div style="background:var(--red-glow);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:10px 14px;font-size:12px;color:var(--red);margin-bottom:14px">
+    <div style="background:var(--red-glow);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:10px 14px;font-size:14px;color:var(--red);margin-bottom:14px">
       İptal edilen paket "Tamamlananlar" listesine iptal ibaresiyle taşınır. Bu işlem geri alınamaz ve iptal nedeni silinemez.
     </div>
     <div class="fl"><label>İptal Nedeni * (zorunlu)</label>
@@ -1057,7 +1057,7 @@ td{padding:10px 12px;vertical-align:middle;}
     <button class="btn btn-danger" onclick="iptalOnayla()">İptal Et</button>
   </div>
 </div></div><button class="close-btn" onclick="closeOv('ov-confirm')">✕</button></div>
-  <div class="modal-body"><div id="confirm-msg" style="font-size:13px;color:var(--text2);line-height:1.6"></div></div>
+  <div class="modal-body"><div id="confirm-msg" style="font-size:15px;color:var(--text2);line-height:1.6"></div></div>
   <div class="modal-ft"><button class="btn btn-ghost" onclick="closeOv('ov-confirm')">İptal</button><button class="btn btn-danger" id="confirm-ok">Evet, Sil</button></div>
 </div></div>
 
@@ -1081,7 +1081,7 @@ td{padding:10px 12px;vertical-align:middle;}
 <div class="modal" style="width:460px">
   <div class="modal-hd"><div><div class="modal-title">✉ Kullanıcı Davet Et</div><div class="modal-sub">Davetiye e-posta ile gönderilir, kullanıcı kendi şifresini belirler</div></div><button class="close-btn" onclick="closeOv('ov-davet')">✕</button></div>
   <div class="modal-body">
-    <div id="davet-msg" style="display:none;border-radius:5px;padding:10px 14px;font-size:12px;margin-bottom:14px"></div>
+    <div id="davet-msg" style="display:none;border-radius:5px;padding:10px 14px;font-size:14px;margin-bottom:14px"></div>
     <div class="form-grid">
       <div class="fl"><label>Ad Soyad *</label><input type="text" id="dv-ad" placeholder="Ad Soyad"></div>
       <div class="fl" id="dv-rol-wrap"><label>Rol *</label>
@@ -1097,7 +1097,7 @@ td{padding:10px 12px;vertical-align:middle;}
       </div>
       <div class="fl form-full"><label>Kurumsal E-posta *</label><input type="email" id="dv-email" placeholder="ad.soyad@folkart.com.tr"></div>
     </div>
-    <div style="background:var(--surface2);border-radius:5px;padding:11px 14px;font-size:11px;color:var(--text2);line-height:1.7;margin-top:4px">
+    <div style="background:var(--surface2);border-radius:5px;padding:11px 14px;font-size:13px;color:var(--text2);line-height:1.7;margin-top:4px">
       ℹ️ Kullanıcıya bir davetiye e-postası gönderilir. Linke tıklayarak kendi şifresini belirler ve sisteme giriş yapabilir.<br>
       Davetiye 24 saat geçerlidir. Süresi doldu ise tekrar davet gönderebilirsiniz.
     </div>
@@ -1369,11 +1369,11 @@ function loginTab(tab) {
   document.getElementById('login-form-giris').style.display = tab==='giris' ? 'block' : 'none';
   document.getElementById('login-form-kayit').style.display = tab==='kayit' ? 'block' : 'none';
   document.getElementById('lt-giris').style.cssText = tab==='giris'
-    ? 'flex:1;padding:9px 0;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid var(--blue-l);color:var(--text);cursor:pointer'
-    : 'flex:1;padding:9px 0;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer';
+    ? 'flex:1;padding:9px 0;font-size:15px;font-weight:600;background:none;border:none;border-bottom:2px solid var(--blue-l);color:var(--text);cursor:pointer'
+    : 'flex:1;padding:9px 0;font-size:15px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer';
   document.getElementById('lt-kayit').style.cssText = tab==='kayit'
-    ? 'flex:1;padding:9px 0;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid var(--blue-l);color:var(--text);cursor:pointer'
-    : 'flex:1;padding:9px 0;font-size:13px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer';
+    ? 'flex:1;padding:9px 0;font-size:15px;font-weight:600;background:none;border:none;border-bottom:2px solid var(--blue-l);color:var(--text);cursor:pointer'
+    : 'flex:1;padding:9px 0;font-size:15px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer';
 }
 
 async function doKayit() {
@@ -1384,8 +1384,8 @@ async function doKayit() {
   const pw2   = document.getElementById('k-pw2').value;
   const msgEl = document.getElementById('kayit-msg');
   const btn   = document.getElementById('kayit-btn');
-  const ERR = 'display:block;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:9px 12px;font-size:12px;margin-bottom:14px;color:#E05252;';
-  const OK  = 'display:block;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);border-radius:5px;padding:9px 12px;font-size:12px;margin-bottom:14px;color:var(--green);';
+  const ERR = 'display:block;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:9px 12px;font-size:14px;margin-bottom:14px;color:#E05252;';
+  const OK  = 'display:block;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);border-radius:5px;padding:9px 12px;font-size:14px;margin-bottom:14px;color:var(--green);';
 
   if (!ad || !email || !birim || !pw) {
     msgEl.textContent = 'Tum alanlar zorunludur.'; msgEl.style.cssText = ERR; return;
@@ -1451,7 +1451,7 @@ function showOnayBekle(adSoyad, ozelMesaj) {
     '<div class="wordmark" style="margin-bottom:18px">FOLKART <em>●</em> TEKNİK PANEL</div>' +
     '<div style="font-size:48px;margin-bottom:16px">' + (reddedildi ? '🚫' : '⏳') + '</div>' +
     '<div style="font-size:18px;font-weight:700;margin-bottom:10px">' + (reddedildi ? 'Talep Reddedildi' : 'Onay Bekleniyor') + '</div>' +
-    '<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:24px">' +
+    '<div style="font-size:15px;color:var(--text2);line-height:1.7;margin-bottom:24px">' +
     'Merhaba <strong>' + adSoyad + '</strong>,<br>' +
     (ozelMesaj || 'Hesap talebiniz sistem yöneticisine iletildi.<br>Onay sonrasında giriş yapabileceksiniz.') +
     '</div>' +
@@ -1466,7 +1466,7 @@ async function doLogin() {
   const pw    = document.getElementById('l-pw').value;
   const btn   = document.getElementById('login-btn');
   const errEl = document.getElementById('login-err');
-  const ERR_CSS = 'display:block;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:9px 12px;font-size:12px;margin-bottom:14px;color:#E05252;';
+  const ERR_CSS = 'display:block;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:9px 12px;font-size:14px;margin-bottom:14px;color:#E05252;';
 
   if (!email || !pw) {
     errEl.textContent = 'E-posta ve sifre gerekli.';
@@ -1901,20 +1901,20 @@ function rSonList() {
     const diffDays = Math.round((new Date(i.acilis + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000);
     let startText = '';
     if (diffDays > 0) {
-      startText = `<span style="color:var(--green);font-size:10px">${diffDays} gün sonra</span>`;
+      startText = `<span style="color:var(--green);font-size:13px">${diffDays} gün sonra</span>`;
     } else if (diffDays === 0) {
-      startText = `<span style="color:var(--gold);font-size:10px;font-weight:700">Bugün başlıyor</span>`;
+      startText = `<span style="color:var(--gold);font-size:13px;font-weight:700">Bugün başlıyor</span>`;
     } else {
-      startText = `<span style="color:var(--red);font-size:10px">${Math.abs(diffDays)} gün önce başladı</span>`;
+      startText = `<span style="color:var(--red);font-size:13px">${Math.abs(diffDays)} gün önce başladı</span>`;
     }
 
     return `
     <div onclick="openDetail('${i._id}')" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
       <span class="mono" style="color:var(--text3);min-width:80px">${i.id}</span>
       ${chip(i.durum)}
-      <span style="font-size:12px;flex:1">${i.paket}</span>
-      <span style="font-size:10px;color:var(--text3);min-width:120px">${i.proje}</span>
-      <span class="mono" style="font-size:11px;min-width:80px;text-align:right">${i.acilis}</span>
+      <span style="font-size:14px;flex:1">${i.paket}</span>
+      <span style="font-size:13px;color:var(--text3);min-width:120px">${i.proje}</span>
+      <span class="mono" style="font-size:13px;min-width:80px;text-align:right">${i.acilis}</span>
       <span style="min-width:100px;text-align:right">${startText}</span>
     </div>`;
   }).join('') : '<div class="empty">Yaklaşan ihale bulunmuyor</div>';
@@ -1945,15 +1945,15 @@ function rHavuz() {
     return `
     <tr>
       <td class="mono" style="color:var(--blue-l)">${i.id}</td>
-      <td style="font-size:11px;color:var(--text2)">${i.proje}</td>
+      <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
       <td><strong>${i.paket}</strong></td>
       <td>${chip(i.durum)}</td>
       <td>${ms.html}</td>
-      <td class="mono" style="font-size:10px">${i.acilis||'-'}</td>
+      <td class="mono" style="font-size:13px">${i.acilis||'-'}</td>
       <td style="min-width:90px">${pb(i.dizayn,pbColor(i.dizayn))}</td>
       <td>${santiyeOnayBadge(i)}</td>
       <td>${dl(i.gecikme)}</td>
-      <td>${i.p6?`<span style="font-family:var(--mono);font-size:10px;color:var(--green)">⬤ ${i.p6}</span>`:'<span style="color:var(--text3);font-size:10px">-</span>'}</td>
+      <td>${i.p6?`<span style="font-family:var(--mono);font-size:13px;color:var(--green)">⬤ ${i.p6}</span>`:'<span style="color:var(--text3);font-size:13px">-</span>'}</td>
       <td><div style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}')">Detay</button>
         ${CRole!=='izleyici'?`<button class="btn btn-ghost btn-sm" onclick="openForm('${i._id}')">✏</button>`:''}
@@ -1980,12 +1980,12 @@ function rDizayn() {
 
     return `
       <tr>
-        <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:10px">${i.id}</div></td>
-        <td style="font-size:11px;color:var(--text2)">${i.proje}</td>
+        <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div></td>
+        <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
         <td style="min-width:110px">${pb(pct, pbColor(pct))}</td>
         <td>${statusBadge}</td>
-        <td class="mono" style="font-size:10px">${i.hedefDevir||'-'}</td>
-        <td class="mono" style="font-size:10px">${i.guncel||'-'}</td>
+        <td class="mono" style="font-size:13px">${i.hedefDevir||'-'}</td>
+        <td class="mono" style="font-size:13px">${i.guncel||'-'}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="openForm('${i._id}')">✏ Güncelle</button></td>
       </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty">Dizayn aşamasında ihale yok</div></td></tr>`;
@@ -2059,7 +2059,7 @@ function rPipeline() {
                 <div class="pipe-card" draggable="true" ondragstart="saDrag(event, '${i._id}')" onclick="openDetail('${i._id}')">
                   <div class="pc-name">${i.paket}</div>
                   <div class="pc-proj">${i.proje}</div>
-                  <div class="pc-id" style="margin-top:6px; font-size:10px; color:var(--text2)">
+                  <div class="pc-id" style="margin-top:6px; font-size:13px; color:var(--text2)">
                     <div>Başlangıç: ${i.acilis || '-'}</div>
                     <div>Hedef: ${i.hedefDevir || '-'}</div>
                     <div style="margin-top:4px">${remainingText}</div>
@@ -2088,11 +2088,11 @@ function rPipeline() {
       
       return `
         <tr>
-          <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:10px">${i.id}</div></td>
-          <td style="font-size:11px;color:var(--text2)">${i.proje}</td>
+          <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div></td>
+          <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
           <td>${chip(i.durum)}</td>
-          <td class="mono" style="font-size:10px">${i.acilis || '-'}</td>
-          <td class="mono" style="font-size:10px">${i.hedefDevir || '-'}</td>
+          <td class="mono" style="font-size:13px">${i.acilis || '-'}</td>
+          <td class="mono" style="font-size:13px">${i.hedefDevir || '-'}</td>
           <td>${remainingText}</td>
           <td><button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}')">Detay</button></td>
         </tr>`;
@@ -2140,7 +2140,7 @@ function rSantiye() {
     const od = i.santiye_onay_durum;
     let islem = '';
     if (!yetkili) {
-      islem = '<span style="font-size:10px;color:var(--text3)">Salt okunur</span>';
+      islem = '<span style="font-size:13px;color:var(--text3)">Salt okunur</span>';
     } else if (od === 'bekliyor') {
       islem = `<div style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="btn btn-archive btn-sm" onclick="santiyeKabul('${i._id}')">✓ Kabul</button>
@@ -2153,20 +2153,20 @@ function rSantiye() {
     } else if (od === 'red') {
       islem = `<button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}')">Detay</button>`;
     } else {
-      islem = '<span style="font-size:10px;color:var(--text3)">Dizayn devam ediyor</span>';
+      islem = '<span style="font-size:13px;color:var(--text3)">Dizayn devam ediyor</span>';
     }
 
     const redNot = (od === 'red' && i.santiye_red_nedeni)
-      ? `<div style="font-size:10px;color:var(--red);margin-top:3px">İade nedeni: ${i.santiye_red_nedeni}</div>` : '';
+      ? `<div style="font-size:13px;color:var(--red);margin-top:3px">İade nedeni: ${i.santiye_red_nedeni}</div>` : '';
 
     return `
       <tr>
-        <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:10px">${i.id}</div>${redNot}</td>
-        <td style="font-size:11px;color:var(--text2)">${i.proje}</td>
+        <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div>${redNot}</td>
+        <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
         <td style="min-width:90px">${pb(i.dizayn, pbColor(i.dizayn))}</td>
-        <td class="mono" style="font-size:10px">${i.dizayn_gonderim_tarihi || '-'}</td>
+        <td class="mono" style="font-size:13px">${i.dizayn_gonderim_tarihi || '-'}</td>
         <td>${santiyeOnayBadge(i)}</td>
-        <td class="mono" style="font-size:10px">${i.talep_giris_tarihi || '-'}</td>
+        <td class="mono" style="font-size:13px">${i.talep_giris_tarihi || '-'}</td>
         <td>${islem}</td>
       </tr>`;
   }).join('') : `<tr><td colspan="7"><div class="empty">Şantiye onayı bekleyen dizayn paketi yok</div></td></tr>`;
@@ -2246,7 +2246,7 @@ function rAksaklik() {
   }
 
   bloke.forEach(i => {
-    html += `<div class="ak-item" onclick="openDetail('${i._id}')"><div class="ak-title">🔴 [BLOKE] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id}</div><div class="ak-meta"><span>Bloke: <strong style="color:var(--red)">${i.bloken}</strong></span><span>Plan: ${i.acilis||'-'}</span></div>${i.aciklama?`<div style="font-size:11px;color:var(--text2);margin-top:7px">${i.aciklama}</div>`:''}</div>`;
+    html += `<div class="ak-item" onclick="openDetail('${i._id}')"><div class="ak-title">🔴 [BLOKE] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id}</div><div class="ak-meta"><span>Bloke: <strong style="color:var(--red)">${i.bloken}</strong></span><span>Plan: ${i.acilis||'-'}</span></div>${i.aciklama?`<div style="font-size:13px;color:var(--text2);margin-top:7px">${i.aciklama}</div>`:''}</div>`;
   });
 
   gecikmeli.forEach(i => {
@@ -2274,13 +2274,13 @@ function rArsiv() {
   document.getElementById('tb-arsiv').innerHTML=SbArchive.length?SbArchive.map(i=>`
     <tr style="${i.durum==='iptal'?'opacity:.75':''}">
       <td class="mono" style="color:var(--text3)">${i.id}</td>
-      <td style="font-size:11px;color:var(--text2)">${i.proje}</td>
+      <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
       <td><strong>${i.paket}</strong>
         ${i.durum==='iptal'?`<span class="chip c-blo" style="margin-left:8px"><span class="chip-dot"></span>İPTAL</span>`:`<span class="chip c-tam" style="margin-left:8px"><span class="chip-dot"></span>Tamamlandı</span>`}
-        ${i.durum==='iptal'&&i.iptalNedeni?`<div style="font-size:10px;color:var(--red);margin-top:3px">${i.iptalNedeni}</div>`:''}
+        ${i.durum==='iptal'&&i.iptalNedeni?`<div style="font-size:13px;color:var(--red);margin-top:3px">${i.iptalNedeni}</div>`:''}
       </td>
-      <td class="mono" style="font-size:11px">${i.arsivTarihi||'-'}</td>
-      <td style="color:var(--green);font-family:var(--mono);font-size:11px">${i.tutar?'₺'+formatTutar(i.tutar):'-'}</td>
+      <td class="mono" style="font-size:13px">${i.arsivTarihi||'-'}</td>
+      <td style="color:var(--green);font-family:var(--mono);font-size:13px">${i.tutar?'₺'+formatTutar(i.tutar):'-'}</td>
       <td>${i.yuklenici||'-'}</td>
       <td><button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}',true)">Detay</button></td>
     </tr>`).join(''):`<tr><td colspan="7"><div class="empty">Henüz tamamlanan ihale yok</div></td></tr>`;
@@ -2293,7 +2293,7 @@ async function rP6() {
   set('p6-unm',unm??0); set('p6-sync',synced??0);
   if (!loglar?.length) { document.getElementById('tb-p6').innerHTML='<tr><td colspan="6"><div class="empty">Henüz P6 logu yok</div></td></tr>'; set('p6-last','Hiç senkron yapılmadı'); return; }
   set('p6-last',relTime(loglar[0].olusturulma));
-  document.getElementById('tb-p6').innerHTML=loglar.map(l=>`<tr><td class="mono" style="font-size:10px">${relTime(l.olusturulma)}</td><td style="font-size:11px">${l.senkron_tipi||'-'}</td><td>${l.durum==='basarili'?chipDizayn('onaylandi'):chipDizayn('iptal')}</td><td class="mono">${l.etkilenen_kayit||0}</td><td style="font-size:11px">${l.kullanici_profilleri?.ad_soyad||'-'}</td><td style="font-size:10px;color:var(--text3)">${l.hata_mesaji||'-'}</td></tr>`).join('');
+  document.getElementById('tb-p6').innerHTML=loglar.map(l=>`<tr><td class="mono" style="font-size:13px">${relTime(l.olusturulma)}</td><td style="font-size:13px">${l.senkron_tipi||'-'}</td><td>${l.durum==='basarili'?chipDizayn('onaylandi'):chipDizayn('iptal')}</td><td class="mono">${l.etkilenen_kayit||0}</td><td style="font-size:13px">${l.kullanici_profilleri?.ad_soyad||'-'}</td><td style="font-size:13px;color:var(--text3)">${l.hata_mesaji||'-'}</td></tr>`).join('');
 }
 
 function renderProjeSettings() {
@@ -2301,14 +2301,14 @@ function renderProjeSettings() {
   el.innerHTML=SbProjeler.map(p=>`
     <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${p.proje_adi}</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">
+        <div style="font-size:15px;font-weight:600">${p.proje_adi}</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:2px">
           ${p.proje_kodu} · ${p.durum}
           ${p.konum ? `<span style="margin-left:8px;color:var(--text2)">📍 ${p.konum}</span>` : ''}
         </div>
-        ${p.notlar ? `<div style="font-size:10px;color:var(--text3);margin-top:3px">📋 ${p.notlar}</div>` : ''}
+        ${p.notlar ? `<div style="font-size:13px;color:var(--text3);margin-top:3px">📋 ${p.notlar}</div>` : ''}
       </div>
-      <span style="font-size:11px;color:var(--text3);margin-right:8px">${SbData.filter(i=>i.proje===p.proje_adi).length} ihale</span>
+      <span style="font-size:13px;color:var(--text3);margin-right:8px">${SbData.filter(i=>i.proje===p.proje_adi).length} ihale</span>
       <button class="btn btn-ghost btn-sm" onclick="editProje('${p.id}')" title="Düzenle">✏</button>
       <button class="btn btn-danger btn-sm" onclick="silProjeOnay('${p.id}','${p.proje_adi.replace(/'/g,"\'")}')" title="Sil">🗑</button>
     </div>`).join('')||'<div class="empty">Proje yok</div>';
@@ -2688,7 +2688,7 @@ function openDetail(id, fromArchive) {
   const gecikmeRenk = g => g > 0 ? 'var(--red)' : g === 0 ? 'var(--green)' : 'var(--text2)';
   const gecBadge = g => g > 0
     ? '<span style="color:var(--red);font-weight:700;font-family:var(--mono)">+'+g+'g gecikme</span>'
-    : '<span style="color:var(--green);font-size:11px">Zamaninda</span>';
+    : '<span style="color:var(--green);font-size:13px">Zamaninda</span>';
 
   // ── Bilgi kartları ──
   const kartlar = '<div class="dg">' +
@@ -2708,7 +2708,7 @@ function openDetail(id, fromArchive) {
   const asamalar = i._asamalar || [];
   let tlHtml = '';
   if (!plan || !asamalar.length) {
-    tlHtml = '<div style="color:var(--text3);font-size:12px;padding:10px 0">Is programi tarihi veya sure bilgileri eksik - tarih hesaplanamadi.</div>';
+    tlHtml = '<div style="color:var(--text3);font-size:14px;padding:10px 0">Is programi tarihi veya sure bilgileri eksik - tarih hesaplanamadi.</div>';
   } else {
     asamalar.forEach(a => {
       const cls = a.durum==='done' ? (a.gecikme>0?'late':'done') : a.durum==='active' ? 'act' : '';
@@ -2728,15 +2728,15 @@ function openDetail(id, fromArchive) {
       // Bu aşamanın KENDİ katkısı (segment): hızlanma/yavaşlama
       let seg_lbl = '';
       if (a.segment != null && a.segment !== 0) {
-        if (a.segment < 0) seg_lbl = '<span style="color:var(--green);font-size:10px;font-weight:700;margin-left:6px" title="Bu birim isini planindan hizli yapti">▼ '+Math.abs(a.segment)+'g hizli</span>';
-        else               seg_lbl = '<span style="color:var(--red);font-size:10px;font-weight:700;margin-left:6px" title="Bu asamada eklenen gecikme">▲ +'+a.segment+'g</span>';
+        if (a.segment < 0) seg_lbl = '<span style="color:var(--green);font-size:13px;font-weight:700;margin-left:6px" title="Bu birim isini planindan hizli yapti">▼ '+Math.abs(a.segment)+'g hizli</span>';
+        else               seg_lbl = '<span style="color:var(--red);font-size:13px;font-weight:700;margin-left:6px" title="Bu asamada eklenen gecikme">▲ +'+a.segment+'g</span>';
       }
 
       const plan_satir = a.plan
-        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span style="font-size:10px;color:var(--text3);min-width:80px">Planlanan:</span><span style="font-family:var(--mono);font-size:11px">'+fmt(a.plan)+'</span></div>'
+        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span style="font-size:13px;color:var(--text3);min-width:80px">Planlanan:</span><span style="font-family:var(--mono);font-size:13px">'+fmt(a.plan)+'</span></div>'
         : '';
       const gercek_satir = a.gercek
-        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font-size:10px;color:var(--text3);min-width:80px">Gerceklesen:</span><span style="font-family:var(--mono);font-size:11px;color:'+(a.gecikme>0?'var(--red)':a.gecikme<0?'var(--green)':'var(--text)')+'">'+fmt(a.gercek)+'</span></div>'
+        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font-size:13px;color:var(--text3);min-width:80px">Gerceklesen:</span><span style="font-family:var(--mono);font-size:13px;color:'+(a.gecikme>0?'var(--red)':a.gecikme<0?'var(--green)':'var(--text)')+'">'+fmt(a.gercek)+'</span></div>'
         : '';
 
       tlHtml +=
@@ -2755,23 +2755,23 @@ function openDetail(id, fromArchive) {
     // Notları satırlara böl ve formatla
     const satirlar = i.aciklama.split('\n').filter(s=>s.trim());
     notHtml = '<div style="margin-top:14px">' +
-      '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Notlar</div>' +
+      '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Notlar</div>' +
       '<div style="display:flex;flex-direction:column;gap:6px">' +
       satirlar.map(s => {
         // [GG.AA.YYYY - İsim - Birim]: mesaj formatını tanı
         const m = s.match(/^\[([^\]]+)\]:\s*(.*)/);
         if (m) {
-          return '<div style="background:var(--surface2);border-radius:5px;padding:8px 11px;font-size:12px">' +
-            '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">' + m[1] + '</div>' +
+          return '<div style="background:var(--surface2);border-radius:5px;padding:8px 11px;font-size:14px">' +
+            '<div style="font-size:13px;color:var(--text3);margin-bottom:3px">' + m[1] + '</div>' +
             '<div style="color:var(--text)">' + m[2] + '</div></div>';
         }
-        return '<div style="background:var(--surface2);border-radius:5px;padding:8px 11px;font-size:12px;color:var(--text2)">' + s + '</div>';
+        return '<div style="background:var(--surface2);border-radius:5px;padding:8px 11px;font-size:14px;color:var(--text2)">' + s + '</div>';
       }).join('') +
       '</div></div>';
   }
 
   document.getElementById('det-body').innerHTML = kartlar +
-    '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">M1-M8 Surec Zaman Cizelgesi</div>' +
+    '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">M1-M8 Surec Zaman Cizelgesi</div>' +
     '<div class="tl">' + tlHtml + '</div>' + notHtml;
 
   document.getElementById('det-ft').innerHTML = fromArchive
@@ -3116,7 +3116,7 @@ function parseXlFile(file) {
         }).filter(r => r.id && r.paket);
 
       if (!rows.length) { toast('Gecerli veri satiri yok. Rapor Ekrani sekmesinde IHL. ile baslayan takvim no olmali.','err'); return; }
-      const q=`<div style="background:var(--green-glow);border:1px solid rgba(58,181,106,.3);border-radius:5px;padding:10px 14px;font-size:11px;color:var(--green)">&#10003; <strong>${rows.length} satir</strong> okundu — "${sn}" sayfasindan</div>`;
+      const q=`<div style="background:var(--green-glow);border:1px solid rgba(58,181,106,.3);border-radius:5px;padding:10px 14px;font-size:13px;color:var(--green)">&#10003; <strong>${rows.length} satir</strong> okundu — "${sn}" sayfasindan</div>`;
       document.getElementById('xl-status').innerHTML=q;
       document.getElementById('xl-status').style.display='block';
       showPreview(rows);
@@ -3623,7 +3623,7 @@ async function saveProje() {
 function silProjeOnay(id, adi) {
   document.getElementById('confirm-msg').innerHTML =
     `<strong style="color:var(--red)">"${adi}"</strong> projesini silmek istediğinizden emin misiniz?<br><br>` +
-    `<span style="color:var(--text2);font-size:11px">⚠️ Bu projeye bağlı tüm ihaleler, dizayn paketleri ve imalatlar da silinir. Bu işlem <strong>geri alınamaz.</strong></span>`;
+    `<span style="color:var(--text2);font-size:13px">⚠️ Bu projeye bağlı tüm ihaleler, dizayn paketleri ve imalatlar da silinir. Bu işlem <strong>geri alınamaz.</strong></span>`;
   document.getElementById('confirm-ok').textContent = 'Evet, Sil';
   document.getElementById('confirm-ok').onclick = async () => {
     closeOv('ov-confirm');
@@ -3689,8 +3689,8 @@ async function davetGonder() {
   const rol     = document.getElementById('dv-rol').value;
   const msgEl   = document.getElementById('davet-msg');
   const btn     = document.getElementById('dv-btn');
-  const ERR_CSS = 'display:block;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);border-radius:5px;padding:10px 14px;font-size:12px;margin-bottom:14px';
-  const OK_CSS  = 'display:block;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);color:var(--green);border-radius:5px;padding:10px 14px;font-size:12px;margin-bottom:14px;line-height:1.8';
+  const ERR_CSS = 'display:block;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);color:var(--red);border-radius:5px;padding:10px 14px;font-size:14px;margin-bottom:14px';
+  const OK_CSS  = 'display:block;background:rgba(58,181,106,.1);border:1px solid rgba(58,181,106,.3);color:var(--green);border-radius:5px;padding:10px 14px;font-size:14px;margin-bottom:14px;line-height:1.8';
 
   if (!email || !adSoyad || !rol) {
     msgEl.textContent = 'Ad soyad, e-posta ve rol zorunludur.';
@@ -3747,7 +3747,7 @@ async function davetGonder() {
     // Biz sadece basarili mesaj gosteriyoruz.
     msgEl.innerHTML =
       '<strong>' + adSoyad + ' sisteme eklendi!</strong><br>' +
-      '<span style="font-size:11px">' +
+      '<span style="font-size:13px">' +
       'E-posta: ' + email + '<br>' +
       'Gecici sifre: <span style="font-family:monospace;background:rgba(255,255,255,.1);padding:1px 6px;border-radius:3px">' + geciciSifre + '</span><br>' +
       'Bu sifreyi kullaniciya bildirin. Giris yapip degistirebilir.' +
@@ -3786,16 +3786,16 @@ async function rOnayBekleyenler() {
   const listEl = document.getElementById('onay-list');
   if (!listEl) return;
   if (!data || !data.length) {
-    listEl.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">Onay bekleyen hesap yok</div>';
+    listEl.innerHTML = '<div style="color:var(--text3);font-size:14px;padding:10px">Onay bekleyen hesap yok</div>';
     return;
   }
   listEl.innerHTML = data.map(u => `
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="flex:1">
-        <div style="font-weight:600;font-size:13px">${u.ad_soyad||'—'}</div>
-        <div style="font-size:11px;color:var(--text3)">${u.id} · Talep: ${u.olusturulma?.split('T')[0]||'?'}</div>
+        <div style="font-weight:600;font-size:15px">${u.ad_soyad||'—'}</div>
+        <div style="font-size:13px;color:var(--text3)">${u.id} · Talep: ${u.olusturulma?.split('T')[0]||'?'}</div>
       </div>
-      <select id="rol-sec-${u.id}" style="font-size:11px;padding:4px 8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
+      <select id="rol-sec-${u.id}" style="font-size:13px;padding:4px 8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
         <option value="satinalma" ${u.rol==='satinalma'?'selected':''}>Satın Alma</option>
         <option value="dizayn"    ${u.rol==='dizayn'?'selected':''}>Dizayn</option>
         <option value="santiye"   ${u.rol==='santiye'?'selected':''}>Şantiye</option>
@@ -3866,7 +3866,7 @@ async function rKullanicilar() {
   el.innerHTML = data.map(u => {
     const initials = (u.ad_soyad||u.email||'?').split(' ').map(s=>s[0]).join('').toUpperCase().slice(0,2);
     const rolSecim = isAdmin && u.id !== CU?.id
-      ? `<select id="rol-usr-${u.id}" style="font-size:11px;padding:3px 7px;border-radius:4px;
+      ? `<select id="rol-usr-${u.id}" style="font-size:13px;padding:3px 7px;border-radius:4px;
            background:var(--surface2);border:1px solid var(--border);color:var(--text);margin-left:4px">
           <option value="admin"     ${u.rol==='admin'     ?'selected':''}>Admin</option>
           <option value="satinalma" ${u.rol==='satinalma' ?'selected':''}>Satın Alma</option>
@@ -3875,19 +3875,19 @@ async function rKullanicilar() {
           <option value="planlama"  ${u.rol==='planlama'  ?'selected':''}>Planlama</option>
           <option value="izleyici"  ${u.rol==='izleyici'  ?'selected':''}>İzleyici</option>
         </select>
-        <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:11px"
+        <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:13px"
           onclick="rolGuncelle('${u.id}')">Güncelle</button>`
       : `<span class="role-pill ${u.rol}">${u.rol}</span>`;
 
     return `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="width:32px;height:32px;border-radius:5px;background:${rolRenk[u.rol]||'var(--text3)'};
-           display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+           display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
            color:#fff;flex-shrink:0">${initials}</div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${u.ad_soyad||'-'}
-          ${!u.aktif?'<span style="font-size:10px;color:var(--text3);margin-left:4px">(pasif)</span>':''}</div>
-        <div style="font-size:11px;color:var(--text3)">${u.email}</div>
+        <div style="font-size:15px;font-weight:600">${u.ad_soyad||'-'}
+          ${!u.aktif?'<span style="font-size:13px;color:var(--text3);margin-left:4px">(pasif)</span>':''}</div>
+        <div style="font-size:13px;color:var(--text3)">${u.email}</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px">${rolSecim}</div>
     </div>`;
@@ -3952,7 +3952,7 @@ function pwaYukle() {
 <div id="install-banner" style="display:none;position:fixed;bottom:18px;right:18px;z-index:999;
   background:var(--surface);border:1px solid var(--border2);border-radius:10px;
   padding:12px 16px;box-shadow:0 4px 24px rgba(0,0,0,.4);
-  align-items:center;gap:12px;font-size:13px;max-width:300px">
+  align-items:center;gap:12px;font-size:15px;max-width:300px">
   <span>📱 Folkart Panel'i cihazınıza yükleyin</span>
   <div style="display:flex;gap:8px">
     <button class="btn btn-primary btn-sm" onclick="pwaYukle()">Yükle</button>
