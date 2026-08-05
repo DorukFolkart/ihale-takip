@@ -1457,8 +1457,12 @@ function showOnayBekle(adSoyad, ozelMesaj) {
     '</div>' +
     (reddedildi ? '' : '<button class="btn btn-ghost" onclick="location.reload()">Tekrar Dene</button>') +
     '</div>';
-  document.getElementById('login-page').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
+  // FIX: eskiden getElementById('app') cagriliyordu; boyle bir eleman yok.
+  // Ana uygulama kabugunun id'si 'main-app' ve gizleme/gosterme
+  // .hidden sinifi uzerinden yapiliyor (bkz. showLogin / showApp).
+  const lp = document.getElementById('login-page');
+  if (lp) { lp.classList.remove('hidden'); lp.style.display = 'flex'; }
+  document.getElementById('main-app')?.classList.add('hidden');
 }
 
 async function doLogin() {
