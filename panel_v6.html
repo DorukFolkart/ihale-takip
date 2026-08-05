@@ -1545,7 +1545,21 @@ async function doLogout() { await sb.auth.signOut(); }
 async function loadAllData() { await Promise.all([loadProjeler(), loadIhaleler(), loadArchive()]); renderAll(); }
 
 async function loadProjeler() {
-  const { data } = await sb.from('projeler').select('id,proje_kodu,proje_adi,durum').order('proje_kodu');
+  // FIX: konum ve notlar kolonlari da cekiliyor.
+  // Eskiden cekilmedikleri icin editProje bu iki alani her zaman BOS
+  // aciyor, saveProje da bos degeri null olarak yazip veritabanindaki
+  // mevcut konum/not bilgisini siliyordu (sessiz veri kaybi).
+  const { data, error } = await sb.from('projeler')
+    .select('id,proje_kodu,proje_adi,durum,konum,notlar')
+    .order('proje_kodu');
+  if (error) {
+    // Sorgu basarisiz olursa eldeki listeyi SILME: aksi halde butun proje
+    // secim kutulari bosalir ve panel kullanilamaz hale gelir. Hatayi
+    // sessizce yutmak yerine kullaniciya ve konsola bildir.
+    console.error('Projeler yuklenemedi:', error);
+    toast('Projeler yuklenemedi: ' + error.message, 'err');
+    return;
+  }
   SbProjeler = data||[];
   const ids = ['oz-proje','fp','fs-proje','f-proje','vf-ih-proje','vf-dz-proje','vf-ak-proje'];
   ids.forEach(id => {
