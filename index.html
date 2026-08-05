@@ -17,8 +17,14 @@
   <div style="font-size:13px;color:#A8B8CC">Yönlendiriliyor...</div>
   <a href="panel_v6.html">Otomatik açılmazsa buraya tıklayın</a>
   <script>
-    // Meta refresh desteklenmiyorsa JS ile yonlendir
-    setTimeout(function(){ window.location.replace('panel_v5.html'); }, 500);
+    // Meta refresh desteklenmiyorsa JS ile yonlendir.
+    // Meta refresh calistiysa bu sayfa zaten terk edilmis olur; yine de
+    // hedef adreste isek tekrar yonlendirme yapmayalim.
+    setTimeout(function () {
+      if (!/panel_v6\.html$/.test(window.location.pathname)) {
+        window.location.replace('panel_v6.html');
+      }
+    }, 500);
   </script>
 </body>
 </html>
