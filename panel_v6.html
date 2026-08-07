@@ -1017,7 +1017,7 @@ td strong{color:var(--text);font-weight:600;}
   <div class="modal-body">
     <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px">
       <button id="imp-tab-xl" onclick="impTab('xl')" style="padding:8px 18px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid var(--blue-l);background:transparent;color:var(--blue-l);font-family:var(--font)">📊 Excel (.xlsx)</button>
-      <button id="imp-tab-csv" onclick="impTab('csv')" style="padding:8px 18px;font-size:13px;font-weight:700;border:none;cursor:pointer;border-bottom:2px solid transparent;background:transparent;color:var(--text3);font-family:var(--font)">📄 CSV</button>
+      
     </div>
     <div id="imp-xl">
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--gold-glow);border:1px solid rgba(242,165,22,.3);border-radius:6px;padding:12px 14px;margin-bottom:14px">
@@ -1031,19 +1031,6 @@ td strong{color:var(--text);font-weight:600;}
         <div style="font-size:13px;color:var(--text3);margin-top:4px">.xlsx veya .xls</div>
       </div>
       <div id="xl-status" style="display:none;margin-top:10px"></div>
-    </div>
-    <div id="imp-csv" style="display:none">
-      <div style="background:var(--surface2);border-radius:5px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:var(--text2);line-height:1.8">
-        <strong style="color:var(--text)">Sütun sırası (A→T):</strong><br>
-        <span style="font-family:var(--mono);color:var(--blue-l)">İhaleNo | Proje | PaketAdı | İmalatGrubu | Durum | P6Kodu | İmalatBaşlangıç | HedefDevir | DizaynSüresi | TalepSüresi | İhaleHazırlık | İhaleSüresi | İhaleKarar | SözleşmeSüresi | ÜretimMobilizasyon | Dizayn% | Şantiye% | Gecikme | BlokenBirim | Açıklama | Firmalar | SözleşmeTutarı | Yüklenici | ParaBirimi | SözleşmeBaşlangıç | SözleşmeBitiş</span>
-      </div>
-      <textarea id="csv-paste" rows="6" placeholder="Excel'den kopyalayıp buraya yapıştırın…" style="width:100%;font-family:var(--mono);font-size:13px;"></textarea>
-      <div style="text-align:center;color:var(--text3);font-size:13px;margin:10px 0">— veya —</div>
-      <div class="csv-zone" id="csv-drop" onclick="document.getElementById('csv-file').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-        <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleFile(event)">
-        <div style="font-size:24px;margin-bottom:8px">📂</div>
-        <div style="font-size:14px;color:var(--text2)">CSV dosyası sürükleyin</div>
-      </div>
     </div>
     <div id="csv-preview-area" style="display:none;margin-top:14px">
       <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px" id="csv-count"></div>
@@ -1650,6 +1637,8 @@ async function loadIhaleler() {
       _is_prog:    i.plan_acilis || i.imalat_baslangic_tarihi || null,
       // gerçekleşen M tarihleri
       ihale_tipi:  i.ihale_tipi || 'standart',
+      ihale_kategori: i.ihale_kategori || '',
+      ihale_bolumu:   i.ihale_bolumu   || '',
       _gm1: i.gercek_m1||null,
       _gm2: i.gercek_m2||null,
       _gm3: i.gercek_m3||null,
@@ -2980,12 +2969,11 @@ function rKilavuz() {
 }
 
 
-function impTab(tab) {
-  const isXl=tab==='xl';
-  document.getElementById('imp-xl').style.display=isXl?'block':'none';
-  document.getElementById('imp-csv').style.display=isXl?'none':'block';
-  document.getElementById('imp-tab-xl').style.cssText+=`;border-bottom-color:${isXl?'var(--blue-l)':'transparent'};color:${isXl?'var(--blue-l)':'var(--text3)'}`;
-  document.getElementById('imp-tab-csv').style.cssText+=`;border-bottom-color:${isXl?'transparent':'var(--blue-l)'};color:${isXl?'var(--text3)':'var(--blue-l)'}`;
+// Artik tek giris yolu var: Excel. Eski CSV yapistirma yolu kaldirildi
+// (sutun sirasi degistigi icin yanlis veri uretiyordu).
+function impTab() {
+  const el = document.getElementById('imp-xl');
+  if (el) el.style.display = 'block';
 }
 
 
@@ -3019,526 +3007,618 @@ function openCsvModal() {
   impTab('xl'); openOv('ov-csv');
 }
 
-function parseXlFile(file) {
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try {
-      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
-      // Rapor Ekranı sekmesini bul
-      const sn=wb.SheetNames.find(n=>n.toLowerCase().includes('rapor'))||wb.SheetNames[0];
-      const ws=wb.Sheets[sn];
-      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false});
+// ════════════════════════════════════════════════════════════════════
+// EXCEL OKUMA — "Satınalma Takvimi Veri Girişi" formati (R2)
+//
+// Sayfa duzeni:
+//   B1                : proje bilgisi (kullanilmiyor; proje Ihale No'dan bulunur)
+//   2. satir          : ana basliklar
+//   3. satir          : PLANLANAN / GERCEKLESEN alt basliklari
+//   4. satirdan itibaren: veri
+//
+// Sutunlar SABIT SIRAYLA DEGIL, BASLIK METNINE gore bulunur. Boylece
+// araya yeni bir sutun eklenirse okuma kaymaz.
+// ════════════════════════════════════════════════════════════════════
+const XL_SEKME_ADI     = 'Satınalma Takvimi Veri Girişi';
+const IHALE_NO_KALIBI  = /^IHL\.(\d{4})\.(\d{3})\/(\d+)$/;
 
-      // Başlık satırını bul: "TAKVİM NO" veya "TAKVIM NO" içeren satır
-      let headerRowIdx = -1;
-      for (let i = 0; i < Math.min(raw.length, 10); i++) {
-        const row = raw[i];
-        if (row && row.some(cell => {
-          const v = String(cell||'').toUpperCase();
-          return v.includes('TAKV') || v.includes('HALE KODU');
-        })) {
-          headerRowIdx = i;
-          break;
-        }
-      }
-      if (headerRowIdx === -1) {
-        toast('Rapor Ekranı başlık satırı bulunamadı.', 'err');
+// Okunan ve dogrulanan dosya burada tutulur (importCsv bunu kullanir)
+let XlVeri = null;
+
+// Baslik metnini karsilastirilabilir hale getirir:
+// Turkce harfler sadelestirilir, bosluk/noktalama atilir, buyuk harfe cevrilir.
+function xlNorm(v) {
+  return String(v == null ? '' : v)
+    .replace(/[İIı]/g,'I').replace(/[Şş]/g,'S').replace(/[Ğğ]/g,'G')
+    .replace(/[Üü]/g,'U').replace(/[Öö]/g,'O').replace(/[Çç]/g,'C')
+    .toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+
+// Excel hucresinden saat diliminden BAGIMSIZ tarih (YYYY-MM-DD).
+// Excel gunleri saat tasimaz ama kutuphane Date'i UTC ya da lokal
+// geceyarisi olarak uretebilir; iki durumda da dogru gunu verir.
+function xlTarih(v) {
+  if (v instanceof Date && !isNaN(v)) {
+    if (v.getUTCHours() === 0 && v.getUTCMinutes() === 0) {
+      return v.getUTCFullYear()+'-'+String(v.getUTCMonth()+1).padStart(2,'0')+'-'+String(v.getUTCDate()).padStart(2,'0');
+    }
+    if (v.getHours() === 0 && v.getMinutes() === 0) return formatDateLocal(v);
+    const d2 = new Date(v.getTime() + 12*3600*1000);
+    return d2.getUTCFullYear()+'-'+String(d2.getUTCMonth()+1).padStart(2,'0')+'-'+String(d2.getUTCDate()).padStart(2,'0');
+  }
+  return parseEsnekTarih(v);
+}
+
+// Metin hucresi: "-" ve benzeri yer tutucular BOS kabul edilir.
+function xlMetin(v) {
+  const s = String(v == null ? '' : v).trim();
+  return (s === '' || s === '-' || s === '—') ? '' : s;
+}
+// Sayi hucresi (tutar / yuzde)
+function xlSayi(v) {
+  if (v == null || v === '' || v === '-') return null;
+  if (typeof v === 'number') return isFinite(v) ? v : null;
+  const n = parseTutar(v);
+  return (n && isFinite(n)) ? n : null;
+}
+
+// M1-M8: her ana baslik, PLANLANAN + GERCEKLESEN cifti acar
+const XL_MS = [
+  { key:'m1', h:'TASARIM KARARLARININ VERİLMESİ' },
+  { key:'m2', h:'PROJE YAYIN TARİHİ' },
+  { key:'m3', h:'TALEP (SAT) TARİHİ' },
+  { key:'m4', h:'İHALE YAYINI' },
+  { key:'m5', h:'YÖNETİME SUNUM TARİHİ' },
+  { key:'m6', h:'İHALE KARAR TARİHİ' },
+  { key:'m7', h:'SÖZLEŞME İMZA TARİHİ' },
+  { key:'m8', h:'İMALAT BAŞLANGIÇ TARİHİ' },
+];
+// Tek sutunlu alanlar
+const XL_BASIT = [
+  { alan:'ihale_no',   h:'İHALE NO',                 zorunlu:true  },
+  { alan:'ihale_kodu', h:'İHALE KODU',               zorunlu:true  },
+  { alan:'ihale_adi',  h:'İHALE ADI / AÇIKLAMA',     zorunlu:true  },
+  { alan:'kategori',   h:'İHALE KATEGORİ'                          },
+  { alan:'bolum',      h:'İHALE BÖLÜMÜ'                            },
+  { alan:'sat_no',     h:'SAT NO'                                  },
+  { alan:'firma',      h:'FİRMA ADI'                               },
+  { alan:'sas_no',     h:'SAS NO'                                  },
+  { alan:'tl',         h:'SÖZLEŞME TUTARI TL'                      },
+  { alan:'usd',        h:'SÖZLEŞME TUTARI USD'                     },
+  { alan:'eur',        h:'SÖZLEŞME TUTARI EURO'                    },
+  { alan:'dizayn_yuz', h:'DİZAYN İLERLEME YÜZDESİ'                 },
+];
+
+// Kirmizi hata kutusu goster ve okunan veriyi temizle
+function xlHataGoster(baslik, satirlar) {
+  XlVeri = null; parsedCsvRows = [];
+  document.getElementById('csv-preview-area').style.display = 'none';
+  const el = document.getElementById('xl-status');
+  el.innerHTML =
+    '<div style="background:var(--red-glow);border:1px solid rgba(224,82,82,.35);border-radius:6px;padding:12px 14px">' +
+    '<div style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:'+(satirlar.length?'8px':'0')+'">⚠️ '+baslik+'</div>' +
+    (satirlar.length
+      ? '<div style="font-size:13px;color:var(--text2);line-height:1.9;max-height:220px;overflow:auto">' +
+        satirlar.map(s=>'• '+s).join('<br>') + '</div>'
+      : '') +
+    '</div>';
+  el.style.display = 'block';
+}
+
+function parseXlFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
+
+      // ── 1) Dogru sekme: SADECE "Satınalma Takvimi Veri Girişi" ──
+      const hedef = xlNorm(XL_SEKME_ADI);
+      const sekmeAdi = wb.SheetNames.find(n => xlNorm(n) === hedef)
+                    || wb.SheetNames.find(n => xlNorm(n).indexOf('VERIGIRISI') >= 0);
+      if (!sekmeAdi) {
+        xlHataGoster('"'+XL_SEKME_ADI+'" sekmesi bulunamadi.',
+          ['Dosyadaki sekmeler: ' + wb.SheetNames.join(', ')]);
         return;
       }
 
-      // TAKVIM NO sutununu basliktan tespit et — A sutunu bos olsa da olmasa da calisir
-      const hdrRow = raw[headerRowIdx];
-      let base = hdrRow.findIndex(cell => String(cell||'').toUpperCase().includes('TAKV'));
-      if (base < 0) base = 1; // bulunamazsa eski varsayim
+      // blankrows:true → dizi indeksi + 1 = gercek Excel satir numarasi
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[sekmeAdi], { header:1, defval:'', blankrows:true });
 
-      // Saat diliminden BAGIMSIZ tarih cozumleme:
-      // Excel gunleri saat tasimaz; kutuphane Date'i UTC ya da lokal
-      // geceyarisi olarak uretebilir. Her iki durumda da dogru gunu ver.
-      const fd = v => {
-        if (v instanceof Date && !isNaN(v)) {
-          if (v.getUTCHours() === 0 && v.getUTCMinutes() === 0) {
-            // UTC geceyarisi: UTC bilesenleri dogru gundur
-            return v.getUTCFullYear() + '-' +
-                   String(v.getUTCMonth()+1).padStart(2,'0') + '-' +
-                   String(v.getUTCDate()).padStart(2,'0');
-          }
-          if (v.getHours() === 0 && v.getMinutes() === 0) {
-            // Lokal geceyarisi: lokal bilesenler dogru gundur
-            return formatDateLocal(v);
-          }
-          // Belirsiz saat: gun ortasina tasiyip UTC gununu al
-          const d2 = new Date(v.getTime() + 12*3600*1000);
-          return d2.getUTCFullYear() + '-' +
-                 String(d2.getUTCMonth()+1).padStart(2,'0') + '-' +
-                 String(d2.getUTCDate()).padStart(2,'0');
-        }
-        return parseEsnekTarih(v);
-      };
-      const fTutar = v => {
-        if (!v) return null;
-        const n = parseTutar(v);
-        return (n && n > 0) ? n : null;
-      };
-
-      // Rapor Ekranı sütun yapısı (0-indexed, B=1):
-      // B(1):TakvimNo  C(2):IhaleKodu  D(3):IhaleAdi
-      // E(4):M1Plan  F(5):M1Gercek  G(6):M2Plan  H(7):M2Gercek
-      // I(8):M3Plan  J(9):M3Gercek  K(10):M4Plan  L(11):M4Gercek
-      // M(12):M5Plan  N(13):M5Gercek  O(14):M6Plan  P(15):M6Gercek
-      // Q(16):M7Plan  R(17):M7Gercek  S(18):M8Plan  T(19):M8Gercek
-      // U(20):SatNo  V(21):FirmaAdi  W(22):SasNo
-      // X(23):TutarTL  Y(24):TutarUSD  Z(25):TutarEUR
-
-      // Alt başlık satırını atla (Planlanan/Gerçekleşen satırı)
-      const dataStart = headerRowIdx + 2; // başlık + alt başlık
-
-      const rows = raw.slice(dataStart)
-        .filter(r => {
-          const takvimNo = String(r[base]||'').trim();
-          return takvimNo && takvimNo.startsWith('IHL.');
-        })
-        .map(r => {
-          const takvimNo = String(r[base]||'').trim();
-          const teknikKod = String(r[base+1]||'').trim();
-          const ihaleAdi = String(r[base+2]||'').trim();
-
-          // Takvim No'dan proje kodu çıkar: IHL.3028.008/1 → 3028
-          const tnMatch = takvimNo.match(/^IHL\.(\d{4})\.(\d{3})\/(\d+)$/);
-          let projeKodu = '';
-          if (tnMatch) projeKodu = tnMatch[1];
-
-          // Proje eşleştir
-          const proj = SbProjeler.find(p =>
-            p.proje_kodu === projeKodu ||
-            String(p.proje_kodu||'').includes(projeKodu) ||
-            projeKodu && String(p.proje_adi||'').includes(projeKodu)
-          );
-          const projeAdi = proj ? proj.proje_adi : projeKodu;
-
-          const row = {
-            id:          takvimNo,
-            proje:       projeAdi,
-            proje_id_matched: proj ? proj.id : null,
-            teknik_kod:  teknikKod,
-            paket:       ihaleAdi || teknikKod,
-            // M1-M8 Gerçekleşen tarihler
-            // PLANLANAN tarihler (Excel'den birebir) — sureler bunlardan turetilir
-            _p1: fd(r[base+3]),  _p2: fd(r[base+5]),  _p3: fd(r[base+7]),
-            _p4: fd(r[base+9]),  _p5: fd(r[base+11]), _p6: fd(r[base+13]),
-            _p7: fd(r[base+15]), _p8: fd(r[base+17]),
-            // M-N gercek = base+3 (M1 plan) uzerinden ciftler halinde
-            gm1:         fd(r[base+4]),
-            gm2:         fd(r[base+6]),
-            gm3:         fd(r[base+8]),
-            gm4:         fd(r[base+10]),
-            gm5:         fd(r[base+12]),
-            gm6:         fd(r[base+14]),
-            gm7:         fd(r[base+16]),
-            gm8:         fd(r[base+18]),
-            // M8 Planlanan = İmalat Başlangıç Tarihi (zincir baz tarihi)
-            acilis:      fd(r[base+17]),
-            // Ek bilgiler
-            sat_no:      String(r[base+19]||'').trim(),
-            yuklenici:   String(r[base+20]||'').trim(),
-            sas_no:      String(r[base+21]||'').trim(),
-            tutar_tl:    fTutar(r[base+22]),
-            tutar_usd:   fTutar(r[base+23]),
-            tutar_eur:   fTutar(r[base+24]),
-            // Durum — gerçekleşen tarihlerden otomatik belirle
-            durum:       'hazirlik',
-            dizayn:      0,
-            santiye:     0,
-            guncel:      today()
-          };
-          // Sureleri Excel'deki PLANLANAN tarih farklarindan turet
-          // (bu formatta sure kolonu yok; motor bu surelerle Excel planini birebir uretir)
-          const gunFark = (a, b) => {
-            if (!a || !b) return null;
-            const f = Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00')) / 86400000);
-            return f >= 0 && f <= 9999 ? f : null;
-          };
-          row.d1 = gunFark(row._p1, row._p2); // dizayn
-          row.d2 = gunFark(row._p2, row._p3); // talep
-          row.d3 = gunFark(row._p3, row._p4); // ihale hazirlik
-          row.d4 = gunFark(row._p4, row._p5); // ihale
-          row.d5 = gunFark(row._p5, row._p6); // karar
-          row.d6 = gunFark(row._p6, row._p7); // sozlesme
-          row.d7 = gunFark(row._p7, row._p8); // mobilizasyon + uretim
-          if (row._p8) row.acilis = row._p8;  // zincir baz tarihi = M8 plan
-
-          processGerceklesenTarihler(row);
-          return row;
-        }).filter(r => r.id && r.paket);
-
-      if (!rows.length) { toast('Gecerli veri satiri yok. Rapor Ekrani sekmesinde IHL. ile baslayan takvim no olmali.','err'); return; }
-      const q=`<div style="background:var(--green-glow);border:1px solid rgba(58,181,106,.3);border-radius:5px;padding:10px 14px;font-size:13px;color:var(--green)">&#10003; <strong>${rows.length} satir</strong> okundu — "${sn}" sayfasindan</div>`;
-      document.getElementById('xl-status').innerHTML=q;
-      document.getElementById('xl-status').style.display='block';
-      showPreview(rows);
-    } catch(err) { toast('Excel okunamadi: '+err.message,'err'); }
-  };
-  reader.readAsArrayBuffer(file);
-}
-function handleXlFile(e){const f=e.target.files[0];if(f)parseXlFile(f);}
-function handleXlDrop(e){e.preventDefault();document.getElementById('xl-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)parseXlFile(f);}
-function parseCsvText(text){return text.trim().split('\n').filter(l=>l.trim()).map(line=>{const sep=line.includes('\t')?'\t':line.includes(';')?';':',';const cols=line.split(sep).map(c=>c.trim().replace(/^"|"$/g,''));const fi=v=>parseInt(v)||null;const fd=v=>parseEsnekTarih(v);return{id:cols[0]||'',proje:cols[1]||'',paket:cols[2]||'',imalatGrubu:cols[3]||'',durum:normalizeDurum(cols[4]),p6:cols[5]||'',acilis:fd(cols[6]),hedefDevir:fd(cols[7]),d1:fi(cols[8]),d2:fi(cols[9]),d3:fi(cols[10]),d4:fi(cols[11]),d5:fi(cols[12]),d6:fi(cols[13]),d7:fi(cols[14]),dizayn:parseInt(cols[15])||0,santiye:parseInt(cols[16])||0,gecikme:parseInt(cols[17])||0,bloken:cols[18]||'-',aciklama:cols[19]||'',firmalar:(cols[20]||'').split(',').map(s=>s.trim()).filter(Boolean),tutar:cols[21]||'',yuklenici:cols[22]||'',paraBirimi:cols[23]||'TRY',sozBas:fd(cols[24]),sozBit:fd(cols[25]),guncel:today()};}).filter(r=>r.id&&r.paket);}
-function showPreview(rows){parsedCsvRows=rows;document.getElementById('csv-count').textContent=`${rows.length} kayıt bulundu - önizleme:`;document.getElementById('csv-preview-table').innerHTML=`<thead><tr><th>No</th><th>Proje</th><th>Paket</th><th>Durum</th></tr></thead><tbody>${rows.slice(0,8).map(r=>`<tr><td class="mono" style="color:var(--blue-l)">${r.id}</td><td>${r.proje}</td><td>${r.paket}</td><td>${chip(r.durum)}</td></tr>`).join('')}</tbody>`;document.getElementById('csv-preview-area').style.display='block';}
-document.addEventListener('input',e=>{if(e.target.id==='csv-paste'&&e.target.value.trim())showPreview(parseCsvText(e.target.value));});
-function handleFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>showPreview(parseCsvText(ev.target.result));r.readAsText(f,'utf-8');}
-function handleDrop(e){e.preventDefault();document.getElementById('csv-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>showPreview(parseCsvText(ev.target.result));r.readAsText(f,'utf-8');}
-
-async function importCsv() {
-  console.log('=== importCsv basladi ===');
-  console.log('parsedCsvRows:', parsedCsvRows.length, 'satir');
-
-  if (!parsedCsvRows.length) {
-    toast('Once veri girin', 'err');
-    console.warn('Import iptal: parsedCsvRows bos');
-    return;
-  }
-
-  if (!CU || !CU.id) {
-    toast('Kullanici oturumu yok - cikip tekrar girin', 'err');
-    console.error('CU bos:', CU);
-    return;
-  }
-
-  console.log('SbProjeler:', SbProjeler.length, 'proje');
-  if (!SbProjeler.length) {
-    toast('Once proje ekleyin', 'err');
-    return;
-  }
-
-  toast('Import basliyor: ' + parsedCsvRows.length + ' satir', 'info');
-
-  let added=0, updated=0, skip=0, hata=0;
-  const hataDetay = [];
-
-  try {
-    // Import oncesi Supabase'den guncel veriyi cek
-    await loadIhaleler();
-    console.log('loadIhaleler sonrasi SbData:', SbData.length);
-
-    for (let idx=0; idx<parsedCsvRows.length; idx++) {
-      const row = parsedCsvRows[idx];
-
-      // Proje eslestirme — esnek
-      const normProje = s => String(s||'').toLowerCase()
-        .replace(/ö/g,'o').replace(/ü/g,'u').replace(/ş/g,'s')
-        .replace(/ğ/g,'g').replace(/ç/g,'c').replace(/ı/g,'i')
-        .replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
-
-      // Önce parseXlFile'dan gelen proje_id_matched kullan (Takvim No'dan)
-      let proj = null;
-      if (row.proje_id_matched) {
-        proj = SbProjeler.find(p => p.id === row.proje_id_matched);
+      // ── 2) Baslik satiri: icinde "İHALE NO" yazan satir ──
+      let hIdx = -1;
+      for (let i = 0; i < Math.min(raw.length, 15); i++) {
+        if ((raw[i]||[]).some(c => xlNorm(c) === 'IHALENO')) { hIdx = i; break; }
       }
+      if (hIdx < 0) {
+        xlHataGoster('Baslik satiri bulunamadi.',
+          ['"'+sekmeAdi+'" sekmesinin ilk 15 satirinda "İHALE NO" yazan bir hucre yok.']);
+        return;
+      }
+      const hRow = raw[hIdx] || [];
+      const aRow = raw[hIdx+1] || [];   // PLANLANAN / GERCEKLESEN satiri
 
-      // Yoksa klasik metin eşleştirme
-      if (!proj) {
-        const rowNorm = normProje(row.proje);
-        const rowParts = rowNorm.split(' ').filter(s => s.length >= 2);
+      // ── 3) Sutunlari baslik metninden bul ──
+      const bul = h => {
+        const n = xlNorm(h);
+        let ix = hRow.findIndex(c => xlNorm(c) === n);
+        if (ix < 0) ix = hRow.findIndex(c => { const x = xlNorm(c); return x && (x.indexOf(n) === 0 || n.indexOf(x) === 0); });
+        return ix;
+      };
 
-        proj = SbProjeler.find(p => {
-          const adNorm  = normProje(p.proje_adi);
-          const kodNorm = normProje(p.proje_kodu);
-          if (rowNorm === adNorm || rowNorm === kodNorm) return true;
-          for (const part of rowParts) {
-            if (part.length < 2) continue;
-            if (adNorm.includes(part) || kodNorm.includes(part)) return true;
-            if (part.includes(adNorm) || part.includes(kodNorm)) return true;
+      const yapiHata = [];
+      const K = {};
+      XL_BASIT.forEach(s => {
+        const ix = bul(s.h);
+        if (ix >= 0) K[s.alan] = ix;
+        else if (s.zorunlu) yapiHata.push('Zorunlu sutun yok: "'+s.h+'"');
+      });
+      const MS = {};
+      XL_MS.forEach(m => {
+        const ix = bul(m.h);
+        if (ix < 0) { yapiHata.push('Kilometre tasi sutunu yok: "'+m.h+'"'); return; }
+        // Alt baslik kontrolu: soldaki PLANLANAN, sagindaki GERCEKLESEN olmali
+        const s1 = xlNorm(aRow[ix]), s2 = xlNorm(aRow[ix+1]);
+        if (s1 !== 'PLANLANAN' || s2 !== 'GERCEKLESEN') {
+          yapiHata.push('"'+m.h+'" altinda PLANLANAN/GERÇEKLEŞEN cifti beklendi, bulunan: "'+(aRow[ix]||'')+'" / "'+(aRow[ix+1]||'')+'"');
+          return;
+        }
+        MS[m.key] = { p: ix, g: ix+1 };
+      });
+      if (yapiHata.length) { xlHataGoster('Dosya duzeni beklenenden farkli — yukleme yapilmadi.', yapiHata); return; }
+
+      // ── 4) Veri satirlarini oku ──
+      const basla = hIdx + 2;
+      const rows = [], hatalar = [], uyarilar = [];
+      const gorulen = new Map();     // ihale_no -> excel satiri (tekrar kontrolu)
+      const projeKodlari = new Set();
+
+      for (let i = basla; i < raw.length; i++) {
+        const r = raw[i] || [];
+        const excelSatir = i + 1;
+        const no = xlMetin(r[K.ihale_no]);
+        // Tamamen bos satir → sessizce atla
+        const doluMu = r.some(c => String(c == null ? '' : c).trim() !== '');
+        if (!no) { if (doluMu) uyarilar.push('Satir '+excelSatir+': İhale No bos, satir atlandi'); continue; }
+
+        // İhale No kalibi
+        const m = no.match(IHALE_NO_KALIBI);
+        if (!m) { hatalar.push('Satir '+excelSatir+': İhale No kalibi hatali → "'+no+'" (beklenen: IHL.3025.001/1)'); continue; }
+        if (gorulen.has(no)) { hatalar.push('Satir '+excelSatir+': "'+no+'" dosyada '+gorulen.get(no)+'. satirda da var (tekrar)'); continue; }
+        gorulen.set(no, excelSatir);
+        projeKodlari.add(m[1]);
+
+        const adi = xlMetin(r[K.ihale_adi]);
+        const kodu = xlMetin(r[K.ihale_kodu]);
+        if (!adi && !kodu) { hatalar.push('Satir '+excelSatir+': İhale Adi ve İhale Kodu ikisi de bos'); continue; }
+
+        // Tarihler
+        const p = {}, g = {};
+        let tarihHata = false;
+        for (const ms of XL_MS) {
+          const ci = MS[ms.key];
+          const hamP = r[ci.p], hamG = r[ci.g];
+          p[ms.key] = xlTarih(hamP);
+          g[ms.key] = xlTarih(hamG);
+          if (String(hamP||'').trim() !== '' && !p[ms.key]) {
+            hatalar.push('Satir '+excelSatir+': "'+ms.h+' / PLANLANAN" tarih olarak okunamadi → "'+hamP+'"'); tarihHata = true;
           }
-          if (adNorm && rowNorm.includes(adNorm)) return true;
-          if (kodNorm && rowNorm.includes(kodNorm)) return true;
-          return false;
+          if (String(hamG||'').trim() !== '' && !g[ms.key]) {
+            hatalar.push('Satir '+excelSatir+': "'+ms.h+' / GERÇEKLEŞEN" tarih olarak okunamadi → "'+hamG+'"'); tarihHata = true;
+          }
+        }
+        if (tarihHata) continue;
+
+        // M8 planlanan zorunlu: butun plan zinciri bu tarihten geriye kuruluyor
+        if (!p.m8) { hatalar.push('Satir '+excelSatir+' ('+no+'): "İMALAT BAŞLANGIÇ TARİHİ / PLANLANAN" bos — plan zinciri kurulamaz'); continue; }
+
+        // Sureleri planlanan tarih farklarindan turet
+        const fark = (a,b) => (!a || !b) ? null
+          : Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00')) / 86400000);
+        const d = {
+          d1: fark(p.m1,p.m2), d2: fark(p.m2,p.m3), d3: fark(p.m3,p.m4), d4: fark(p.m4,p.m5),
+          d5: fark(p.m5,p.m6), d6: fark(p.m6,p.m7), d7: fark(p.m7,p.m8),
+        };
+        const ters = Object.keys(d).filter(k => d[k] != null && d[k] < 0);
+        if (ters.length) {
+          hatalar.push('Satir '+excelSatir+' ('+no+'): planlanan tarihler sirali degil — sonraki asama oncekinden erken');
+          continue;
+        }
+        const eksikPlan = XL_MS.filter(x => !p[x.key]).map(x => x.key.toUpperCase());
+        if (eksikPlan.length) uyarilar.push('Satir '+excelSatir+' ('+no+'): planlanan tarih bos → '+eksikPlan.join(', '));
+
+        let dz = xlSayi(r[K.dizayn_yuz]);
+        if (dz != null && dz > 0 && dz <= 1) dz = Math.round(dz * 100);   // %85 yerine 0,85 yazilmissa
+        if (dz != null) dz = Math.max(0, Math.min(100, Math.round(dz)));
+
+        rows.push({
+          satir: excelSatir,
+          ihale_no: no,
+          proje_kodu: m[1],
+          ihale_kodu: kodu,
+          ihale_adi: adi || kodu,
+          kategori: xlMetin(r[K.kategori]),
+          bolum: xlMetin(r[K.bolum]),
+          p: p, g: g, d: d,
+          sat_no: xlMetin(r[K.sat_no]),
+          firma: xlMetin(r[K.firma]),
+          sas_no: xlMetin(r[K.sas_no]),
+          tl: xlSayi(r[K.tl]), usd: xlSayi(r[K.usd]), eur: xlSayi(r[K.eur]),
+          dizayn_yuz: dz,
         });
       }
 
-      if (!proj) {
-        skip++;
-        console.warn('[' + (idx+1) + '] Proje bulunamadi:', row.proje);
-        hataDetay.push('Satir ' + (idx+1) + ': "' + row.proje + '" projesi yok');
-        continue;
+      if (!rows.length && !hatalar.length) {
+        xlHataGoster('Gecerli veri satiri bulunamadi.',
+          ['"'+sekmeAdi+'" sekmesinde '+(basla+1)+'. satirdan itibaren İhale No dolu bir satir yok.']);
+        return;
       }
 
-      const kod = (row.id||'').toUpperCase().trim();
-      if (!kod) {
-        skip++;
-        console.warn('[' + (idx+1) + '] Ihale kodu bos');
-        continue;
+      // ── 5) Proje kontrolu ──
+      let proje = null;
+      if (projeKodlari.size > 1) {
+        hatalar.push('Dosyada birden fazla proje kodu var ('+[...projeKodlari].join(', ')+'). Her proje icin ayri dosya yuklenmelidir.');
+      } else if (projeKodlari.size === 1) {
+        const kod = [...projeKodlari][0];
+        proje = SbProjeler.find(pr => {
+          const pk = String(pr.proje_kodu||'');
+          return pk === kod || (pk.match(/\d{4}/)||[])[0] === kod;
+        });
+        if (!proje) hatalar.push('"'+kod+'" kodlu proje panelde bulunamadi. Once Ayarlar > Yeni Proje ile ekleyin.');
       }
 
-      const veri = {
-        proje_id:                proj.id,
-        takvim_no:               kod,
-        ihale_kodu:              kod,
-        teknik_kod:              row.teknik_kod || null,
-        ihale_adi:               row.paket || kod,
-        imalt_grubu:             row.imalatGrubu || null,
-        durum:                   mapDurumRev(row.durum),
-        plan_acilis:             row.acilis || null,
-        imalat_baslangic_tarihi: row.acilis || null,
-        dizayn_suresi_gun:       row.d1 || null,
-        talep_suresi_gun:        row.d2 || null,
-        ihale_hazirlik_gun:      row.d3 || null,
-        ihale_suresi_gun:        row.d4 || null,
-        ihale_karar_gun:         row.d5 || null,
-        sozlesme_suresi_gun:     row.d6 || null,
-        uretim_mobilizasyon_gun: row.d7 || null,
-        ozel_notlar:             row.aciklama || null,
-        yuklenci_firma:          row.yuklenici || null,
-        davet_firmalar:          row.yuklenici || null,
-        sat_no:                  row.sat_no || null,
-        sas_no:                  row.sas_no || null,
-        sozlesme_tutari_tl:      row.tutar_tl || null,
-        sozlesme_tutari_usd:     row.tutar_usd || null,
-        sozlesme_tutari_eur:     row.tutar_eur || null,
-        olusturan_id:            CU.id,
-        gercek_m1:               row.gm1 || null,
-        gercek_m2:               row.gm2 || null,
-        gercek_m3:               row.gm3 || null,
-        gercek_m4:               row.gm4 || null,
-        gercek_m5:               row.gm5 || null,
-        gercek_m6:               row.gm6 || null,
-        gercek_m7:               row.gm7 || null,
-        gercek_m8:               row.gm8 || null,
-        dizayn_yuzdesi:          row.dizayn || 0,
-        santiye_yuzdesi:         row.santiye || 0,
-      };
-
-      console.log('[' + (idx+1) + '] Islemiyor:', kod, '— proje:', proj.proje_adi);
-
-      // M7 (sozlesme imza) veya M8 gerceklesen varsa otomatik tamamlandi
-      if ((veri.gercek_m7 || veri.gercek_m8) && veri.durum !== 'iptal') veri.durum = 'tamamlandi';
-
-      const exist = SbData.find(i => i.id === kod && i.proje_id === proj.id);
-
-      if (exist?._id) {
-        const { error } = await sb.from('ihaleler').update(veri).eq('id', exist._id);
-        if (error) {
-          hata++;
-          console.error('[' + (idx+1) + '] Update hatasi:', kod, error);
-          hataDetay.push(kod + ': ' + error.message);
-        } else {
-          updated++;
-          console.log('[' + (idx+1) + '] Guncellendi:', kod);
-        }
-      } else {
-        const { error } = await sb.from('ihaleler').insert(veri);
-        if (error) {
-          if (error.code === '23505') {
-            const { error: e2 } = await sb.from('ihaleler')
-              .update(veri).eq('ihale_kodu', kod).eq('proje_id', proj.id);
-            if (e2) {
-              hata++;
-              console.error('[' + (idx+1) + '] Upsert hatasi:', kod, e2);
-              hataDetay.push(kod + ': ' + e2.message);
-            } else {
-              updated++;
-              console.log('[' + (idx+1) + '] Upsert ile guncellendi:', kod);
-            }
-          } else {
-            hata++;
-            console.error('[' + (idx+1) + '] Insert hatasi:', kod, error);
-            hataDetay.push(kod + ': ' + error.message);
-          }
-        } else {
-          added++;
-          console.log('[' + (idx+1) + '] Eklendi:', kod);
-        }
+      // ── 6) Kontrol kapisi: tek hata varsa hicbir sey yazilmaz ──
+      if (hatalar.length) {
+        xlHataGoster(hatalar.length+' hata bulundu — hicbir kayit yazilmadi.', hatalar.slice(0, 40)
+          .concat(hatalar.length > 40 ? ['… ve '+(hatalar.length-40)+' hata daha'] : []));
+        return;
       }
+
+      XlVeri = { rows: rows, proje: proje, sekme: sekmeAdi, uyarilar: uyarilar, dosya: file.name };
+      parsedCsvRows = rows;
+      xlOnizleme();
+
+    } catch(err) {
+      console.error('parseXlFile:', err);
+      xlHataGoster('Excel okunamadi.', [err.message]);
     }
-
-    console.log('=== Import tamamlandi ===');
-    closeOv('ov-csv');
-    await loadIhaleler();
-    renderAll();
-    rHavuz();
-
-    let msg = added + ' eklendi, ' + updated + ' guncellendi';
-    if (skip) msg += ' | ' + skip + ' satir atildi';
-    if (hata) msg += ' | ' + hata + ' hata (F12 konsolu)';
-    toast(msg, hata > 0 ? 'info' : 'ok');
-
-  } catch(ex) {
-    console.error('importCsv exception:', ex);
-    toast('Import hatasi: ' + ex.message, 'err');
-  }
-}
-
-function downloadTemplate() {
-  const PRJL=SbProjeler.map(p=>p.proje_adi);
-  if (!PRJL.length){toast('Once proje yukleyin','err');return;}
-  const wb=XLSX.utils.book_new();
-  // Rapor Ekranı formatında şablon
-  const row1=['','FOLKART İNŞAAT — RAPOR EKRANI ŞABLONU | '+new Date().toLocaleDateString('tr-TR')];
-  const row2=[
-    '','TAKVİM NO','İHALE KODU','İHALE ADI',
-    'TASARIM KARARLARININ VERİLMESİ','',
-    'PROJE YAYIN TARİHİ','',
-    'TALEP (SAT) TARİHİ','',
-    'İHALE YAYINI','',
-    'YÖNETİME SUNUM TARİHİ','',
-    'İHALE KARAR TARİHİ','',
-    'SÖZLEŞME İMZA TARİHİ','',
-    'İMALAT BAŞLANGIÇ TARİHİ','',
-    'SAT NO','FİRMA ADI','SAS NO',
-    'SÖZLEŞME TUTARI TL','SÖZLEŞME TUTARI USD','SÖZLEŞME TUTARI EUR'
-  ];
-  const row3=[
-    '','','','',
-    'Planlanan','Gerçekleşen','Planlanan','Gerçekleşen',
-    'Planlanan','Gerçekleşen','Planlanan','Gerçekleşen',
-    'Planlanan','Gerçekleşen','Planlanan','Gerçekleşen',
-    'Planlanan','Gerçekleşen','Planlanan','Gerçekleşen',
-    '','','','','',''
-  ];
-  const pk = SbProjeler[0]?.proje_kodu || '3028';
-  const ex1=['','IHL.'+pk+'.001/1','09.01.00 YIKIM İŞLERİ','Yıkım ve Söküm İşleri',
-    '','','','','','','','','','','','','','','10.06.2025','',
-    '','','','','',''];
-  const ex2=['','IHL.'+pk+'.002/1','16.02.00 BETON İŞLERİ','Betonarme İmalatları',
-    '','','','','','','','','','','','','','','20.06.2025','',
-    '','Firma A','','','',''];
-  const aoa=[row1,row2,row3,ex1,ex2];
-  const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[
-    {wch:3},{wch:20},{wch:24},{wch:35},
-    {wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},
-    {wch:12},{wch:12},{wch:12},{wch:12},{wch:12},{wch:12},
-    {wch:12},{wch:12},{wch:12},{wch:12},
-    {wch:12},{wch:22},{wch:12},{wch:16},{wch:16},{wch:16}
-  ];
-  ws['!merges']=[
-    {s:{r:1,c:4},e:{r:1,c:5}},{s:{r:1,c:6},e:{r:1,c:7}},{s:{r:1,c:8},e:{r:1,c:9}},
-    {s:{r:1,c:10},e:{r:1,c:11}},{s:{r:1,c:12},e:{r:1,c:13}},{s:{r:1,c:14},e:{r:1,c:15}},
-    {s:{r:1,c:16},e:{r:1,c:17}},{s:{r:1,c:18},e:{r:1,c:19}}
-  ];
-  XLSX.utils.book_append_sheet(wb,ws,'Rapor Ekrani');
-  XLSX.writeFile(wb,'folkart_rapor_sablonu_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx');
-  toast('Rapor Ekrani sablonu indirildi','ok');
-}
-
-function exportData() {
-  if (!SbData.length) { toast('Disa aktarilacak veri yok', 'err'); return; }
-
-  // Filtre: havuz'daki proje filtresi varsa sadece onu aktar
-  const secilenProje = AktifProje
-    ? (SbProjeler.find(p => p.id === AktifProje)?.proje_adi || '')
-    : '';
-  const rows = projeFiltre(SbData);
-  if (!rows.length) { toast('Filtreli kayit yok', 'err'); return; }
-
-  // Tarih formatlayici: YYYY-MM-DD -> Excel serial (Date objesi)
-  // XLSX bu sekilde gercek tarih hucreleri uretir
-  const toDate = d => {
-    if (!d) return '';
-    const dt = new Date(d + 'T00:00:00');
-    return isNaN(dt) ? '' : dt;
   };
-  const fmtT = v => v ? Number(v) : '';
+  reader.readAsArrayBuffer(file);
+}
 
-  // ── FOLKART RAPOR EKRANI FORMATI ──
-  // Satir 1: Bos (orijinal sablonda firma basligi alani)
-  // Satir 2: Ana basliklar (TAKVİM NO, İHALE KODU...)
-  // Satir 3: Alt basliklar (PLANLANAN / GERÇEKLEŞen)
-  // Satir 4+: Veri
+// Okuma basarili — ozet ve ilk satirlarin onizlemesi
+function xlOnizleme() {
+  const { rows, proje, sekme, uyarilar } = XlVeri;
+  const el = document.getElementById('xl-status');
+  el.innerHTML =
+    '<div style="background:var(--green-glow);border:1px solid rgba(58,181,106,.3);border-radius:6px;padding:11px 14px;font-size:13px;color:var(--green)">' +
+    '✓ <strong>'+rows.length+' satir</strong> okundu — "'+sekme+'" · Proje: <strong>'+(proje ? proje.proje_adi : '?')+'</strong>' +
+    '</div>' +
+    (uyarilar.length
+      ? '<div style="background:var(--gold-glow);border:1px solid rgba(242,165,22,.3);border-radius:6px;padding:10px 14px;margin-top:8px;font-size:13px;color:var(--text2);line-height:1.8;max-height:150px;overflow:auto">' +
+        '<strong style="color:var(--gold)">'+uyarilar.length+' uyari</strong> (yukleme engellenmez)<br>' +
+        uyarilar.slice(0,15).map(u=>'• '+u).join('<br>') +
+        (uyarilar.length>15 ? '<br>… ve '+(uyarilar.length-15)+' uyari daha' : '') + '</div>'
+      : '');
+  el.style.display = 'block';
 
-  const anaBaslik = [
-    'TAKVİM NO','İHALE KODU','İHALE ADI',
-    'TASARIM KARARLARININ VERİLMESİ','',
-    'PROJE YAYIN TARİHİ','',
-    'TALEP (SAT) TARİHİ','',
-    'İHALE YAYINI','',
-    'YÖNETİME SUNUM TARİHİ','',
-    'İHALE KARAR TARİHİ','',
-    'SÖZLEŞME İMZA TARİHİ','',
-    'İMALAT BAŞLANGIÇ TARİHİ','',
-    'SAT NO','FİRMA ADI','SAS NO',
-    'SÖZLEŞME TUTARI TL','SÖZLEŞME TUTARI USD','SÖZLEŞME TUTARI EURO'
-  ];
+  document.getElementById('csv-count').textContent = 'İlk satirlarin onizlemesi:';
+  document.getElementById('csv-preview-table').innerHTML =
+    '<thead><tr><th>İhale No</th><th>İhale Kodu</th><th>İhale Adı</th><th>Kategori</th><th>Bölüm</th><th>M8 Plan</th></tr></thead><tbody>' +
+    rows.slice(0,8).map(r =>
+      '<tr><td class="mono" style="color:var(--blue-l)">'+r.ihale_no+'</td>' +
+      '<td style="font-size:13px">'+r.ihale_kodu+'</td>' +
+      '<td>'+r.ihale_adi+'</td>' +
+      '<td style="font-size:13px">'+(r.kategori||'-')+'</td>' +
+      '<td style="font-size:13px">'+(r.bolum||'-')+'</td>' +
+      '<td class="mono" style="font-size:13px">'+fmtTarih(r.p.m8)+'</td></tr>'
+    ).join('') + '</tbody>';
+  document.getElementById('csv-preview-area').style.display = 'block';
+}
 
-  const altBaslik = [
-    '','','',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    'PLANLANAN','GERÇEKLEŞEN',
-    '','','','','',''
-  ];
+// Gerceklesen tarihlerden durum turet (Excel'de durum sutunu yok)
+function xlDurumTuret(g) {
+  const sira = ['m8','m7','m6','m5','m4','m3','m2','m1'];
+  const harita = { m1:'hazirlik', m2:'dizaydan_devir', m3:'satinalma_devir', m4:'firma_davet',
+                   m5:'degerlendirme', m6:'yonetim_onayi', m7:'sozlesme', m8:'aktif' };
+  for (const k of sira) if (g[k]) {
+    // M7 (sozlesme imza) veya M8 (imalat baslangic) gerceklestiyse surec kapanmistir
+    return (k === 'm7' || k === 'm8') ? 'tamamlandi' : harita[k];
+  }
+  return 'hazirlik';
+}
+function handleXlFile(e){const f=e.target.files[0];if(f)parseXlFile(f);}
+function handleXlDrop(e){e.preventDefault();document.getElementById('xl-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)parseXlFile(f);}
 
-  const veriSatirlari = rows.map(i => [
-    i.id        || '',
-    i.teknik_kod|| '',
-    i.paket     || '',
-    toDate(i._plan?.m1_tasarim),       toDate(i._gm1),
-    toDate(i._plan?.m2_proje_yayin),   toDate(i._gm2),
-    toDate(i._plan?.m3_talep),         toDate(i._gm3),
-    toDate(i._plan?.m4_ihale_yayin),   toDate(i._gm4),
-    toDate(i._plan?.m5_yonetim_sunum), toDate(i._gm5),
-    toDate(i._plan?.m6_ihale_karar),   toDate(i._gm6),
-    toDate(i._plan?.m7_sozlesme_imza), toDate(i._gm7),
-    toDate(i._plan?.m8_imalat_baslangic), toDate(i._gm8),
-    i.sat_no    || '',
-    i.yuklenici || '',
-    i.sas_no    || '',
-    fmtT(i.sozlesme_tutari_tl || i.tutar),
-    fmtT(i.sozlesme_tutari_usd),
-    fmtT(i.sozlesme_tutari_eur),
-  ]);
+// ════════════════════════════════════════════════════════════════════
+// ICE AKTARIM
+//
+// Kurallar (Doruk ile kararlastirildi):
+//  1) Excel, panelin uzerine yazar — AMA yalnizca Excel'de SUTUNU BULUNAN
+//     alanlar icin. Notlar, santiye onay akisi, P6 kodu, ihale tipi gibi
+//     panele ozel alanlara import HIC dokunmaz.
+//  2) Excel'de olmayan ihaleler IPTAL'e tasinir (yalnizca ayni projede).
+//  3) Iptaldeki bir ihale Excel'de tekrar gorunurse otomatik geri doner.
+//  4) Yazmadan once ozet onayi + otomatik yedek indirme.
+// ════════════════════════════════════════════════════════════════════
+async function importCsv() {
+  if (!XlVeri || !XlVeri.rows.length) { toast('Once gecerli bir Excel dosyasi yukleyin', 'err'); return; }
+  if (!CU || !CU.id)                  { toast('Oturum yok — cikip tekrar girin', 'err'); return; }
+  if (!XlVeri.proje)                  { toast('Proje bulunamadi', 'err'); return; }
 
-  const aoa = [anaBaslik, altBaslik, ...veriSatirlari];
-  const ws  = XLSX.utils.aoa_to_sheet(aoa);
+  const proje = XlVeri.proje;
+  const rows  = XlVeri.rows;
 
-  // Tarih hucrelerine format ata (DD.MM.YYYY gosterimi)
-  const tarihFmt = 'DD.MM.YYYY';
-  const tarihSutunlar = [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; // C-R arasi (0-indexed)
-  const veriBaslangic = 2; // 0-indexed satir 2 = 3. satir
-  veriSatirlari.forEach((row, ri) => {
-    tarihSutunlar.forEach(ci => {
-      const cellAddr = XLSX.utils.encode_cell({r: veriBaslangic + ri, c: ci});
-      if (ws[cellAddr] && ws[cellAddr].v instanceof Date) {
-        ws[cellAddr].t = 'd';
-        ws[cellAddr].z = tarihFmt;
-      }
-    });
+  // Panel verisini tazele — dosya secildikten sonra baskasi degistirmis olabilir
+  await loadIhaleler();
+  const mevcut     = SbData.filter(i => i.proje_id === proje.id);
+  const mevcutMap  = new Map(mevcut.map(i => [i.id, i]));
+  const excelNolar = new Set(rows.map(r => r.ihale_no));
+
+  // ── Ozet hesapla ──
+  let yeni = 0, guncellenecek = 0, silinecekTarih = 0, tamamlanacak = 0, iptaldenDonecek = 0;
+  const silinecekDetay = [];
+  rows.forEach(r => {
+    const v = mevcutMap.get(r.ihale_no);
+    if (!v) { yeni++; }
+    else {
+      guncellenecek++;
+      if (v.durum === 'iptal') iptaldenDonecek++;
+      const kayip = [];
+      ['m1','m2','m3','m4','m5','m6','m7','m8'].forEach(k => {
+        if (v['_g'+k] && !r.g[k]) kayip.push(k.toUpperCase());
+      });
+      if ((v.dizayn_yuz || 0) > 0 && !r.dizayn_yuz) kayip.push('Dizayn %');
+      if (kayip.length) { silinecekTarih++; silinecekDetay.push(r.ihale_no + ' → ' + kayip.join(', ')); }
+    }
+    if (xlDurumTuret(r.g) === 'tamamlandi') tamamlanacak++;
+  });
+  const iptaleGidecek = mevcut.filter(i => !excelNolar.has(i.id) && i.durum !== 'iptal');
+
+  // ── Ozet onay ekrani ──
+  const satir = (renk, metin) => '<div style="display:flex;gap:8px;padding:4px 0"><span style="color:'+renk+'">●</span><span>'+metin+'</span></div>';
+  document.getElementById('confirm-msg').innerHTML =
+    '<div style="text-align:left;font-size:14px;line-height:1.6">' +
+    '<div style="font-size:13px;color:var(--text3);margin-bottom:10px">' +
+      'Dosya: <strong>'+(XlVeri.dosya||'-')+'</strong><br>Proje: <strong>'+proje.proje_adi+'</strong></div>' +
+    satir('var(--green)', '<strong>'+yeni+'</strong> yeni ihale eklenecek') +
+    satir('var(--blue-l)', '<strong>'+guncellenecek+'</strong> ihale guncellenecek') +
+    (tamamlanacak    ? satir('var(--text3)', '<strong>'+tamamlanacak+'</strong> ihale "Tamamlandi" olarak isaretlenecek (M7 veya M8 gerceklesmis)') : '') +
+    (iptaldenDonecek ? satir('var(--green)', '<strong>'+iptaldenDonecek+'</strong> iptal edilmis ihale tekrar aktif olacak') : '') +
+    (silinecekTarih  ? satir('var(--red)', '<strong>'+silinecekTarih+'</strong> ihalede panelde DOLU olan veri silinecek (Excel\'de bos)') : '') +
+    (iptaleGidecek.length ? satir('var(--red)', '<strong>'+iptaleGidecek.length+'</strong> ihale IPTAL\'e tasinacak (Excel\'de yok)') : '') +
+    ((silinecekDetay.length || iptaleGidecek.length)
+      ? '<div style="margin-top:10px;background:var(--surface2);border-radius:5px;padding:9px 11px;font-size:13px;color:var(--text2);max-height:150px;overflow:auto;line-height:1.7">' +
+        (silinecekDetay.length ? '<strong style="color:var(--red)">Silinecek veriler:</strong><br>'+silinecekDetay.slice(0,10).join('<br>') + (silinecekDetay.length>10?'<br>… ve '+(silinecekDetay.length-10)+' tane daha':'') + (iptaleGidecek.length?'<br><br>':'') : '') +
+        (iptaleGidecek.length ? '<strong style="color:var(--red)">İptale tasinacaklar:</strong><br>'+iptaleGidecek.slice(0,10).map(i=>i.id+' — '+i.paket).join('<br>') + (iptaleGidecek.length>10?'<br>… ve '+(iptaleGidecek.length-10)+' tane daha':'') : '') +
+        '</div>'
+      : '') +
+    '<div style="margin-top:12px;font-size:13px;color:var(--text3)">Onaylarsan once mevcut durumun yedegi Excel olarak indirilecek, sonra yukleme baslayacak.</div>' +
+    '</div>';
+  document.getElementById('confirm-ok').textContent = 'Yedegi indir ve yukle';
+  document.getElementById('confirm-ok').onclick = () => { closeOv('ov-confirm'); xlYaz(proje, rows, iptaleGidecek); };
+  openOv('ov-confirm');
+}
+
+// Onaylandi — yedek al ve yaz
+async function xlYaz(proje, rows, iptaleGidecek) {
+  // ── 1) Otomatik yedek ──
+  try {
+    exportExcel(proje.id, 'YEDEK_' + proje.proje_adi.replace(/[^\wçğıöşüÇĞİÖŞÜ]+/g,'_') + '_' + today() + '.xlsx', true);
+    toast('Mevcut durumun yedegi indirildi', 'ok');
+  } catch(e) {
+    console.error('Yedek alinamadi:', e);
+    toast('Yedek alinamadi — yukleme durduruldu: ' + e.message, 'err');
+    return;
+  }
+
+  closeOv('ov-csv');
+  toast('Yukleme basliyor: ' + rows.length + ' satir…', 'info');
+
+  const mevcutMap = new Map(SbData.filter(i => i.proje_id === proje.id).map(i => [i.id, i]));
+
+  // Iptal notu icin kullanici adi
+  const kim = (await sb.from('kullanici_profilleri').select('ad_soyad,rol').eq('id', CU.id).single()).data;
+  const imza = '[' + new Date().toLocaleDateString('tr-TR') + ' - ' + (kim?.ad_soyad || CU.email) + ' (' + (kim?.rol || '') + ')]';
+
+  // ── 2) Satirlari yaz ──
+  const hatalar = [];
+  let eklendi = 0, guncellendi = 0;
+
+  const veriKur = r => ({
+    proje_id:                proje.id,
+    takvim_no:               r.ihale_no,
+    ihale_kodu:              r.ihale_no,      // benzersizlik icin Ihale No
+    teknik_kod:              r.ihale_kodu,    // Excel'deki "İHALE KODU" (05.03.00 …)
+    ihale_adi:               r.ihale_adi,
+    ihale_kategori:          r.kategori || null,
+    ihale_bolumu:            r.bolum || null,
+    plan_acilis:             r.p.m8,
+    imalat_baslangic_tarihi: r.p.m8,
+    dizayn_suresi_gun:       r.d.d1, talep_suresi_gun:   r.d.d2,
+    ihale_hazirlik_gun:      r.d.d3, ihale_suresi_gun:   r.d.d4,
+    ihale_karar_gun:         r.d.d5, sozlesme_suresi_gun:r.d.d6,
+    uretim_mobilizasyon_gun: r.d.d7, uretim_termin_gun:  0,
+    gercek_m1: r.g.m1 || null, gercek_m2: r.g.m2 || null,
+    gercek_m3: r.g.m3 || null, gercek_m4: r.g.m4 || null,
+    gercek_m5: r.g.m5 || null, gercek_m6: r.g.m6 || null,
+    gercek_m7: r.g.m7 || null, gercek_m8: r.g.m8 || null,
+    sat_no:                  r.sat_no || null,
+    yuklenci_firma:          r.firma || null,
+    sas_no:                  r.sas_no || null,
+    sozlesme_tutari_tl:      r.tl, sozlesme_bedeli: r.tl,
+    sozlesme_tutari_usd:     r.usd, sozlesme_tutari_eur: r.eur,
+    dizayn_yuzdesi:          r.dizayn_yuz == null ? 0 : r.dizayn_yuz,
+    durum:                   xlDurumTuret(r.g),
   });
 
-  // Sutun genislikleri (orijinal sablon ile ayni)
-  ws['!cols'] = [
-    {wch:18},{wch:22},{wch:35},
-    {wch:13},{wch:13},{wch:13},{wch:13},{wch:13},{wch:13},
-    {wch:13},{wch:13},{wch:13},{wch:13},{wch:13},{wch:13},
-    {wch:13},{wch:13},{wch:13},{wch:13},
-    {wch:14},{wch:22},{wch:14},{wch:16},{wch:16},{wch:16}
-  ];
+  // 8'erli gruplar halinde — tek tek gondermekten cok daha hizli
+  const PARCA = 8;
+  for (let i = 0; i < rows.length; i += PARCA) {
+    const parca = rows.slice(i, i + PARCA);
+    await Promise.all(parca.map(async r => {
+      const veri = veriKur(r);
+      const v = mevcutMap.get(r.ihale_no);
+      try {
+        if (v && v._id) {
+          // Iptalden geri donuyorsa iptal izlerini temizle
+          if (v.durum === 'iptal') { veri.iptal_nedeni = null; veri.iptal_tarihi = null; }
+          const { error } = await sb.from('ihaleler').update(veri).eq('id', v._id);
+          if (error) throw error;
+          guncellendi++;
+        } else {
+          veri.olusturan_id = CU.id;
+          const { error } = await sb.from('ihaleler').insert(veri);
+          if (error) throw error;
+          eklendi++;
+        }
+      } catch(err) {
+        hatalar.push(r.ihale_no + ': ' + (err.message || err));
+        console.error('Import satiri basarisiz:', r.ihale_no, err);
+      }
+    }));
+    if (rows.length > 20) toast('Yukleniyor… ' + Math.min(i + PARCA, rows.length) + '/' + rows.length, 'info');
+  }
 
-  // Milestone cift sutunlarini birlestir (ana baslik satirinda)
+  // ── 3) Excel'de olmayanlari iptale tasi (yalnizca bu proje) ──
+  let iptalEdildi = 0;
+  for (const it of iptaleGidecek) {
+    const { error } = await sb.from('ihaleler').update({
+      durum: 'iptal',
+      iptal_nedeni: imza + ': Excel revizyonunda listeden cikarildi',
+      iptal_tarihi: today(),
+    }).eq('id', it._id);
+    if (error) hatalar.push(it.id + ' (iptal): ' + error.message); else iptalEdildi++;
+  }
+
+  // ── 4) Bitir ──
+  await loadAllData();
+  tumSekmeleriCiz();
+
+  let msg = eklendi + ' eklendi, ' + guncellendi + ' guncellendi';
+  if (iptalEdildi) msg += ', ' + iptalEdildi + ' iptale tasindi';
+  if (hatalar.length) {
+    msg += ' | ' + hatalar.length + ' hata';
+    console.error('Import hatalari:', hatalar);
+    xlHataGoster(hatalar.length + ' kayit yazilamadi (digerleri yazildi).', hatalar.slice(0, 20));
+    openOv('ov-csv');
+  }
+  toast(msg, hatalar.length ? 'err' : 'ok');
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// SABLON INDIRME
+// Formullu (VLOOKUP'li) gercek sablon JavaScript ile uretilemez; bu yuzden
+// orijinal dosya depoda durur ve buradan indirilir.
+// ════════════════════════════════════════════════════════════════════
+const SABLON_DOSYA = 'ihale-sablonu.xlsx';
+function downloadTemplate() {
+  const a = document.createElement('a');
+  a.href = SABLON_DOSYA;
+  a.download = 'Folkart Ihale Satinalma Sablonu.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('Sablon indiriliyor…', 'ok');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// DISA AKTARIM — "Satınalma Takvimi Veri Girişi" duzeninde
+// Uretilen dosya tekrar yuklenebilir. Sablon/Referans sekmeleri ve
+// VLOOKUP formulleri BULUNMAZ (yalnizca degerler).
+// ════════════════════════════════════════════════════════════════════
+const XL_DISA_ANA = [
+  '', 'İHALE NO', 'İHALE KODU', 'İHALE ADI / AÇIKLAMA', 'İHALE KATEGORİ', 'İHALE BÖLÜMÜ',
+  'TASARIM KARARLARININ VERİLMESİ','', 'PROJE YAYIN TARİHİ','', 'TALEP (SAT) TARİHİ','',
+  'İHALE YAYINI','', 'YÖNETİME SUNUM TARİHİ','', 'İHALE KARAR TARİHİ','',
+  'SÖZLEŞME İMZA TARİHİ','', 'İMALAT BAŞLANGIÇ TARİHİ','',
+  'SAT NO', 'FİRMA ADI', 'SAS NO',
+  'SÖZLEŞME TUTARI TL', 'SÖZLEŞME TUTARI USD', 'SÖZLEŞME TUTARI EURO',
+  'DİZAYN İLERLEME YÜZDESİ'
+];
+const XL_DISA_ALT = (() => {
+  const a = new Array(29).fill('');
+  for (let c = 6; c <= 20; c += 2) { a[c] = 'PLANLANAN'; a[c+1] = 'GERÇEKLEŞEN'; }
+  return a;
+})();
+
+// projeId zorunlu: dosyanin B1 hucresi tek bir projeyi temsil eder.
+// sessiz=true ise ekrana bildirim basmaz (yedek alirken kullanilir).
+function exportExcel(projeId, dosyaAdi, sessiz) {
+  const proje = SbProjeler.find(p => p.id === projeId);
+  if (!proje) throw new Error('Proje bulunamadi');
+
+  const rows = SbData.filter(i => i.proje_id === projeId)
+                     .slice()
+                     .sort((a,b) => String(a.id).localeCompare(String(b.id), 'tr'));
+
+  const tarih = d => { if (!d) return ''; const dt = new Date(d + 'T00:00:00'); return isNaN(dt) ? '' : dt; };
+  const sayi  = v => (v == null || v === '') ? '' : Number(v);
+
+  const veri = rows.map(i => ([
+    '',
+    i.id || '',
+    i.teknik_kod || '',
+    i.paket || '',
+    i.ihale_kategori || '',
+    i.ihale_bolumu || '',
+    tarih(i._plan?.m1_tasarim),          tarih(i._gm1),
+    tarih(i._plan?.m2_proje_yayin),      tarih(i._gm2),
+    tarih(i._plan?.m3_talep),            tarih(i._gm3),
+    tarih(i._plan?.m4_ihale_yayin),      tarih(i._gm4),
+    tarih(i._plan?.m5_yonetim_sunum),    tarih(i._gm5),
+    tarih(i._plan?.m6_ihale_karar),      tarih(i._gm6),
+    tarih(i._plan?.m7_sozlesme_imza),    tarih(i._gm7),
+    tarih(i._plan?.m8_imalat_baslangic), tarih(i._gm8),
+    i.sat_no || '',
+    i.yuklenici || '',
+    i.sas_no || '',
+    sayi(i.sozlesme_tl != null ? i.sozlesme_tl : i.tutar),
+    sayi(i.sozlesme_usd),
+    sayi(i.sozlesme_eur),
+    sayi(i.dizayn_yuz),
+  ]));
+
+  const b1 = new Array(29).fill('');
+  b1[1] = (proje.proje_kodu || '') + ' - ' + String(proje.proje_adi || '').toUpperCase();
+
+  const aoa = [b1, XL_DISA_ANA, XL_DISA_ALT].concat(veri);
+  const ws  = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Tarih hucrelerine GG.AA.YYYY bicimi
+  for (let ri = 0; ri < veri.length; ri++) {
+    for (let ci = 6; ci <= 21; ci++) {
+      const adr = XLSX.utils.encode_cell({ r: 3 + ri, c: ci });
+      if (ws[adr] && ws[adr].v instanceof Date) { ws[adr].t = 'd'; ws[adr].z = 'DD.MM.YYYY'; }
+    }
+  }
+  ws['!cols'] = [{wch:3},{wch:18},{wch:32},{wch:40},{wch:14},{wch:10}]
+    .concat(new Array(16).fill({wch:13}))
+    .concat([{wch:14},{wch:34},{wch:14},{wch:18},{wch:16},{wch:16},{wch:12}]);
   ws['!merges'] = [
-    {s:{r:0,c:3}, e:{r:0,c:4}},   // Tasarim
-    {s:{r:0,c:5}, e:{r:0,c:6}},   // Proje Yayin
-    {s:{r:0,c:7}, e:{r:0,c:8}},   // Talep
-    {s:{r:0,c:9}, e:{r:0,c:10}},  // Ihale Yayini
-    {s:{r:0,c:11},e:{r:0,c:12}},  // Yonetime Sunum
-    {s:{r:0,c:13},e:{r:0,c:14}},  // Ihale Karar
-    {s:{r:0,c:15},e:{r:0,c:16}},  // Sozlesme Imza
-    {s:{r:0,c:17},e:{r:0,c:18}},  // Imalat Baslangic
+    {s:{r:1,c:6}, e:{r:1,c:7}},  {s:{r:1,c:8}, e:{r:1,c:9}},
+    {s:{r:1,c:10},e:{r:1,c:11}}, {s:{r:1,c:12},e:{r:1,c:13}},
+    {s:{r:1,c:14},e:{r:1,c:15}}, {s:{r:1,c:16},e:{r:1,c:17}},
+    {s:{r:1,c:18},e:{r:1,c:19}}, {s:{r:1,c:20},e:{r:1,c:21}},
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Rapor Ekranı');
-
-  const tarih = new Date().toISOString().split('T')[0];
-  const dosyaAdi = 'Folkart_Rapor_Ekrani' +
-    (secilenProje ? '_' + secilenProje.replace(/\s+/g,'_') : '') +
-    '_' + tarih + '.xlsx';
-
+  XLSX.utils.book_append_sheet(wb, ws, XL_SEKME_ADI);
   XLSX.writeFile(wb, dosyaAdi);
-  toast(rows.length + ' ihale Rapor Ekrani formatiyla disa aktarildi', 'ok');
+  if (!sessiz) toast(rows.length + ' ihale disa aktarildi', 'ok');
+  return rows.length;
+}
+
+// "⬇ Dışa Aktar" butonu — ustteki proje secicisinden proje alir
+function exportData() {
+  if (!AktifProje) {
+    toast('Once ustteki PROJE secicisinden bir proje secin (dosya tek projeye aittir)', 'err');
+    return;
+  }
+  const proje = SbProjeler.find(p => p.id === AktifProje);
+  if (!proje) { toast('Proje bulunamadi', 'err'); return; }
+  const rows = SbData.filter(i => i.proje_id === AktifProje);
+  if (!rows.length) { toast('Bu projede disa aktarilacak ihale yok', 'err'); return; }
+  const ad = String(proje.proje_adi || 'proje').replace(/[^\wçğıöşüÇĞİÖŞÜ]+/g, '_');
+  exportExcel(AktifProje, 'Folkart_' + ad + '_' + today() + '.xlsx');
 }
 function exportArchive(){if(!SbArchive.length){toast('Arsiv bos','err');return;}const wb=XLSX.utils.book_new();const aoa=[['FOLKART ARSIV EXPORT | '+new Date().toLocaleDateString('tr-TR')],['IhaleNo','Proje','PaketAdi','ArsivTarihi','SozlesmeTutari','Yuklenici'],...SbArchive.map(i=>[i.id,i.proje,i.paket,fmtTarih(i.arsivTarihi),i.tutar||'',i.yuklenici||''])];const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:18},{wch:28},{wch:38},{wch:14},{wch:18},{wch:28}];XLSX.utils.book_append_sheet(wb,ws,'Arsiv');XLSX.writeFile(wb,`folkart_arsiv_.xlsx`);toast('Arsiv disa aktarildi OK','ok');}
 function dlFile(name,content){const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent('\uFEFF'+content);a.download=name;a.click();}
