@@ -3000,11 +3000,20 @@ function normalizeDurum(raw) {
   return _DURUM_MAP[k] || 'hazirlik';
 }
 function openCsvModal() {
-  parsedCsvRows=[];
-  document.getElementById('csv-preview-area').style.display='none';
-  document.getElementById('csv-paste').value='';
-  document.getElementById('xl-status').style.display='none';
-  impTab('xl'); openOv('ov-csv');
+  // Onceki yuklemeden kalan durumu temizle.
+  // NOT: 'csv-paste' (eski CSV yapistirma kutusu) kaldirildi; burada
+  // artik referans verilmiyor. Yoksa null.value hatasi modalin
+  // acilmasini tamamen engelliyor.
+  parsedCsvRows = [];
+  XlVeri = null;
+  const onizleme = document.getElementById('csv-preview-area');
+  if (onizleme) onizleme.style.display = 'none';
+  const durum = document.getElementById('xl-status');
+  if (durum) { durum.style.display = 'none'; durum.innerHTML = ''; }
+  const secici = document.getElementById('xl-file');
+  if (secici) secici.value = '';   // ayni dosya tekrar secilebilsin
+  impTab();
+  openOv('ov-csv');
 }
 
 // ════════════════════════════════════════════════════════════════════
