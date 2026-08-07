@@ -399,6 +399,8 @@ td strong{color:var(--text);font-weight:600;}
 .tag-pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:var(--surface2);
   border:1px solid var(--border);color:var(--text2);margin:2px;}
 .hidden{display:none!important;}
+.ms-sahip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:none;background:var(--surface3);color:var(--text3);vertical-align:middle;}
+input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opacity:.55;cursor:not-allowed;}
 @media print{
   nav,header,#toast,.overlay{display:none!important;}
   main{padding:0;}
@@ -984,16 +986,20 @@ td strong{color:var(--text);font-weight:600;}
 
     <!-- Gerçekleşen M Tarihleri — sadece admin/planlama -->
     <div id="gm-section" style="display:none">
-      <div class="form-sec" style="margin-top:12px">Gerceklesen M Tarihleri (Admin/Planlama)</div>
+      <div class="form-sec" style="margin-top:12px">Gerçekleşen Milestone Tarihleri</div>
+      <div style="font-size:13px;color:var(--text3);margin:-4px 0 10px;line-height:1.7">
+        Her tarihi yalnızca sorumlu birim girebilir. Yetkiniz olmayan alanlar kilitli görünür.
+        Tarih girildiğinde ihalenin durumu otomatik güncellenir.
+      </div>
       <div class="form-grid">
-        <div class="fl"><label>M1 - Tasarim Kararlari</label><input type="date" id="f-gm-m1"></div>
-        <div class="fl"><label>M2 - Proje Yayin</label><input type="date" id="f-gm-m2"></div>
-        <div class="fl"><label>M3 - Talep (SAT)</label><input type="date" id="f-gm-m3"></div>
-        <div class="fl"><label>M4 - Ihale Yayini</label><input type="date" id="f-gm-m4"></div>
-        <div class="fl"><label>M5 - Yonetime Sunum</label><input type="date" id="f-gm-m5"></div>
-        <div class="fl"><label>M6 - Ihale Karar</label><input type="date" id="f-gm-m6"></div>
-        <div class="fl"><label>M7 - Sozlesme Imza</label><input type="date" id="f-gm-m7"></div>
-        <div class="fl form-full"><label>M8 - Imalat Baslangic</label><input type="date" id="f-gm-m8"></div>
+        <div class="fl"><label>M1 · Tasarım Kararları <span class="ms-sahip">Dizayn</span></label><input type="date" id="f-gm-m1" oninput="msDurumTazele()"></div>
+        <div class="fl"><label>M2 · Proje Yayın <span class="ms-sahip">Şantiye kabulüyle otomatik</span></label><input type="date" id="f-gm-m2" oninput="msDurumTazele()"></div>
+        <div class="fl"><label>M3 · Şantiye Talep (SAT) <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m3" oninput="msDurumTazele()"><div class="calc" id="m3-hedef"></div></div>
+        <div class="fl"><label>M4 · İhale Yayını <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m4" oninput="msDurumTazele()"></div>
+        <div class="fl"><label>M5 · Yönetime Sunum <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m5" oninput="msDurumTazele()"></div>
+        <div class="fl"><label>M6 · İhale Karar <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m6" oninput="msDurumTazele()"></div>
+        <div class="fl"><label>M7 · Sözleşme İmza <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m7" oninput="msDurumTazele()"></div>
+        <div class="fl"><label>M8 · İmalat Başlangıç <span class="ms-sahip">Şantiye</span></label><input type="date" id="f-gm-m8" oninput="msDurumTazele()"></div>
       </div>
     </div>
 
@@ -2194,9 +2200,13 @@ function rSantiye() {
         <button class="btn btn-danger btn-sm" onclick="santiyeRed('${i._id}')">✕ Eksik / Red</button>
       </div>`;
     } else if (od === 'kabul') {
-      islem = i.talep_giris_tarihi
-        ? '<span class="chip c-soz"><span class="chip-dot"></span>Talep Girildi</span>'
-        : `<button class="btn btn-primary btn-sm" onclick="santiyeTalepGir('${i._id}')">📨 Talep Gir → Satınalma</button>`;
+      if (i._gm3 || i.talep_giris_tarihi) {
+        islem = '<span class="chip c-soz"><span class="chip-dot"></span>Talep girildi · ' + fmtTarih(i._gm3 || i.talep_giris_tarihi) + '</span>';
+      } else {
+        const hedef = (i.santiye_onay_tarihi && i._s_talep) ? addGun(i.santiye_onay_tarihi, i._s_talep) : '';
+        islem = `<button class="btn btn-primary btn-sm" onclick="santiyeTalepGir('${i._id}')">📨 Talep Gir → Satınalma</button>`
+              + (hedef ? '<div style="font-size:13px;color:var(--text3);margin-top:3px">Hedef: ' + fmtTarih(hedef) + '</div>' : '');
+      }
     } else if (od === 'red') {
       islem = `<button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}')">Detay</button>`;
     } else {
@@ -2241,13 +2251,23 @@ async function dizaynSantiyeyeGonder() {
 
 async function santiyeKabul(id) {
   if (CRole !== 'admin' && CRole !== 'santiye') { toast('Şantiye yetkisi gerekli', 'err'); return; }
-  const upd = { santiye_onay_durum: 'kabul', santiye_onay_tarihi: today(), santiye_red_nedeni: null };
-  // Dizayn tamamlandı kabul edildi → M2 (Proje Yayın) gerçekleşeni işaretle
   const it = SbData.find(x => x._id === id);
-  if (it && !it._gm2) upd.gercek_m2 = it.dizayn_gonderim_tarihi || today();
+  if (!it) return;
+  const t = today();
+  const upd = { santiye_onay_durum: 'kabul', santiye_onay_tarihi: t, santiye_red_nedeni: null };
+  // Santiye kabulu = M2 (Proje Yayin) gerceklesti. Bu tarih OTOMATIK olusur,
+  // sonradan elle degistirilemez (yalnizca admin duzeltebilir).
+  if (!it._gm2) upd.gercek_m2 = it.dizayn_gonderim_tarihi || t;
+  // M3 (Talep/SAT) BURADA GIRILMEZ. Talep tarihini satinalma girer.
+  const g = {};
+  MS_LISTE.forEach(m => { g[m] = ('gercek_'+m in upd) ? upd['gercek_'+m] : it['_g'+m]; });
+  if (it.durum !== 'bloke' && it.durum !== 'iptal') upd.durum = durumTuret(g);
   const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
-  toast('Dizayn kabul edildi. Artık talep girebilirsiniz.', 'ok');
+  const sure = it._s_talep || 0;
+  toast(sure
+    ? 'Dizayn kabul edildi. Artık talep girebilirsiniz (hedef: ' + fmtTarih(addGun(t, sure)) + ')'
+    : 'Dizayn kabul edildi. Artık talep girebilirsiniz.', 'ok');
   await loadIhaleler(); renderAll(); rSantiye(); rHavuz();
 }
 
@@ -2269,10 +2289,14 @@ async function santiyeTalepGir(id) {
   if (!it) return;
   if (it.santiye_onay_durum !== 'kabul') { toast('Talep girmek için önce dizaynı KABUL etmelisiniz', 'err'); return; }
   const t = today();
-  const upd = { talep_giris_tarihi: t, gercek_m3: t, durum: 'satinalma_devir' };
-  // Önceki dizayn milestone'larını tutarlılık için doldur
+  const upd = { talep_giris_tarihi: t, gercek_m3: t };
+  // Onceki dizayn milestone'larini tutarlilik icin doldur
   if (!it._gm2) upd.gercek_m2 = it.santiye_onay_tarihi || it.dizayn_gonderim_tarihi || t;
   if (!it._gm1) upd.gercek_m1 = it.dizayn_gonderim_tarihi || t;
+  // Durum, ortak kuralla son girilen tarihten turetilir (M3 -> satinalma_devir)
+  const g = {};
+  MS_LISTE.forEach(m => { g[m] = ('gercek_'+m in upd) ? upd['gercek_'+m] : it['_g'+m]; });
+  if (it.durum !== 'bloke' && it.durum !== 'iptal') upd.durum = durumTuret(g);
   const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
   toast('Talep girildi → İhale & Satınalma birimine iletildi', 'ok');
@@ -2373,8 +2397,20 @@ function populateProjeSelect(cur) {
 function openForm(id) {
   editId = id || null;
   const f = id ? SbData.find(i=>i._id===id) : null;
-  document.getElementById('form-title').textContent = id ? 'Ihale Duzenle' : 'Yeni Ihale Ekle';
-  document.getElementById('form-sub').textContent   = id ? '#'+id : 'Tum alanlari doldurun';
+  // Baslikta ihalenin TANIMI dursun. Eskiden veritabani satir kimligi
+  // (a3e9f772-7e1a-…) yaziyordu; kullaniciya hicbir sey ifade etmiyordu.
+  const bslk = document.getElementById('form-title');
+  const alt  = document.getElementById('form-sub');
+  if (id && f) {
+    bslk.textContent = f.paket || 'İhale Düzenle';
+    alt.innerHTML =
+      '<span style="font-family:var(--mono);color:var(--blue-l);font-weight:600">' + esc(f.id) + '</span>' +
+      (f.teknik_kod ? ' <span style="color:var(--text3)">·</span> ' + esc(f.teknik_kod) : '') +
+      (f.proje      ? ' <span style="color:var(--text3)">·</span> ' + esc(f.proje)      : '');
+  } else {
+    bslk.textContent = id ? 'İhale Düzenle' : 'Yeni İhale Ekle';
+    alt.textContent  = id ? '' : 'Tüm alanları doldurun';
+  }
   // Tamamlanan/iptal paketlerde admin disinda duzenleme yok
   if (id) {
     const kayit = SbData.find(i => i._id === id);
@@ -2428,15 +2464,25 @@ function openForm(id) {
   document.getElementById('f-sat-no').value    = f?.sat_no||'';
   document.getElementById('f-sas-no').value    = f?.sas_no||'';
 
-  // Gerçekleşen M tarihleri (admin/planlama görebilir)
-  const gmVisible = (CRole==='admin'||CRole==='planlama'||CRole==='satinalma');
+  // ── Gerceklesen milestone tarihleri ──
+  // Bolum herkese gorunur; her alan yalnizca sorumlu birime aciktir.
   const gmSection = document.getElementById('gm-section');
-  if (gmSection) gmSection.style.display = gmVisible ? 'block' : 'none';
-  if (gmVisible && f) {
-    ['m1','m2','m3','m4','m5','m6','m7','m8'].forEach(m => {
-      const el = document.getElementById('f-gm-'+m);
-      if (el) el.value = f['_g'+m]||'';
-    });
+  if (gmSection) gmSection.style.display = 'block';
+  MS_LISTE.forEach(m => {
+    const el = document.getElementById('f-gm-'+m);
+    if (!el) return;
+    el.value = (f && f['_g'+m]) || '';
+    el.disabled = !msYetkiliMi(m) || CRole === 'izleyici';
+  });
+  // M3 icin hedef talep tarihi: santiye kabulu + talep hazirlik suresi
+  const m3h = document.getElementById('m3-hedef');
+  if (m3h) {
+    const kabul = (f && (f.santiye_onay_tarihi || f._gm2)) || '';
+    const sure  = (f && f._s_talep) || 0;
+    m3h.textContent = kabul
+      ? (sure ? '→ Hedef: ' + fmtTarih(addGun(kabul, sure)) + '  (şantiye kabulü ' + fmtTarih(kabul) + ' + ' + sure + ' gün)'
+              : '→ Şantiye kabulü: ' + fmtTarih(kabul))
+      : '→ Şantiye henüz dizaynı kabul etmedi';
   }
 
   // ROL KISITLARI
@@ -2450,7 +2496,9 @@ function openForm(id) {
   const isSatinalma= CRole==='satinalma';
   const isPlanlama = CRole==='planlama';
 
-  document.getElementById('f-durum').disabled   = !(isAdmin||isPlanlama||isSatinalma);
+  // Durum girilen son milestone tarihinden otomatik turetilir.
+  // Yalnizca admin elle degistirebilir (bloke / iptal isaretlemek icin).
+  document.getElementById('f-durum').disabled   = !isAdmin;
   document.getElementById('f-dizayn').disabled  = !(isAdmin||isDizayn);
   document.getElementById('f-firmalar').disabled= !(isAdmin||isSatinalma);
 
@@ -2480,6 +2528,7 @@ function openForm(id) {
     }
   }
 
+  msDurumTazele();
   toggleSozFieldsModal();
   openOv('ov-form');
 }
@@ -2531,13 +2580,21 @@ async function saveForm() {
   const dizaynYuz  = parseInt(document.getElementById('f-dizayn').value)||0;
 
   // ── Gerçekleşen M tarihleri (admin/planlama) ──
+  // Yalnizca YETKILI olunan milestone alanlari gonderilir; digerleri
+  // istege hic eklenmez, boylece veritabanindaki degerleri ezilmez.
   const gmVeri = {};
-  if (CRole==='admin'||CRole==='planlama'||CRole==='satinalma') {
-    ['m1','m2','m3','m4','m5','m6','m7','m8'].forEach(m => {
-      const el = document.getElementById('f-gm-'+m);
-      if (el) gmVeri['gercek_'+m] = el.value||null;
-    });
-  }
+  MS_LISTE.forEach(m => {
+    if (!msYetkiliMi(m)) return;
+    const el = document.getElementById('f-gm-'+m);
+    if (el) gmVeri['gercek_'+m] = el.value || null;
+  });
+  // Durum hesabi icin: kendi duzenlediklerimiz + dokunmadigimiz mevcut degerler
+  const gTum = {};
+  MS_LISTE.forEach(m => {
+    gTum[m] = ('gercek_'+m in gmVeri) ? gmVeri['gercek_'+m] : (orig ? orig['_g'+m] : null);
+  });
+  // Satinalma M3'u girdiyse talep giris tarihi de ayni gun olur
+  if (gmVeri.gercek_m3) gmVeri.talep_giris_tarihi = gmVeri.gercek_m3;
 
   // ── Dizayn → Şantiye onay kapısı ──
   // Talep/İhale aşamasına (M3+) ancak şantiye dizaynı KABUL ettiyse geçilebilir.
@@ -2553,7 +2610,11 @@ async function saveForm() {
     takvim_no:        id.toUpperCase(),
     ihale_kodu:       id.toUpperCase(),
     ihale_adi:        paket,
-    durum:            mapDurumRev(document.getElementById('f-durum').value),
+    durum:            (function(){
+                        const sec = document.getElementById('f-durum').value;
+                        // bloke ve iptal elle isaretlenir; digerleri tarihlerden turetilir
+                        return (sec === 'bloke' || sec === 'iptal') ? sec : durumTuret(gTum);
+                      })(),
     ihale_tipi:       document.getElementById('f-tipi')?.value || (SbData.find(x=>x._id===editId)?.ihale_tipi) || 'standart',
     dizayn_yuzdesi:   dizaynYuz,
     davet_firmalar:   document.getElementById('f-firmalar').value.trim()||null,
@@ -2574,11 +2635,9 @@ async function saveForm() {
   if (veri.ihale_tipi === 'sadece_dizayn' && (veri.dizayn_yuzdesi||0) >= 100) {
     veri.durum = 'tamamlandi';
   }
-  // 2) M7 (sozlesme imza) VEYA M8 (imalat baslangic) gerceklesince
-  //    otomatik tamamlanir - hangisi once girilirse (iptal haric)
-  if ((veri.gercek_m7 || veri.gercek_m8) && veri.durum !== 'iptal') {
-    veri.durum = 'tamamlandi';
-  }
+  // NOT: eski "M7 veya M8 girilince tamamlandi" kurali kaldirildi.
+  // Durum artik durumTuret() ile son girilen tarihten belirleniyor:
+  // M7 -> Sozlesme Imza, M8 -> Tamamlandi.
 
   let error;
   if (editId) {
@@ -3324,17 +3383,8 @@ function xlOnizleme() {
   document.getElementById('csv-preview-area').style.display = 'block';
 }
 
-// Gerceklesen tarihlerden durum turet (Excel'de durum sutunu yok)
-function xlDurumTuret(g) {
-  const sira = ['m8','m7','m6','m5','m4','m3','m2','m1'];
-  const harita = { m1:'hazirlik', m2:'dizaydan_devir', m3:'satinalma_devir', m4:'firma_davet',
-                   m5:'degerlendirme', m6:'yonetim_onayi', m7:'sozlesme', m8:'aktif' };
-  for (const k of sira) if (g[k]) {
-    // M7 (sozlesme imza) veya M8 (imalat baslangic) gerceklestiyse surec kapanmistir
-    return (k === 'm7' || k === 'm8') ? 'tamamlandi' : harita[k];
-  }
-  return 'hazirlik';
-}
+// Excel okuyucusu da ayni kurali kullanir
+function xlDurumTuret(g) { return durumTuret(g); }
 function handleXlFile(e){const f=e.target.files[0];if(f)parseXlFile(f);}
 function handleXlDrop(e){e.preventDefault();document.getElementById('xl-drop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)parseXlFile(f);}
 
@@ -3391,7 +3441,7 @@ async function importCsv() {
       'Dosya: <strong>'+(XlVeri.dosya||'-')+'</strong><br>Proje: <strong>'+proje.proje_adi+'</strong></div>' +
     satir('var(--green)', '<strong>'+yeni+'</strong> yeni ihale eklenecek') +
     satir('var(--blue-l)', '<strong>'+guncellenecek+'</strong> ihale guncellenecek') +
-    (tamamlanacak    ? satir('var(--text3)', '<strong>'+tamamlanacak+'</strong> ihale "Tamamlandi" olarak isaretlenecek (M7 veya M8 gerceklesmis)') : '') +
+    (tamamlanacak    ? satir('var(--text3)', '<strong>'+tamamlanacak+'</strong> ihale "Tamamlandı" olarak işaretlenecek (M7 Sözleşme İmza veya M8 gerçekleşmiş)') : '') +
     (iptaldenDonecek ? satir('var(--green)', '<strong>'+iptaldenDonecek+'</strong> iptal edilmis ihale tekrar aktif olacak') : '') +
     (silinecekTarih  ? satir('var(--red)', '<strong>'+silinecekTarih+'</strong> ihalede panelde DOLU olan veri silinecek (Excel\'de bos)') : '') +
     (iptaleGidecek.length ? satir('var(--red)', '<strong>'+iptaleGidecek.length+'</strong> ihale IPTAL\'e tasinacak (Excel\'de yok)') : '') +
@@ -3677,6 +3727,67 @@ function parseTutar(s){if(!s)return 0;if(typeof s==='number')return s;const str=
 function onTutarInput(el){const c=el.value.replace(/[^0-9.,]/g,''),h=c.includes(',');if(h){const p=c.split(','),i=p[0].replace(/\./g,''),f=(p[1]||'').replace(/\./g,'').slice(0,2);el.value=i.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+f;}else{const i=c.replace(/\./g,'');if(!i){el.value='';return;}el.value=i.replace(/\B(?=(\d{3})+(?!\d))/g,'.');}}
 function set(id,val){const el=document.getElementById(id);if(el)el.textContent=val??'-';}
 function today(){return formatDateLocal(new Date());}
+
+// Bir tarihe gun ekle (YYYY-MM-DD -> YYYY-MM-DD)
+function addGun(tarih, gun){
+  if(!tarih || !gun) return tarih || '';
+  const d = new Date(tarih + 'T00:00:00');
+  d.setDate(d.getDate() + Number(gun));
+  return formatDateLocal(d);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MILESTONE SAHIPLIGI
+// Her gerceklesen tarihi yalnizca sorumlu birim girer. Admin hepsini girer.
+// M2 (Proje Yayin) santiye kabulu ile OTOMATIK olusur; elle degistirilemez.
+// ════════════════════════════════════════════════════════════════════
+const MS_LISTE = ['m1','m2','m3','m4','m5','m6','m7','m8'];
+const MS_SAHIP = {
+  m1: ['dizayn'],      // Tasarim kararlari
+  m2: [],              // Proje yayin — otomatik, sadece admin duzeltir
+  m3: ['satinalma'],   // Santiye talep (SAT)
+  m4: ['satinalma'],   // Ihale yayini
+  m5: ['satinalma'],   // Yonetime sunum
+  m6: ['satinalma'],   // Ihale karar
+  m7: ['satinalma'],   // Sozlesme imza
+  m8: ['santiye'],     // Imalat baslangic
+};
+function msYetkiliMi(m){
+  if (CRole === 'admin') return true;
+  return (MS_SAHIP[m] || []).indexOf(CRole) >= 0;
+}
+
+// Durum, GIRILEN SON milestone tarihine gore belirlenir.
+// 'bloke' ve 'iptal' elle isaretlenen durumlardir, bu kuralin disindadir.
+function durumTuret(g){
+  // Ihale sureci SOZLESME IMZA ile biter. M7 veya M8 girildiyse tamamlandi.
+  if (g.m8 || g.m7) return 'tamamlandi';
+  if (g.m6) return 'yonetim_onayi';
+  if (g.m5) return 'degerlendirme';
+  if (g.m4) return 'firma_davet';
+  if (g.m3) return 'satinalma_devir';
+  if (g.m2) return 'dizaydan_devir';
+  return 'hazirlik';
+}
+
+// Formdaki tarih kutularindan durumu canli hesaplayip secime yansitir
+function msDurumTazele(){
+  const g = {};
+  MS_LISTE.forEach(m => { const el = document.getElementById('f-gm-'+m); g[m] = el ? el.value : ''; });
+  const sel = document.getElementById('f-durum');
+  if (!sel) return;
+  if (sel.value === 'bloke' || sel.value === 'iptal') return;   // elle isaretlenmis
+  const yeni = durumTuret(g);
+  if ([...sel.options].some(o => o.value === yeni)) sel.value = yeni;
+}
+
+// HTML kacisi: veritabanindan gelen metinler innerHTML'e yazilirken
+// icindeki < > & " ' karakterleri etiket olarak yorumlanmasin.
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // Turkce tarih gosterimi: 2026-11-20 -> 20.11.2026
 // Yalnizca EKRANDA kullanilir; veritabanina ve <input type="date"> alanlarina
