@@ -82,24 +82,37 @@ table,.mono,.kpi-v,.pb-lbl,.dl,.range-val,.di-v{font-variant-numeric:tabular-num
 .login-footer{text-align:center;margin-top:20px;font-size:13px;color:var(--text3);}
 
 /* UST BAR — 60 px */
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;
-  display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:90;}
-.hd-left{display:flex;align-items:center;gap:16px;min-width:0;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;min-height:60px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:90;
+  flex-wrap:wrap;}
+.hd-left{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;padding:8px 0;}
 .logo{font-size:16px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text);white-space:nowrap;}
 .logo em{color:var(--blue);font-style:normal;}
 .hd{font-size:13px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border);white-space:nowrap;}
 /* Genel proje secici — panelin tamamini suruklen filtre */
-.proje-secici{display:flex;align-items:center;gap:8px;padding-left:16px;border-left:1px solid var(--border);}
+.proje-secici{display:flex;align-items:center;gap:8px;padding-left:12px;border-left:1px solid var(--border);}
+/* Ikincil filtreler (Bolum / Kategori) — proje kadar bas cekmesinler */
+#hdr-bolum,#hdr-kategori{height:36px;min-width:96px;font-size:14px;font-weight:500;color:var(--text);
+  background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:0 30px 0 10px;
+  cursor:pointer;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;}
+#hdr-bolum:hover,#hdr-kategori:hover{border-color:var(--border-strong);}
+/* Filtre aktifken belli olsun */
+#hdr-bolum.aktif,#hdr-kategori.aktif{border-color:var(--blue);color:var(--blue-l);font-weight:600;
+  box-shadow:0 0 0 3px var(--blue-glow);}
 .proje-secici label{font-size:12px;font-weight:500;color:var(--faint);text-transform:uppercase;
   letter-spacing:.06em;white-space:nowrap;}
-#hdr-proje{height:36px;min-width:240px;font-size:14px;font-weight:600;color:var(--text);
+#hdr-proje{height:36px;min-width:200px;font-size:14px;font-weight:600;color:var(--text);
   background:var(--surface);border:1px solid var(--blue);border-radius:6px;padding:0 32px 0 12px;
   box-shadow:0 0 0 3px var(--blue-glow);cursor:pointer;
   appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230043D1' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;}
 #hdr-proje:hover{border-color:var(--blue-hover);}
-.h-right{display:flex;align-items:center;gap:8px;}
+.h-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;}
+@media (max-width:1650px){#clk{display:none;}}
+@media (max-width:1450px){.hd{display:none;}}
 .live{display:inline-flex;align-items:center;gap:6px;background:var(--green-glow);border:1px solid #A7F3D0;
   border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--green);white-space:nowrap;}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
@@ -282,8 +295,11 @@ td strong{color:var(--text);font-weight:600;}
 .cb-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;}
 .cb{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:opacity .2s;}
 .cb:hover{opacity:.75;}
-.cb-lbl{font-size:12px;color:var(--text3);font-weight:500;text-align:center;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.cb-lbl{font-size:12px;color:var(--text3);font-weight:500;text-align:center;
+  max-width:100%;line-height:1.25;overflow-wrap:anywhere;}
+/* Durum dagiliminda 11 sutun var; cubuklar daralinca yazi kucululsun */
+#ch-durum{gap:5px;height:132px;}
+#ch-durum .cb-lbl{font-size:11px;}
 .cb-val{font-size:12px;color:var(--text);font-weight:600;}
 
 /* MODALLER */
@@ -476,6 +492,24 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
         <option value="">Tüm projeler</option>
       </select>
     </div>
+    <div class="proje-secici">
+      <label for="hdr-bolum">Bölüm</label>
+      <select id="hdr-bolum" onchange="genelFiltreDegisti()" title="İhale bölümüne göre filtreler">
+        <option value="">Tümü</option>
+        <option value="İNŞ">İNŞ</option>
+        <option value="ELK">ELK</option>
+        <option value="MEK">MEK</option>
+      </select>
+    </div>
+    <div class="proje-secici">
+      <label for="hdr-kategori">Kategori</label>
+      <select id="hdr-kategori" onchange="genelFiltreDegisti()" title="İhale kategorisine göre filtreler">
+        <option value="">Tümü</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+      </select>
+    </div>
   </div>
   <div class="h-right">
     <span id="clk" style="font-size:13px;color:var(--text3)"></span>
@@ -521,9 +555,14 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="kpi rd"><div class="kpi-lbl">Geciken / Bloke</div><div class="kpi-v rd" id="kv-gec">—</div><div class="kpi-sub">Aksiyon gerekli</div></div>
     <div class="kpi gn"><div class="kpi-lbl">Tamamlandı</div><div class="kpi-v gn" id="kv-arc">—</div><div class="kpi-sub">Tamamlanan + İptal</div></div>
   </div>
-  <div class="g2">
-    <div class="card"><div class="card-t"><div class="ct-dot" style="background:var(--gold)"></div>Proje bazlı dağılım</div><div class="chart" id="ch-proje"></div></div>
-    <div class="card"><div class="card-t"><div class="ct-dot" style="background:var(--blue-l)"></div>Durum dağılımı</div><div class="chart" id="ch-durum"></div></div>
+  <!-- Durum dagilimi 11 sutunlu; birim adlari sigsin diye tam genislikte -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-t"><div class="ct-dot" style="background:var(--blue-l)"></div>Durum dağılımı</div>
+    <div class="chart" id="ch-durum"></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-t"><div class="ct-dot" style="background:var(--gold)"></div>Proje bazlı dağılım</div>
+    <div class="chart" id="ch-proje"></div>
   </div>
   <div class="card"><div class="card-t"><div class="ct-dot" style="background:var(--green)"></div>Yaklaşan ihaleler</div><div id="son-list"></div></div>
 </div>
@@ -762,7 +801,9 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 
 <!-- AKSAKLIK -->
 <div class="view" id="view-aksaklik">
-  <div class="sh"><div class="st">Aksaklık paneli</div></div>
+  <div class="sh"><div class="st">Aksaklık paneli</div>
+    <div class="fr" id="ak-birim-secim"></div>
+  </div>
   <div id="ak-list"></div>
 </div>
 
@@ -994,7 +1035,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
       <div class="form-grid">
         <div class="fl"><label>M1 · Tasarım Kararları <span class="ms-sahip">Dizayn</span></label><input type="date" id="f-gm-m1" oninput="msDurumTazele()"></div>
         <div class="fl"><label>M2 · Proje Yayın <span class="ms-sahip">Şantiye kabulüyle otomatik</span></label><input type="date" id="f-gm-m2" oninput="msDurumTazele()"></div>
-        <div class="fl"><label>M3 · Şantiye Talep (SAT) <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m3" oninput="msDurumTazele()"><div class="calc" id="m3-hedef"></div></div>
+        <div class="fl"><label>M3 · Şantiye Talep (SAT) <span class="ms-sahip">Şantiye</span></label><input type="date" id="f-gm-m3" oninput="msDurumTazele()"><div class="calc" id="m3-hedef"></div></div>
         <div class="fl"><label>M4 · İhale Yayını <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m4" oninput="msDurumTazele()"></div>
         <div class="fl"><label>M5 · Yönetime Sunum <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m5" oninput="msDurumTazele()"></div>
         <div class="fl"><label>M6 · İhale Karar <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m6" oninput="msDurumTazele()"></div>
@@ -1049,6 +1090,28 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 <div class="overlay" id="ov-confirm">
 <div class="modal" style="width:380px">
   <div class="modal-hd"><div><div class="modal-title">Onay Gerekiyor</div></div>
+
+<!-- SANTIYE IADE (RED) MODALI: cok satirli, gecmis saklanir -->
+<div class="overlay" id="ov-red">
+<div class="modal" style="width:560px">
+  <div class="modal-hd">
+    <div><div class="modal-title" style="color:var(--red)">Dizaynı eksik bul / iade et</div>
+    <div class="modal-sub" id="red-sub"></div></div>
+    <button class="close-btn" onclick="closeOv('ov-red')">✕</button>
+  </div>
+  <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+    <div id="red-gecmis"></div>
+    <div class="fl"><label>İade nedeni * (eksikleri madde madde yazabilirsiniz)</label>
+      <textarea id="red-neden" rows="10" placeholder="Örn:&#10;1) B blok kalıp planı revize edilmemiş&#10;2) Donatı detayları eksik&#10;3) Metraj tablosu güncel değil…"></textarea></div>
+    <div style="font-size:13px;color:var(--faint);margin-top:6px">
+      Bu iade, tarih ve adınızla kaydedilir. Önceki iadeler silinmez, geçmiş olarak saklanır.
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeOv('ov-red')">Vazgeç</button>
+    <button class="btn btn-danger" onclick="santiyeRedOnayla()">İade et</button>
+  </div>
+</div></div>
 
 <!-- IPTAL MODALI: neden zorunlu, silinemez -->
 <div class="overlay" id="ov-iptal">
@@ -1311,9 +1374,36 @@ function projeDegisti() {
   tumSekmeleriCiz();
 }
 
-// Aktif filtreye gore satirlari suz. Arsiv kayitlari da proje_id tasir.
+// Ust bardaki diger genel filtreler. Bos = tumu.
+let AktifBolum = '', AktifKategori = '';
+
+function genelFiltreDegisti() {
+  const b = document.getElementById('hdr-bolum');
+  const k = document.getElementById('hdr-kategori');
+  AktifBolum    = b?.value || '';
+  AktifKategori = k?.value || '';
+  // Secili filtreyi gorsel olarak belli et
+  if (b) b.classList.toggle('aktif', !!AktifBolum);
+  if (k) k.classList.toggle('aktif', !!AktifKategori);
+  tumSekmeleriCiz();
+}
+
+// Kategori metnini tek harfe indirger: "A KATEGORİ" -> "A"
+function katHarf(v) {
+  const t = String(v || '').trim().toUpperCase();
+  return t ? t.charAt(0) : '';
+}
+
+// Aktif filtrelere gore satirlari suz: proje + bolum + kategori.
+// Panelin butun sayfalari bu tek fonksiyondan geciyor.
+// Bolum/kategori bos olan kayitlar, o filtre seciliyken listede cikmaz.
+// "Tümü" secildiginde hepsi gorunur.
 function projeFiltre(rows) {
-  return AktifProje ? rows.filter(r => r.proje_id === AktifProje) : rows;
+  let r = rows;
+  if (AktifProje)    r = r.filter(x => x.proje_id === AktifProje);
+  if (AktifBolum)    r = r.filter(x => String(x.ihale_bolumu || '').toUpperCase() === AktifBolum);
+  if (AktifKategori) r = r.filter(x => katHarf(x.ihale_kategori) === AktifKategori);
+  return r;
 }
 
 // Acik olan sekme hangisi olursa olsun hepsini guncelle.
@@ -1680,6 +1770,12 @@ async function loadIhaleler() {
       santiye:     i.santiye_yuzdesi||0,
       gecikme:     0,
     };
+    // KURAL: Ihale yayini (M4) veya sonrasi gerceklesmisse dizayn
+    // ilerlemesi tanim geregi %100'dur. Excel'de bos gelse bile boyle
+    // gosterilir ve disa aktarimda 100 olarak yazilir.
+    if (row._gm4 || row._gm5 || row._gm6 || row._gm7 || row._gm8) {
+      row.dizayn_yuz = 100; row.dizayn = 100;
+    }
     // Tarih zinciri hesapla
     const hesap = hesaplaIhaleTarihleriV2(row);
     row._plan   = hesap.plan;   // planlanan tarihler (salt is_prog'dan)
@@ -1861,7 +1957,9 @@ async function loadArchive() {
     arsivTarihi: (i.iptal_tarihi||i.guncelleme?.split('T')[0])||'',
     tutar: i.sozlesme_bedeli||'',
     yuklenici: i.yuklenci_firma||'',
-    proje_id: i.proje_id,   // genel proje filtresi icin
+    proje_id: i.proje_id,             // genel proje filtresi icin
+    ihale_kategori: i.ihale_kategori || '',   // genel kategori filtresi icin
+    ihale_bolumu:   i.ihale_bolumu   || '',   // genel bolum filtresi icin
     _id: i.id
   }));
 }
@@ -1936,15 +2034,20 @@ function rCharts() {
     const h=Math.max((v/maxP)*78,4), short=p.replace('Folkart ','').substring(0,10);
     return `<div class="cb-wrap"><div class="cb-val">${v}</div><div class="cb" style="height:${h}px;background:${clrs[i%clrs.length]}"></div><div class="cb-lbl">${short}</div></div>`;
   }).join('');
-  // Durum renkleri: rozet sozlugu ile ayni anlami tasir
-  const dc={},dc_c={hazirlik:'var(--neutral)',dizaydan_devir:'var(--s1)',satinalma_devir:'var(--s1)',
-    firma_davet:'var(--s1)',degerlendirme:'var(--s4)',yonetim_onayi:'var(--s4)',sozlesme:'var(--s2)',
-    aktif:'var(--s2)',tamamlandi:'var(--green)',bloke:'var(--red)',iptal:'var(--red)'};
-  rows.forEach(i=>dc[i.durum]=(dc[i.durum]||0)+1);
-  const maxD=Math.max(...Object.values(dc),1);
-  document.getElementById('ch-durum').innerHTML=Object.entries(dc).map(([d,v])=>{
-    const h=Math.max((v/maxD)*78,4);
-    return `<div class="cb-wrap"><div class="cb-val">${v}</div><div class="cb" style="height:${h}px;background:${dc_c[d]||'var(--s5)'}"></div><div class="cb-lbl" style="font-size:12px">${DM[d]?.l?.split(' ')[0]||d}</div></div>`;
+  // Durum dagilimi: SIRA SABIT — M1'den M8'e, sonra kapanis durumlari.
+  // Sayisi sifir olanlar da yerini korur ki sutunlar kaymasin.
+  const dc = {};
+  rows.forEach(i => dc[i.durum] = (dc[i.durum] || 0) + 1);
+  const maxD = Math.max(...Object.values(dc), 1);
+  document.getElementById('ch-durum').innerHTML = DURUM_SIRA.map(d => {
+    const v = dc[d.k] || 0;
+    const h = Math.max((v / maxD) * 78, 3);
+    return '<div class="cb-wrap">' +
+      '<div class="cb-val">' + v + '</div>' +
+      '<div class="cb" style="height:' + h + 'px;background:' + d.renk + (v ? '' : ';opacity:.25') + '"></div>' +
+      '<div class="cb-lbl" style="font-size:12px">' + d.kisa + '</div>' +
+      '<div class="cb-lbl" style="font-size:11px;color:var(--faint)">' + d.birim + '</div>' +
+      '</div>';
   }).join('');
 }
 
@@ -1987,8 +2090,9 @@ function rSonList() {
 function rHavuz() {
   const fd=document.getElementById('fd').value, fg=document.getElementById('fg').value, fs=document.getElementById('fs').value.toLowerCase();
 
-  const rows=SbData.filter(i => {
-    const projMatch = !AktifProje || i.proje_id === AktifProje;
+  // Proje / bolum / kategori suzgeci ortak fonksiyondan gecer,
+  // sayfaya ozel olanlar (durum, gecikme, arama) burada uygulanir.
+  const rows=projeFiltre(SbData).filter(i => {
     const durumMatch = !fd || i.durum === fd;
     const searchMatch = !fs || i.paket.toLowerCase().includes(fs) || i.id.toLowerCase().includes(fs);
     
@@ -1999,7 +2103,7 @@ function rHavuz() {
       delayMatch = !i.gecikme || i.gecikme <= 0;
     }
     
-    return projMatch && durumMatch && searchMatch && delayMatch;
+    return durumMatch && searchMatch && delayMatch;
   });
 
   document.getElementById('tb-havuz').innerHTML=rows.length?rows.map(i=>{
@@ -2214,7 +2318,7 @@ function rSantiye() {
     }
 
     const redNot = (od === 'red' && i.santiye_red_nedeni)
-      ? `<div style="font-size:13px;color:var(--red);margin-top:3px">İade nedeni: ${i.santiye_red_nedeni}</div>` : '';
+      ? `<div style="font-size:13px;color:var(--red);margin-top:3px;white-space:pre-wrap">Son iade${redAdet(i)>1?' ('+redAdet(i)+' iade)':''}: ${esc(redSon(i))}</div>` : '';
 
     return `
       <tr>
@@ -2271,14 +2375,50 @@ async function santiyeKabul(id) {
   await loadIhaleler(); renderAll(); rSantiye(); rHavuz();
 }
 
-async function santiyeRed(id) {
+// ── Santiye iade (red) gecmisi ──
+// Tum iadeler tek metin alaninda saklanir; kayitlar "---" satiriyla ayrilir.
+// Her kayit: [GG.AA.YYYY - Ad Soyad (rol)]: serbest metin (cok satirli olabilir)
+const RED_AYRAC = '\n---\n';
+function redKayitlari(i) {
+  const t = String((i && i.santiye_red_nedeni) || '').trim();
+  return t ? t.split(/\n-{3,}\n/).map(x => x.trim()).filter(Boolean) : [];
+}
+function redAdet(i) { return redKayitlari(i).length; }
+function redSon(i)  { const k = redKayitlari(i); return k.length ? k[k.length - 1] : '-'; }
+
+let redHedefId = null;
+function santiyeRed(id) {
   if (CRole !== 'admin' && CRole !== 'santiye') { toast('Şantiye yetkisi gerekli', 'err'); return; }
-  const neden = prompt('Dizaynı eksik bulma / iade nedeni (zorunlu):');
-  if (neden === null) return;
-  if (!neden.trim()) { toast('İade nedeni zorunlu', 'err'); return; }
-  const upd = { santiye_onay_durum: 'red', santiye_red_nedeni: neden.trim(), dizayn_santiyeye_gonderildi: false };
-  const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  redHedefId = id;
+  document.getElementById('red-sub').textContent = it.paket + ' (' + it.id + ')';
+  document.getElementById('red-neden').value = '';
+  const gecmisEl = document.getElementById('red-gecmis');
+  const kayitlar = redKayitlari(it);
+  gecmisEl.innerHTML = kayitlar.length
+    ? '<div style="font-size:13px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Önceki iadeler (' + kayitlar.length + ')</div>' +
+      kayitlar.map(k => '<div style="background:var(--surface2);border-radius:5px;padding:9px 11px;font-size:13px;margin-bottom:6px;white-space:pre-wrap">' + esc(k) + '</div>').join('')
+    : '';
+  openOv('ov-red');
+}
+
+async function santiyeRedOnayla() {
+  const metin = document.getElementById('red-neden').value.trim();
+  if (!metin) { toast('İade nedeni zorunlu', 'err'); return; }
+  if (!redHedefId) return;
+  const it = SbData.find(x => x._id === redHedefId);
+  const kim = (await sb.from('kullanici_profilleri').select('ad_soyad,rol').eq('id', CU.id).single()).data;
+  const basi = '[' + new Date().toLocaleDateString('tr-TR') + ' - ' + (kim?.ad_soyad || CU.email) + ' (' + (kim?.rol || '') + ')]: ';
+  const eski = String((it && it.santiye_red_nedeni) || '').trim();
+  const yeni = eski ? eski + RED_AYRAC + basi + metin : basi + metin;
+  const { error } = await sb.from('ihaleler').update({
+    santiye_onay_durum: 'red',
+    santiye_red_nedeni: yeni,
+    dizayn_santiyeye_gonderildi: false,
+  }).eq('id', redHedefId);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  closeOv('ov-red'); redHedefId = null;
   toast('Dizayn eksik olarak iade edildi', 'ok');
   await loadIhaleler(); renderAll(); rSantiye(); rHavuz();
 }
@@ -2303,25 +2443,52 @@ async function santiyeTalepGir(id) {
   await loadIhaleler(); renderAll(); rSantiye(); rHavuz();
 }
 
+// Aksakliklar sayfasindaki birim sekmesi. '' = tum birimler.
+let AkBirim = '';
+function akBirimSec(b) { AkBirim = b; rAksaklik(); }
+
 function rAksaklik() {
-  // Tamamlanan ve iptal edilen paketler aksaklik sayilmaz
+  // Tamamlanan ve iptal edilen paketler aksaklik sayilmaz.
+  // Ust bardaki proje/bolum/kategori filtreleri burada da gecerli.
   const acikPaketler = projeFiltre(SbData).filter(i => !['tamamlandi','iptal'].includes(i.durum));
-  const bloke = acikPaketler.filter(i => i.durum === 'bloke');
-  const gecikmeli = acikPaketler.filter(i => i.gecikme && i.gecikme > 0 && i.durum !== 'bloke');
-  // Şantiyenin eksik bulup iade ettiği (red) dizayn paketleri de bir aksaklıktır
-  const dizaynRed = acikPaketler.filter(i => i.santiye_onay_durum === 'red');
+
+  // Once TUM aksakliklari bul, sonra birim sekmesine gore suz.
+  const tumBloke     = acikPaketler.filter(i => i.durum === 'bloke');
+  const tumGecikmeli = acikPaketler.filter(i => i.gecikme && i.gecikme > 0 && i.durum !== 'bloke');
+  const tumRed       = acikPaketler.filter(i => i.santiye_onay_durum === 'red');
+
+  // Birim sekmeleri — her sekmede kac aksaklik oldugu rozette yazar
+  const BIRIMLER = ['Dizayn','Şantiye','Satınalma'];
+  const say = b => [...tumBloke, ...tumGecikmeli, ...tumRed].filter(i => sorumluBirim(i) === b).length;
+  const secimEl = document.getElementById('ak-birim-secim');
+  if (secimEl) {
+    const dugme = (deger, etiket, adet) =>
+      '<button class="btn ' + (AkBirim === deger ? 'btn-primary' : 'btn-ghost') + ' btn-sm" ' +
+      'onclick="akBirimSec(\'' + deger + '\')">' + etiket +
+      ' <span style="opacity:.75">' + adet + '</span></button>';
+    secimEl.innerHTML =
+      dugme('', 'Tüm birimler', tumBloke.length + tumGecikmeli.length + tumRed.length) +
+      BIRIMLER.map(b => dugme(b, b, say(b))).join('');
+  }
+
+  const suz = list => AkBirim ? list.filter(i => sorumluBirim(i) === AkBirim) : list;
+  const bloke     = suz(tumBloke);
+  const gecikmeli = suz(tumGecikmeli);
+  const dizaynRed = suz(tumRed);
 
   let html = '';
   if (!bloke.length && !gecikmeli.length && !dizaynRed.length) {
-    html = '<div class="empty" style="padding:60px">✅ Şu an aktif aksaklık bulunmuyor</div>';
+    html = '<div class="empty" style="padding:60px">✅ ' +
+           (AkBirim ? AkBirim + ' biriminde aktif aksaklık bulunmuyor' : 'Şu an aktif aksaklık bulunmuyor') +
+           '</div>';
   }
 
   bloke.forEach(i => {
-    html += `<div class="ak-item" onclick="openDetail('${i._id}')"><div class="ak-title">🔴 [BLOKE] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id}</div><div class="ak-meta"><span>Bloke: <strong style="color:var(--red)">${i.bloken}</strong></span><span>Plan: ${fmtTarih(i.acilis)}</span></div>${i.aciklama?`<div style="font-size:13px;color:var(--text2);margin-top:7px">${i.aciklama}</div>`:''}</div>`;
+    html += `<div class="ak-item" onclick="openDetail('${i._id}')"><div class="ak-title">🔴 [BLOKE] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id}</div><div class="ak-meta"><span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span><span>Bloke: <strong style="color:var(--red)">${i.bloken}</strong></span><span>Plan: ${fmtTarih(i.acilis)}</span></div>${i.aciklama?`<div style="font-size:13px;color:var(--text2);margin-top:7px">${i.aciklama}</div>`:''}</div>`;
   });
 
   gecikmeli.forEach(i => {
-    html += `<div class="ak-item warn" onclick="openDetail('${i._id}')"><div class="ak-title">⚠️ [GECİKME] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id} · ${chip(i.durum)}</div><div class="ak-meta"><span>Net Gecikme: <strong style="color:var(--yellow)">+${i.gecikme}g</strong></span></div></div>`;
+    html += `<div class="ak-item warn" onclick="openDetail('${i._id}')"><div class="ak-title">⚠️ [GECİKME] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id} · ${chip(i.durum)}</div><div class="ak-meta"><span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span><span>Net gecikme: <strong style="color:var(--yellow)">+${i.gecikme}g</strong></span></div></div>`;
   });
 
   dizaynRed.forEach(i => {
@@ -2329,14 +2496,15 @@ function rAksaklik() {
       <div class="ak-item" style="border-left-color: var(--red);" onclick="openDetail('${i._id}')">
         <div class="ak-title" style="color: var(--red);">🚫 [DİZAYN İADE — ŞANTİYE EKSİK BULDU] ${i.paket}</div>
         <div class="ak-sub">${i.proje} · ${i.id}</div>
-        <div class="ak-meta"><span>İade nedeni: <strong style="color:var(--red)">${i.santiye_red_nedeni || '-'}</strong></span></div>
+        <div class="ak-meta"><span>Sorumlu: <strong>Dizayn</strong></span><span>İade sayısı: <strong>${redAdet(i)}</strong></span></div>
+        <div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(redSon(i))}</div>
       </div>`;
   });
 
   document.getElementById('ak-list').innerHTML = html;
 
-  // Aksaklık rozet sayısı
-  const totalAksak = bloke.length + gecikmeli.length + dizaynRed.length;
+  // Sekme rozeti her zaman TUM aksakliklari sayar (secili birime bagli degil)
+  const totalAksak = tumBloke.length + tumGecikmeli.length + tumRed.length;
   const badge = document.getElementById('nb-aksak');
   if (badge) badge.textContent = totalAksak;
 }
@@ -2873,9 +3041,25 @@ function openDetail(id, fromArchive) {
       '</div></div>';
   }
 
+  // ── Santiye iade gecmisi ──
+  let redHtml = '';
+  const redler = redKayitlari(i);
+  if (redler.length) {
+    redHtml = '<div style="margin-top:14px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Şantiye iade geçmişi (' + redler.length + ')</div>' +
+      redler.map(k => {
+        const m = String(k).match(/^\[([^\]]+)\]:\s*([\s\S]*)$/);
+        return '<div style="background:var(--surface2);border-left:2px solid var(--red);border-radius:5px;padding:9px 12px;margin-bottom:6px">' +
+          (m ? '<div style="font-size:12px;color:var(--faint);margin-bottom:4px">' + esc(m[1]) + '</div>' +
+               '<div style="font-size:14px;white-space:pre-wrap">' + esc(m[2]) + '</div>'
+             : '<div style="font-size:14px;white-space:pre-wrap">' + esc(k) + '</div>') +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
   document.getElementById('det-body').innerHTML = kartlar +
     '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">M1-M8 Surec Zaman Cizelgesi</div>' +
-    '<div class="tl">' + tlHtml + '</div>' + notHtml;
+    '<div class="tl">' + tlHtml + '</div>' + redHtml + notHtml;
 
   document.getElementById('det-ft').innerHTML = fromArchive
     ? `<button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`
@@ -3699,6 +3883,33 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 // ════════════════════════════════════════════
 // YARDIMCI FONKSİYONLAR
 // ════════════════════════════════════════════
+// Ozet grafiginde durum sutunlarinin SABIT sirasi ve sorumlu birimleri.
+// Birim eslemesi: M1-M2 Dizayn, M3 ve M8 Santiye, M4-M7 Satinalma.
+const DURUM_SIRA = [
+  { k:'hazirlik',        kisa:'M1',         birim:'Dizayn',    renk:'var(--neutral)' },
+  { k:'dizaydan_devir',  kisa:'M2',         birim:'Dizayn',    renk:'var(--s1)' },
+  { k:'satinalma_devir', kisa:'M3',         birim:'Şantiye',   renk:'var(--s1)' },
+  { k:'firma_davet',     kisa:'M4',         birim:'Satınalma', renk:'var(--s1)' },
+  { k:'degerlendirme',   kisa:'M5',         birim:'Satınalma', renk:'var(--s4)' },
+  { k:'yonetim_onayi',   kisa:'M6',         birim:'Satınalma', renk:'var(--s4)' },
+  { k:'sozlesme',        kisa:'M7',         birim:'Satınalma', renk:'var(--s2)' },
+  { k:'aktif',           kisa:'M8',         birim:'Şantiye',   renk:'var(--s2)' },
+  { k:'tamamlandi',      kisa:'Tamamlandı', birim:'—',         renk:'var(--green)' },
+  { k:'bloke',           kisa:'Bloke',      birim:'—',         renk:'var(--red)' },
+  { k:'iptal',           kisa:'İptal',      birim:'—',         renk:'var(--red)' },
+];
+
+// Bir ihalenin AKTIF (ilk tamamlanmamis) milestone'una gore sorumlu birimi.
+// Aksakliklar sayfasindaki birim filtresi bunu kullanir.
+const MS_BIRIM = { m1:'Dizayn', m2:'Dizayn', m3:'Şantiye', m4:'Satınalma',
+                   m5:'Satınalma', m6:'Satınalma', m7:'Satınalma', m8:'Şantiye' };
+function sorumluBirim(i) {
+  // Santiyenin iade ettigi paket her halukarda dizaynin isidir
+  if (i.santiye_onay_durum === 'red') return 'Dizayn';
+  for (const m of MS_LISTE) if (!i['_g'+m]) return MS_BIRIM[m];
+  return 'Şantiye';
+}
+
 const DM={
   hazirlik:{l:'M1-Tasarim Kararlari'}, dizaydan_devir:{l:'M2-Proje Yayin'}, satinalma_devir:{l:'M3-Talep (SAT)'},
   firma_davet:{l:'M4-Ihale Yayini'}, degerlendirme:{l:'M5-Yonetime Sunum'}, yonetim_onayi:{l:'M6-Ihale Karar'},
@@ -3745,7 +3956,8 @@ const MS_LISTE = ['m1','m2','m3','m4','m5','m6','m7','m8'];
 const MS_SAHIP = {
   m1: ['dizayn'],      // Tasarim kararlari
   m2: [],              // Proje yayin — otomatik, sadece admin duzeltir
-  m3: ['satinalma'],   // Santiye talep (SAT)
+  m3: ['santiye','satinalma'],  // Santiye talep (SAT) — sorumlu santiye,
+                                // satinalma da duzeltebilir
   m4: ['satinalma'],   // Ihale yayini
   m5: ['satinalma'],   // Yonetime sunum
   m6: ['satinalma'],   // Ihale karar
