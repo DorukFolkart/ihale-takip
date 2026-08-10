@@ -2137,9 +2137,11 @@ function rHavuz() {
     return durumMatch && searchMatch && delayMatch;
   });
 
-  // Siralama: mevcut durumun PLANLANAN tarihi, en yakin en ustte.
-  // Tarihi olmayan kayitlar en sona.
-  rows.sort((a, b) => tarihSirali(durumPlanTarihi(a), durumPlanTarihi(b)));
+  // Siralama: once acik ihaleler, sonra kapanmis olanlar (tamamlandi/iptal).
+  // Her grup icinde mevcut durumun PLANLANAN tarihine gore artan;
+  // tarihi olmayan kayitlar grubun sonunda.
+  const kapali = i => ['tamamlandi','iptal'].includes(i.durum) ? 1 : 0;
+  rows.sort((a, b) => (kapali(a) - kapali(b)) || tarihSirali(durumPlanTarihi(a), durumPlanTarihi(b)));
 
   document.getElementById('tb-havuz').innerHTML=rows.length?rows.map(i=>{
     const ms = getAktifMilestoneBilgi(i);
