@@ -582,14 +582,14 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="fr">
       <select id="fd" onchange="rHavuz()">
         <option value="">Tüm durumlar</option>
-        <option value="hazirlik">M1 - Tasarim</option>
+        <option value="hazirlik">M1 · Tasarım Kararları</option>
         <option value="dizaydan_devir">M2 - Proje Yayin</option>
-        <option value="satinalma_devir">M3 - Talep</option>
+        <option value="satinalma_devir">M3 · Talep (SAT)</option>
         <option value="firma_davet">M4 - Ihale Yayini</option>
         <option value="degerlendirme">M5 - Sunum</option>
         <option value="yonetim_onayi">M6 - Karar</option>
-        <option value="sozlesme">M7 - Sozlesme</option>
-        <option value="aktif">M8 - Imalat</option>
+        <option value="sozlesme">M7 · Sözleşme İmza</option>
+        <option value="aktif">M8 · İmalat Başlangıç</option>
         <option value="bloke">Bloke</option>
         <option disabled>──────</option>
         <option value="geciken">⚠ Geciken</option>
@@ -632,12 +632,13 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
       <table>
         <thead>
           <tr>
+            <th>İhale No</th>
             <th>Paket</th>
-            <th>Proje</th>
             <th>Durum</th>
-            <th>Başlangıç Tarihi</th>
-            <th>Hedef Tarih</th>
-            <th>Kalan Gün</th>
+            <th>Gerçekleşen talep tarihi</th>
+            <th>Hedeflenen tarih</th>
+            <th>Hedeflenen imalat başlangıcı</th>
+            <th>Kalan</th>
             <th>İşlem</th>
           </tr>
         </thead>
@@ -1102,9 +1103,66 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   <div class="modal-ft"><button class="btn btn-ghost" onclick="closeOv('ov-csv')">İptal</button><button class="btn btn-primary" onclick="importCsv()">⬆ İçe Aktar</button></div>
 </div></div>
 
+<!-- ONAY MODALI -->
+<!-- DIKKAT: Her overlay <body> altinda AYRI kardes olmali. Ic ice girerse
+     dis overlay display:none oldugu icin ic overlay 'on' olsa bile
+     gorunmez. (Eskiden ov-iptal bu modalin basligi icinde kalmisti.) -->
 <div class="overlay" id="ov-confirm">
 <div class="modal" style="width:380px">
-  <div class="modal-hd"><div><div class="modal-title">Onay Gerekiyor</div></div>
+  <div class="modal-hd">
+    <div><div class="modal-title">Onay gerekiyor</div></div>
+    <button class="close-btn" onclick="closeOv('ov-confirm')">✕</button>
+  </div>
+  <div class="modal-body"><div id="confirm-msg" style="font-size:14px;color:var(--text2);line-height:1.6"></div></div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeOv('ov-confirm')">İptal</button>
+    <button class="btn btn-danger" id="confirm-ok">Evet, Sil</button>
+  </div>
+</div></div>
+
+<!-- IHALE IPTAL MODALI: neden zorunlu, silinemez -->
+<div class="overlay" id="ov-iptal">
+<div class="modal" style="width:460px">
+  <div class="modal-hd">
+    <div><div class="modal-title" style="color:var(--red)">İhaleyi iptal et</div>
+    <div class="modal-sub" id="iptal-sub"></div></div>
+    <button class="close-btn" onclick="closeOv('ov-iptal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="background:var(--red-glow);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:10px 14px;font-size:14px;color:var(--red);margin-bottom:14px">
+      İptal edilen paket "Tamamlananlar" listesine iptal ibaresiyle taşınır. Bu işlem geri alınamaz ve iptal nedeni silinemez.
+    </div>
+    <div class="fl"><label>İptal nedeni * (zorunlu)</label>
+      <textarea id="iptal-neden" rows="4" placeholder="İptal gerekçesini yazın…"></textarea></div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeOv('ov-iptal')">Vazgeç</button>
+    <button class="btn btn-danger" onclick="iptalOnayla()">İptal et</button>
+  </div>
+</div></div>
+
+<!-- SATINALMA -> SANTIYE TALEP IADE MODALI -->
+<div class="overlay" id="ov-talep-red">
+<div class="modal" style="width:560px">
+  <div class="modal-hd">
+    <div><div class="modal-title" style="color:var(--red)">Talebi eksik bul / şantiyeye iade et</div>
+    <div class="modal-sub" id="trd-sub"></div></div>
+    <button class="close-btn" onclick="closeOv('ov-talep-red')">✕</button>
+  </div>
+  <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+    <div style="background:var(--gold-glow);border:1px solid rgba(242,165,22,.3);border-radius:5px;padding:10px 14px;font-size:13px;color:var(--text2);margin-bottom:14px" id="trd-bilgi"></div>
+    <div id="trd-gecmis"></div>
+    <div class="fl"><label>İade nedeni * (eksikleri madde madde yazabilirsiniz)</label>
+      <textarea id="trd-neden" rows="10" placeholder="Örn:&#10;1) Metraj listesi eksik&#10;2) Teknik şartname ekli değil&#10;3) Termin tarihi belirtilmemiş…"></textarea></div>
+    <div style="font-size:13px;color:var(--faint);margin-top:6px">
+      Bu iade, tarih ve adınızla kaydedilir. Önceki iadeler silinmez, geçmiş olarak saklanır.
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeOv('ov-talep-red')">Vazgeç</button>
+    <button class="btn btn-danger" onclick="talepRedOnayla()">Şantiyeye iade et</button>
+  </div>
+</div></div>
 
 <!-- SANTIYE IADE (RED) MODALI: cok satirli, gecmis saklanir -->
 <div class="overlay" id="ov-red">
@@ -1126,26 +1184,6 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <button class="btn btn-ghost" onclick="closeOv('ov-red')">Vazgeç</button>
     <button class="btn btn-danger" onclick="santiyeRedOnayla()">İade et</button>
   </div>
-</div></div>
-
-<!-- IPTAL MODALI: neden zorunlu, silinemez -->
-<div class="overlay" id="ov-iptal">
-<div class="modal" style="width:460px">
-  <div class="modal-hd"><div><div class="modal-title" style="color:var(--red)">İhaleyi İptal Et</div><div class="modal-sub" id="iptal-sub"></div></div><button class="close-btn" onclick="closeOv('ov-iptal')">✕</button></div>
-  <div class="modal-body">
-    <div style="background:var(--red-glow);border:1px solid rgba(224,82,82,.3);border-radius:5px;padding:10px 14px;font-size:14px;color:var(--red);margin-bottom:14px">
-      İptal edilen paket "Tamamlananlar" listesine iptal ibaresiyle taşınır. Bu işlem geri alınamaz ve iptal nedeni silinemez.
-    </div>
-    <div class="fl"><label>İptal Nedeni * (zorunlu)</label>
-      <textarea id="iptal-neden" rows="3" placeholder="İptal gerekçesini yazın…"></textarea></div>
-  </div>
-  <div class="modal-ft">
-    <button class="btn btn-ghost" onclick="closeOv('ov-iptal')">Vazgeç</button>
-    <button class="btn btn-danger" onclick="iptalOnayla()">İptal Et</button>
-  </div>
-</div></div><button class="close-btn" onclick="closeOv('ov-confirm')">✕</button></div>
-  <div class="modal-body"><div id="confirm-msg" style="font-size:14px;color:var(--text2);line-height:1.6"></div></div>
-  <div class="modal-ft"><button class="btn btn-ghost" onclick="closeOv('ov-confirm')">İptal</button><button class="btn btn-danger" id="confirm-ok">Evet, Sil</button></div>
 </div></div>
 
 <!-- PROJE EKLEME MODALI -->
@@ -1323,14 +1361,14 @@ function getAktifMilestoneBilgi(i) {
   if (!plan || !kaym) return { ad: '-', hedef: '', gun: 0, html: '<span class="mono">-</span>' };
   
   const milestones = [
-    { key: 'm1', ad: 'M1-Tasarim Kararlari', planKey: 'm1_tasarim', gercek: i._gm1 },
-    { key: 'm2', ad: 'M2-Proje Yayin', planKey: 'm2_proje_yayin', gercek: i._gm2 },
-    { key: 'm3', ad: 'M3-Talep (SAT)', planKey: 'm3_talep', gercek: i._gm3 },
-    { key: 'm4', ad: 'M4-Ihale Yayini', planKey: 'm4_ihale_yayin', gercek: i._gm4 },
-    { key: 'm5', ad: 'M5-Yonetime Sunum', planKey: 'm5_yonetim_sunum', gercek: i._gm5 },
-    { key: 'm6', ad: 'M6-Ihale Karar', planKey: 'm6_ihale_karar', gercek: i._gm6 },
-    { key: 'm7', ad: 'M7-Sozlesme Imza', planKey: 'm7_sozlesme_imza', gercek: i._gm7 },
-    { key: 'm8', ad: 'M8-Imalat Baslangic', planKey: 'm8_imalat_baslangic', gercek: i._gm8 }
+    { key:'m1', ad:'M1 · Tasarım Kararları', planKey:'m1_tasarim',          gercek:i._gm1 },
+    { key:'m2', ad:'M2 · Proje Yayın',       planKey:'m2_proje_yayin',      gercek:i._gm2 },
+    { key:'m3', ad:'M3 · Talep (SAT)',       planKey:'m3_talep',            gercek:i._gm3 },
+    { key:'m4', ad:'M4 · İhale Yayını',      planKey:'m4_ihale_yayin',      gercek:i._gm4 },
+    { key:'m5', ad:'M5 · Yönetime Sunum',    planKey:'m5_yonetim_sunum',    gercek:i._gm5 },
+    { key:'m6', ad:'M6 · İhale Karar',       planKey:'m6_ihale_karar',      gercek:i._gm6 },
+    { key:'m7', ad:'M7 · Sözleşme İmza',     planKey:'m7_sozlesme_imza',    gercek:i._gm7 },
+    { key:'m8', ad:'M8 · İmalat Başlangıç',  planKey:'m8_imalat_baslangic', gercek:i._gm8 }
   ];
 
   // Find the first milestone that is NOT completed
@@ -1781,6 +1819,9 @@ async function loadIhaleler() {
       santiye_red_nedeni:          i.santiye_red_nedeni || null,
       santiye_onay_tarihi:         i.santiye_onay_tarihi || null,
       talep_giris_tarihi:          i.talep_giris_tarihi || null,
+      // satinalma -> santiye talep iadesi
+      talep_onay_durum:            i.talep_onay_durum  || null,   // null | 'red'
+      talep_red_nedeni:            i.talep_red_nedeni  || null,
       // eski uyumluluk
       dizayn:      i.dizayn_yuzdesi||0,
       santiye:     i.santiye_yuzdesi||0,
@@ -1859,14 +1900,14 @@ function hesaplaIhaleTarihleriV2(ihale) {
   //      sonraki aşama -10 (hızlandı) görünür, NET toplam +5 olur.
   // ════════════════════════════════════════════
   const seq = [
-    { key:'m1', planKey:'m1_tasarim',          gercek: ihale._gm1, ad:'M1 - Tasarim Kararlari', birim:'Dizayn' },
-    { key:'m2', planKey:'m2_proje_yayin',      gercek: ihale._gm2, ad:'M2 - Proje Yayin',       birim:'Dizayn' },
-    { key:'m3', planKey:'m3_talep',            gercek: ihale._gm3, ad:'M3 - Talep (Santiye)',   birim:'Santiye' },
-    { key:'m4', planKey:'m4_ihale_yayin',      gercek: ihale._gm4, ad:'M4 - Ihale Yayini',      birim:'Satinalma' },
-    { key:'m5', planKey:'m5_yonetim_sunum',    gercek: ihale._gm5, ad:'M5 - Yonetime Sunum',    birim:'Satinalma' },
-    { key:'m6', planKey:'m6_ihale_karar',      gercek: ihale._gm6, ad:'M6 - Ihale Karar',       birim:'Satinalma' },
-    { key:'m7', planKey:'m7_sozlesme_imza',    gercek: ihale._gm7, ad:'M7 - Sozlesme Imza',     birim:'Satinalma' },
-    { key:'m8', planKey:'m8_imalat_baslangic', gercek: ihale._gm8, ad:'M8 - Imalat Baslangic',  birim:'Santiye' },
+    { key:'m1', planKey:'m1_tasarim',          gercek: ihale._gm1, ad:'M1 · Tasarım Kararları', birim:MS_BIRIM.m1 },
+    { key:'m2', planKey:'m2_proje_yayin',      gercek: ihale._gm2, ad:'M2 · Proje Yayın',       birim:MS_BIRIM.m2 },
+    { key:'m3', planKey:'m3_talep',            gercek: ihale._gm3, ad:'M3 · Talep (SAT)',       birim:MS_BIRIM.m3 },
+    { key:'m4', planKey:'m4_ihale_yayin',      gercek: ihale._gm4, ad:'M4 · İhale Yayını',      birim:MS_BIRIM.m4 },
+    { key:'m5', planKey:'m5_yonetim_sunum',    gercek: ihale._gm5, ad:'M5 · Yönetime Sunum',    birim:MS_BIRIM.m5 },
+    { key:'m6', planKey:'m6_ihale_karar',      gercek: ihale._gm6, ad:'M6 · İhale Karar',       birim:MS_BIRIM.m6 },
+    { key:'m7', planKey:'m7_sozlesme_imza',    gercek: ihale._gm7, ad:'M7 · Sözleşme İmza',     birim:MS_BIRIM.m7 },
+    { key:'m8', planKey:'m8_imalat_baslangic', gercek: ihale._gm8, ad:'M8 · İmalat Başlangıç',  birim:MS_BIRIM.m8 },
   ];
 
   const todayStr = today();
@@ -2234,6 +2275,16 @@ async function saDrop(ev, targetStatus) {
   rPipeline();
 }
 
+// Mevcut durumun planlanan hedefine gore kalan/gecen gun metni
+function kalanGunMetni(i) {
+  const hedef = durumPlanTarihi(i);
+  if (!hedef) return '<span style="color:var(--text3)">-</span>';
+  const g = Math.round((new Date(hedef + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
+  if (g > 0)   return '<span style="color:var(--green);font-weight:600">' + g + ' gün kaldı</span>';
+  if (g === 0) return '<span style="color:var(--gold);font-weight:700">Bugün hedef</span>';
+  return '<span style="color:var(--red);font-weight:700">' + Math.abs(g) + ' gün geçti</span>';
+}
+
 function rPipeline() {
   const btnToggle = document.getElementById('btn-sa-toggle');
   if (btnToggle) {
@@ -2258,24 +2309,17 @@ function rPipeline() {
           </div>
           <div class="pipe-body" style="min-height:250px;">
             ${items.length ? items.map(i => {
-              const diffDays = i.hedefDevir ? Math.round((new Date(i.hedefDevir + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000) : null;
-              let remainingText = '';
-              if (diffDays !== null) {
-                if (diffDays > 0) remainingText = `<span style="color:var(--green);font-weight:600">${diffDays}g kaldı</span>`;
-                else if (diffDays === 0) remainingText = `<span style="color:var(--gold);font-weight:700">Bugün hedef</span>`;
-                else remainingText = `<span style="color:var(--red);font-weight:700">+${Math.abs(diffDays)}g gecikti</span>`;
-              } else {
-                remainingText = '<span style="color:var(--text3)">-</span>';
-              }
-              
               return `
                 <div class="pipe-card" draggable="true" ondragstart="saDrag(event, '${i._id}')" onclick="openDetail('${i._id}')">
-                  <div class="pc-name">${i.paket}</div>
-                  <div class="pc-proj">${i.proje}</div>
-                  <div class="pc-id" style="margin-top:6px; font-size:13px; color:var(--text2)">
-                    <div>Başlangıç: ${fmtTarih(i.acilis)}</div>
-                    <div>Hedef: ${fmtTarih(i.hedefDevir)}</div>
-                    <div style="margin-top:4px">${remainingText}</div>
+                  <div class="pc-name mono" style="color:var(--blue-l)">${esc(i.id)}</div>
+                  <div style="font-weight:600;color:var(--text);font-size:13.5px;margin-top:2px">${esc(i.paket)}</div>
+                  <div class="pc-proj">${esc(i.proje)}</div>
+                  ${i.talep_onay_durum === 'red' ? '<div style="margin-top:5px;font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}
+                  <div class="pc-id" style="margin-top:7px;font-size:12.5px;color:var(--text2);line-height:1.75">
+                    <div>Gerçekleşen talep tarihi: <strong>${fmtTarih(i._gm3)}</strong></div>
+                    <div>Hedeflenen tarih: <strong>${fmtTarih(durumPlanTarihi(i))}</strong></div>
+                    <div>Hedeflenen imalat başlangıcı: <strong>${fmtTarih(i._plan?.m8_imalat_baslangic)}</strong></div>
+                    <div style="margin-top:5px">${kalanGunMetni(i)}</div>
                   </div>
                 </div>`;
             }).join('') : '<div class="empty" style="padding:14px">Paket yok</div>'}
@@ -2288,28 +2332,23 @@ function rPipeline() {
     
     // Render list view table rows
     const rows = veri.filter(i => stages.includes(i.durum));
+    rows.sort((a, b) => tarihSirali(durumPlanTarihi(a), durumPlanTarihi(b)));
     document.getElementById('tb-sa-list').innerHTML = rows.length ? rows.map(i => {
-      const diffDays = i.hedefDevir ? Math.round((new Date(i.hedefDevir + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000) : null;
-      let remainingText = '';
-      if (diffDays !== null) {
-        if (diffDays > 0) remainingText = `<span style="color:var(--green);font-weight:600">${diffDays} gün kaldı</span>`;
-        else if (diffDays === 0) remainingText = `<span style="color:var(--gold);font-weight:700">Bugün hedef</span>`;
-        else remainingText = `<span style="color:var(--red);font-weight:700">${Math.abs(diffDays)} gün gecikti</span>`;
-      } else {
-        remainingText = '<span style="color:var(--text3)">-</span>';
-      }
       
       return `
         <tr>
-          <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div></td>
-          <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
+          <td class="mono" style="color:var(--blue-l)">${esc(i.id)}
+            <div style="font-size:12px;color:var(--faint);font-family:var(--font)">${esc(i.proje)}</div></td>
+          <td><strong>${esc(i.paket)}</strong>
+            ${i.talep_onay_durum === 'red' ? '<div style="font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}</td>
           <td>${chip(i.durum)}</td>
-          <td class="mono" style="font-size:13px">${fmtTarih(i.acilis)}</td>
-          <td class="mono" style="font-size:13px">${fmtTarih(i.hedefDevir)}</td>
-          <td>${remainingText}</td>
-          <td><button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}')">Detay</button></td>
+          <td class="mono" style="font-size:13px">${fmtTarih(i._gm3)}</td>
+          <td class="mono" style="font-size:13px">${fmtTarih(durumPlanTarihi(i))}</td>
+          <td class="mono" style="font-size:13px">${fmtTarih(i._plan?.m8_imalat_baslangic)}</td>
+          <td>${kalanGunMetni(i)}</td>
+          <td><button class="btn btn-ghost btn-sm ikon" onclick="openDetail('${i._id}')" title="Detay">🔍</button></td>
         </tr>`;
-    }).join('') : `<tr><td colspan="7"><div class="empty">Satın alma sürecinde ihale yok</div></td></tr>`;
+    }).join('') : `<tr><td colspan="8"><div class="empty">Satın alma sürecinde ihale yok</div></td></tr>`;
   }
 }
 
@@ -2354,7 +2393,13 @@ function rSantiye() {
         islem = '<span class="chip c-soz"><span class="chip-dot"></span>Talep girildi · ' + fmtTarih(i._gm3 || i.talep_giris_tarihi) + '</span>';
       } else {
         const hedef = (i.santiye_onay_tarihi && i._s_talep) ? addGun(i.santiye_onay_tarihi, i._s_talep) : '';
-        islem = `<button class="btn btn-primary btn-sm" onclick="santiyeTalepGir('${i._id}')">📨 Talep Gir → Satınalma</button>`
+        const iade = i.talep_onay_durum === 'red'
+          ? '<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:4px">⚠ Satınalma talebi iade etti'
+            + (talepRedAdet(i) > 1 ? ' (' + talepRedAdet(i) + ' kez)' : '') + '</div>'
+            + '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;margin-bottom:5px">' + esc(talepRedSon(i)) + '</div>'
+          : '';
+        islem = iade
+              + `<button class="btn btn-primary btn-sm" onclick="santiyeTalepGir('${i._id}')">📨 Talep Gir → Satınalma</button>`
               + (hedef ? '<div style="font-size:13px;color:var(--text3);margin-top:3px">Hedef: ' + fmtTarih(hedef) + '</div>' : '');
       }
     } else if (od === 'red') {
@@ -2425,12 +2470,25 @@ async function santiyeKabul(id) {
 // Tum iadeler tek metin alaninda saklanir; kayitlar "---" satiriyla ayrilir.
 // Her kayit: [GG.AA.YYYY - Ad Soyad (rol)]: serbest metin (cok satirli olabilir)
 const RED_AYRAC = '\n---\n';
-function redKayitlari(i) {
-  const t = String((i && i.santiye_red_nedeni) || '').trim();
+// Bir metin alanindaki iade kayitlarini listeye cevirir
+function redAyir(metin) {
+  const t = String(metin || '').trim();
   return t ? t.split(/\n-{3,}\n/).map(x => x.trim()).filter(Boolean) : [];
 }
+// Santiye -> dizayn iadeleri
+function redKayitlari(i) { return redAyir(i && i.santiye_red_nedeni); }
 function redAdet(i) { return redKayitlari(i).length; }
 function redSon(i)  { const k = redKayitlari(i); return k.length ? k[k.length - 1] : '-'; }
+// Satinalma -> santiye talep iadeleri
+function talepRedKayitlari(i) { return redAyir(i && i.talep_red_nedeni); }
+function talepRedAdet(i) { return talepRedKayitlari(i).length; }
+function talepRedSon(i)  { const k = talepRedKayitlari(i); return k.length ? k[k.length - 1] : '-'; }
+
+// Iade kaydi imzasi: [GG.AA.YYYY - Ad Soyad (rol)]
+async function redImza() {
+  const kim = (await sb.from('kullanici_profilleri').select('ad_soyad,rol').eq('id', CU.id).single()).data;
+  return '[' + new Date().toLocaleDateString('tr-TR') + ' - ' + (kim?.ad_soyad || CU.email) + ' (' + (kim?.rol || '') + ')]: ';
+}
 
 let redHedefId = null;
 function santiyeRed(id) {
@@ -2454,8 +2512,7 @@ async function santiyeRedOnayla() {
   if (!metin) { toast('İade nedeni zorunlu', 'err'); return; }
   if (!redHedefId) return;
   const it = SbData.find(x => x._id === redHedefId);
-  const kim = (await sb.from('kullanici_profilleri').select('ad_soyad,rol').eq('id', CU.id).single()).data;
-  const basi = '[' + new Date().toLocaleDateString('tr-TR') + ' - ' + (kim?.ad_soyad || CU.email) + ' (' + (kim?.rol || '') + ')]: ';
+  const basi = await redImza();
   const eski = String((it && it.santiye_red_nedeni) || '').trim();
   const yeni = eski ? eski + RED_AYRAC + basi + metin : basi + metin;
   const { error } = await sb.from('ihaleler').update({
@@ -2475,7 +2532,9 @@ async function santiyeTalepGir(id) {
   if (!it) return;
   if (it.santiye_onay_durum !== 'kabul') { toast('Talep girmek için önce dizaynı KABUL etmelisiniz', 'err'); return; }
   const t = today();
-  const upd = { talep_giris_tarihi: t, gercek_m3: t };
+  // Tekrar talep girildiginde onceki satinalma iadesi 'cozuldu' sayilir
+  // (gecmis silinmez, yalnizca uyari isareti kalkar).
+  const upd = { talep_giris_tarihi: t, gercek_m3: t, talep_onay_durum: null };
   // Onceki dizayn milestone'larini tutarlilik icin doldur
   if (!it._gm2) upd.gercek_m2 = it.santiye_onay_tarihi || it.dizayn_gonderim_tarihi || t;
   if (!it._gm1) upd.gercek_m1 = it.dizayn_gonderim_tarihi || t;
@@ -2493,6 +2552,59 @@ async function santiyeTalepGir(id) {
 let AkBirim = '';
 function akBirimSec(b) { AkBirim = b; rAksaklik(); }
 
+// ════════════════════════════════════════════════════════════════════
+// SATINALMA -> SANTIYE TALEP IADESI
+// Satinalma, santiyeden gelen talebi eksik bulup iade edebilir.
+// Iade edilince:
+//   - gercek_m3 (talep tarihi) ve talep_giris_tarihi SILINIR
+//   - kayit santiyenin kuyruguna doner; "Talep Gir" butonu tekrar cikar
+//   - santiye_onay_durum 'kabul' olarak KALIR (dizayn tekrar onaya girmez)
+//   - iade nedenleri tarih ve kisi adiyla biriktirilir
+// ════════════════════════════════════════════════════════════════════
+let talepRedHedefId = null;
+function talepRedAc(id) {
+  if (CRole !== 'admin' && CRole !== 'satinalma') { toast('Talebi iade etmek için satınalma yetkisi gerekli', 'err'); return; }
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!it._gm3) { toast('Bu ihalede girilmiş bir talep tarihi yok', 'err'); return; }
+  talepRedHedefId = id;
+  document.getElementById('trd-sub').textContent = it.paket + ' (' + it.id + ')';
+  document.getElementById('trd-bilgi').innerHTML =
+    'Gerçekleşen talep tarihi <strong>' + fmtTarih(it._gm3) + '</strong> silinecek ve kayıt şantiyenin kuyruğuna dönecek. ' +
+    'Şantiye eksiği tamamlayıp tekrar "Talep Gir" diyebilecek.';
+  document.getElementById('trd-neden').value = '';
+  const kayitlar = talepRedKayitlari(it);
+  document.getElementById('trd-gecmis').innerHTML = kayitlar.length
+    ? '<div style="font-size:13px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Önceki talep iadeleri (' + kayitlar.length + ')</div>' +
+      kayitlar.map(k => '<div style="background:var(--surface2);border-radius:5px;padding:9px 11px;font-size:13px;margin-bottom:6px;white-space:pre-wrap">' + esc(k) + '</div>').join('')
+    : '';
+  openOv('ov-talep-red');
+}
+
+async function talepRedOnayla() {
+  const metin = document.getElementById('trd-neden').value.trim();
+  if (!metin) { toast('İade nedeni zorunlu', 'err'); return; }
+  if (!talepRedHedefId) return;
+  const it = SbData.find(x => x._id === talepRedHedefId);
+  const basi = await redImza();
+  const eski = String((it && it.talep_red_nedeni) || '').trim();
+  const upd = {
+    gercek_m3: null,
+    talep_giris_tarihi: null,
+    talep_onay_durum: 'red',
+    talep_red_nedeni: eski ? eski + RED_AYRAC + basi + metin : basi + metin,
+  };
+  // Durum, M3 silindikten sonraki hale gore yeniden turetilir (genelde M2)
+  const g = {};
+  MS_LISTE.forEach(m => { g[m] = ('gercek_' + m in upd) ? upd['gercek_' + m] : (it ? it['_g' + m] : null); });
+  if (it && it.durum !== 'bloke' && it.durum !== 'iptal') upd.durum = durumTuret(g);
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', talepRedHedefId);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  closeOv('ov-talep-red'); talepRedHedefId = null;
+  toast('Talep şantiyeye iade edildi', 'ok');
+  await loadIhaleler(); renderAll(); rSantiye(); rHavuz(); rPipeline();
+}
+
 function rAksaklik() {
   // Tamamlanan ve iptal edilen paketler aksaklik sayilmaz.
   // Ust bardaki proje/bolum/kategori filtreleri burada da gecerli.
@@ -2502,10 +2614,11 @@ function rAksaklik() {
   const tumBloke     = acikPaketler.filter(i => i.durum === 'bloke');
   const tumGecikmeli = acikPaketler.filter(i => i.gecikme && i.gecikme > 0 && i.durum !== 'bloke');
   const tumRed       = acikPaketler.filter(i => i.santiye_onay_durum === 'red');
+  const tumTalepRed  = acikPaketler.filter(i => i.talep_onay_durum === 'red');
 
   // Birim sekmeleri — her sekmede kac aksaklik oldugu rozette yazar
-  const BIRIMLER = ['Dizayn','Şantiye','Satınalma'];
-  const say = b => [...tumBloke, ...tumGecikmeli, ...tumRed].filter(i => sorumluBirim(i) === b).length;
+  const BIRIMLER = ['Dizayn','Şantiye','Satınalma','Üst Yönetim'];
+  const say = b => [...tumBloke, ...tumGecikmeli, ...tumRed, ...tumTalepRed].filter(i => sorumluBirim(i) === b).length;
   const secimEl = document.getElementById('ak-birim-secim');
   if (secimEl) {
     const dugme = (deger, etiket, adet) =>
@@ -2513,7 +2626,7 @@ function rAksaklik() {
       'onclick="akBirimSec(\'' + deger + '\')">' + etiket +
       ' <span style="opacity:.75">' + adet + '</span></button>';
     secimEl.innerHTML =
-      dugme('', 'Tüm birimler', tumBloke.length + tumGecikmeli.length + tumRed.length) +
+      dugme('', 'Tüm birimler', tumBloke.length + tumGecikmeli.length + tumRed.length + tumTalepRed.length) +
       BIRIMLER.map(b => dugme(b, b, say(b))).join('');
   }
 
@@ -2521,9 +2634,10 @@ function rAksaklik() {
   const bloke     = suz(tumBloke);
   const gecikmeli = suz(tumGecikmeli);
   const dizaynRed = suz(tumRed);
+  const talepRed  = suz(tumTalepRed);
 
   let html = '';
-  if (!bloke.length && !gecikmeli.length && !dizaynRed.length) {
+  if (!bloke.length && !gecikmeli.length && !dizaynRed.length && !talepRed.length) {
     html = '<div class="empty" style="padding:60px">✅ ' +
            (AkBirim ? AkBirim + ' biriminde aktif aksaklık bulunmuyor' : 'Şu an aktif aksaklık bulunmuyor') +
            '</div>';
@@ -2547,10 +2661,20 @@ function rAksaklik() {
       </div>`;
   });
 
+  talepRed.forEach(i => {
+    html += `
+      <div class="ak-item" style="border-left-color: var(--gold);" onclick="openDetail('${i._id}')">
+        <div class="ak-title" style="color: var(--gold);">↩ [TALEP İADE — SATINALMA EKSİK BULDU] ${esc(i.paket)}</div>
+        <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)}</div>
+        <div class="ak-meta"><span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span><span>İade sayısı: <strong>${talepRedAdet(i)}</strong></span></div>
+        <div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(talepRedSon(i))}</div>
+      </div>`;
+  });
+
   document.getElementById('ak-list').innerHTML = html;
 
   // Sekme rozeti her zaman TUM aksakliklari sayar (secili birime bagli degil)
-  const totalAksak = tumBloke.length + tumGecikmeli.length + tumRed.length;
+  const totalAksak = tumBloke.length + tumGecikmeli.length + tumRed.length + tumTalepRed.length;
   const badge = document.getElementById('nb-aksak');
   if (badge) badge.textContent = totalAksak;
 }
@@ -3010,13 +3134,13 @@ function openDetail(id, fromArchive) {
   // ── Bilgi kartları ──
   const kartlar = '<div class="dg">' +
     '<div class="di"><div class="di-k">Durum</div><div class="di-v">' + chip(i.durum) + '</div></div>' +
-    '<div class="di"><div class="di-k">Is Prog. Hedef</div><div class="di-v" style="font-family:var(--mono)">' + fmt(plan?.m8_imalat_baslangic) + '</div></div>' +
-    '<div class="di"><div class="di-k">Dizayn Ilerleme</div><div class="di-v">' + pb(i.dizayn_yuz, pbColor(i.dizayn_yuz)) + '</div></div>' +
-    '<div class="di"><div class="di-k">Dizayn / Santiye Onay</div><div class="di-v">' + santiyeOnayBadge(i) + '</div></div>' +
-    '<div class="di"><div class="di-k">Net Gecikme</div><div class="di-v">' + dl(i.gecikme) + '</div></div>' +
-    '<div class="di"><div class="di-k">Projeksiyon Is Prog.</div><div class="di-v" style="font-family:var(--mono);color:' + (i.gecikme>0?'var(--red)':'var(--green)') + '">' + fmt(kaym?.m8_imalat_baslangic) + '</div></div>' +
-    (i.tutar ? '<div class="di"><div class="di-k">Sozlesme Tutari</div><div class="di-v" style="color:var(--green)">\u20ba' + formatTutar(i.tutar) + '</div></div>' : '') +
-    (i.yuklenici ? '<div class="di"><div class="di-k">Yuklenici</div><div class="di-v">' + i.yuklenici + '</div></div>' : '') +
+    '<div class="di"><div class="di-k">İş programı hedefi (M8)</div><div class="di-v" style="font-family:var(--mono)">' + fmt(plan?.m8_imalat_baslangic) + '</div></div>' +
+    '<div class="di"><div class="di-k">Dizayn ilerleme</div><div class="di-v">' + pb(i.dizayn_yuz, pbColor(i.dizayn_yuz)) + '</div></div>' +
+    '<div class="di"><div class="di-k">Şantiye onayı</div><div class="di-v">' + santiyeOnayBadge(i) + '</div></div>' +
+    '<div class="di"><div class="di-k">NET GECİKME (işin toplamı)</div><div class="di-v">' + dl(i.gecikme) + '</div></div>' +
+    '<div class="di"><div class="di-k">Projeksiyon (gerçekleşene göre M8)</div><div class="di-v" style="font-family:var(--mono);color:' + (i.gecikme>0?'var(--red)':'var(--green)') + '">' + fmt(kaym?.m8_imalat_baslangic) + '</div></div>' +
+    (i.tutar ? '<div class="di"><div class="di-k">Sözleşme tutarı</div><div class="di-v" style="color:var(--green)">\u20ba' + formatTutar(i.tutar) + '</div></div>' : '') +
+    (i.yuklenici ? '<div class="di"><div class="di-k">Yüklenici</div><div class="di-v">' + i.yuklenici + '</div></div>' : '') +
     '</div>';
 
   // ── M1-M8 Aşama Bazlı Gecikme Zaman Çizelgesi ──
@@ -3025,35 +3149,39 @@ function openDetail(id, fromArchive) {
   const asamalar = i._asamalar || [];
   let tlHtml = '';
   if (!plan || !asamalar.length) {
-    tlHtml = '<div style="color:var(--text3);font-size:14px;padding:10px 0">Is programi tarihi veya sure bilgileri eksik - tarih hesaplanamadi.</div>';
+    tlHtml = '<div style="color:var(--text3);font-size:14px;padding:10px 0">İş programı tarihi veya süre bilgileri eksik — tarihler hesaplanamadı.</div>';
   } else {
     asamalar.forEach(a => {
-      const cls = a.durum==='done' ? (a.gecikme>0?'late':'done') : a.durum==='active' ? 'act' : '';
+      const cls = a.durum==='done' ? (a.segment>0?'late':'done') : a.durum==='active' ? 'act' : '';
 
-      // Aşamanın orijinal plana göre toplam durumu
+      // ── Asama etiketi ──
+      // Kumulatif gecikme ARTIK GOSTERILMIYOR. Her asamada yalnizca o
+      // asamanin KENDI performansi yaziyor: planina gore kac gun gec
+      // kaldi ya da kac gun hizli bitirdi. Isin toplami "Net gecikme"
+      // kartinda ustte duruyor.
       let durum_lbl = '';
-      if (a.durum==='done') {
-        if (a.gecildi)        durum_lbl = '<span class="tag tag-done">Geçildi</span>';
-        else if (a.gecikme>0) durum_lbl = '<span class="tag tag-late">+'+a.gecikme+'g (plana gore)</span>';
-        else if (a.gecikme<0) durum_lbl = '<span class="tag tag-done">'+Math.abs(a.gecikme)+'g erken</span>';
-        else                  durum_lbl = '<span class="tag tag-done">Zamaninda</span>';
-      } else if (a.durum==='active') {
-        if (a.gecikme>0) durum_lbl = '<span class="tag tag-late">+'+a.gecikme+'g gecikmede</span>';
-        else             durum_lbl = '<span class="tag tag-act">Aktif</span>';
+      const seg = a.segment;
+      if (a.durum === 'done') {
+        if (a.gecildi) {
+          durum_lbl = '<span class="tag" style="background:var(--surface3);color:var(--faint)" title="Bu asamanin gerceklesen tarihi girilmemis; sonraki asama gerceklestigi icin gecilmis sayildi">Tarih girilmedi</span>';
+        } else if (seg > 0) {
+          durum_lbl = '<span class="tag tag-late">▲ ' + seg + ' gün geç</span>';
+        } else if (seg < 0) {
+          durum_lbl = '<span class="tag tag-done">▼ ' + Math.abs(seg) + ' gün hızlı</span>';
+        } else {
+          durum_lbl = '<span class="tag tag-done">Zamanında</span>';
+        }
+      } else if (a.durum === 'active') {
+        if (seg > 0) durum_lbl = '<span class="tag tag-late">▲ ' + seg + ' gün geç · sürüyor</span>';
+        else         durum_lbl = '<span class="tag tag-act">Sürüyor</span>';
       }
-
-      // Bu aşamanın KENDİ katkısı (segment): hızlanma/yavaşlama
-      let seg_lbl = '';
-      if (a.segment != null && a.segment !== 0) {
-        if (a.segment < 0) seg_lbl = '<span style="color:var(--green);font-size:13px;font-weight:700;margin-left:6px" title="Bu birim isini planindan hizli yapti">▼ '+Math.abs(a.segment)+'g hizli</span>';
-        else               seg_lbl = '<span style="color:var(--red);font-size:13px;font-weight:700;margin-left:6px" title="Bu asamada eklenen gecikme">▲ +'+a.segment+'g</span>';
-      }
+      const seg_lbl = '';   // ayri segment etiketi kaldirildi, tek etikete birlesti
 
       const plan_satir = a.plan
         ? '<div style="display:flex;align-items:center;gap:8px;margin-top:3px"><span style="font-size:13px;color:var(--text3);min-width:80px">Planlanan:</span><span style="font-family:var(--mono);font-size:13px">'+fmt(a.plan)+'</span></div>'
         : '';
       const gercek_satir = a.gercek
-        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font-size:13px;color:var(--text3);min-width:80px">Gerceklesen:</span><span style="font-family:var(--mono);font-size:13px;color:'+(a.gecikme>0?'var(--red)':a.gecikme<0?'var(--green)':'var(--text)')+'">'+fmt(a.gercek)+'</span></div>'
+        ? '<div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="font-size:13px;color:var(--text3);min-width:80px">Gerçekleşen:</span><span style="font-family:var(--mono);font-size:13px;color:'+(seg>0?'var(--red)':seg<0?'var(--green)':'var(--text)')+'">'+fmt(a.gercek)+'</span></div>'
         : '';
 
       tlHtml +=
@@ -3103,14 +3231,31 @@ function openDetail(id, fromArchive) {
       }).join('') + '</div>';
   }
 
+  // ── Satinalma -> santiye talep iade gecmisi ──
+  let talepRedHtml = '';
+  const trler = talepRedKayitlari(i);
+  if (trler.length) {
+    talepRedHtml = '<div style="margin-top:14px">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">Satınalma talep iadeleri (' + trler.length + ')</div>' +
+      trler.map(k => {
+        const m = String(k).match(/^\[([^\]]+)\]:\s*([\s\S]*)$/);
+        return '<div style="background:var(--surface2);border-left:2px solid var(--gold);border-radius:5px;padding:9px 12px;margin-bottom:6px">' +
+          (m ? '<div style="font-size:12px;color:var(--faint);margin-bottom:4px">' + esc(m[1]) + '</div>' +
+               '<div style="font-size:14px;white-space:pre-wrap">' + esc(m[2]) + '</div>'
+             : '<div style="font-size:14px;white-space:pre-wrap">' + esc(k) + '</div>') +
+          '</div>';
+      }).join('') + '</div>';
+  }
+
   document.getElementById('det-body').innerHTML = kartlar +
-    '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">M1-M8 Surec Zaman Cizelgesi</div>' +
-    '<div class="tl">' + tlHtml + '</div>' + redHtml + notHtml;
+    '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">M1–M8 aşama performansı</div>' +
+    '<div class="tl">' + tlHtml + '</div>' + redHtml + talepRedHtml + notHtml;
 
   document.getElementById('det-ft').innerHTML = fromArchive
     ? `<button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`
-    : `${(CRole==='admin'||CRole==='satinalma')&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm" onclick="closeOv('ov-detay');iptalAc('${i._id}')">İptal Et</button>`:''}
-       ${(CRole!=='izleyici')&&(CRole==='admin'||!['tamamlandi','iptal'].includes(i.durum))?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Duzenle</button>`:''}
+    : `${(CRole==='admin'||CRole==='satinalma')&&i._gm3&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="closeOv('ov-detay');talepRedAc('${i._id}')" title="Talebi eksik bulup şantiyeye iade et">↩ Talebi iade et</button>`:''}
+       ${(CRole==='admin'||CRole==='satinalma')&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm" onclick="closeOv('ov-detay');iptalAc('${i._id}')">İptal Et</button>`:''}
+       ${(CRole!=='izleyici')&&(CRole==='admin'||!['tamamlandi','iptal'].includes(i.durum))?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>`:''}
        <button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`;
   openOv('ov-detay');
 }
@@ -3936,7 +4081,7 @@ const DURUM_SIRA = [
   { k:'dizaydan_devir',  kisa:'M2',         birim:'Dizayn',    renk:'var(--s1)' },
   { k:'satinalma_devir', kisa:'M3',         birim:'Şantiye',   renk:'var(--s1)' },
   { k:'firma_davet',     kisa:'M4',         birim:'Satınalma', renk:'var(--s1)' },
-  { k:'degerlendirme',   kisa:'M5',         birim:'Satınalma', renk:'var(--s4)' },
+  { k:'degerlendirme',   kisa:'M5',         birim:'Üst Yönetim', renk:'var(--s4)' },
   { k:'yonetim_onayi',   kisa:'M6',         birim:'Satınalma', renk:'var(--s4)' },
   { k:'sozlesme',        kisa:'M7',         birim:'Satınalma', renk:'var(--s2)' },
   { k:'aktif',           kisa:'M8',         birim:'Şantiye',   renk:'var(--s2)' },
@@ -3947,8 +4092,11 @@ const DURUM_SIRA = [
 
 // Bir ihalenin AKTIF (ilk tamamlanmamis) milestone'una gore sorumlu birimi.
 // Aksakliklar sayfasindaki birim filtresi bunu kullanir.
+// M5 (Yonetime Sunum) sorumlusu UST YONETIM olarak etiketlenir.
+// Not: ayri bir kullanici rolu yok; tarihi satinalma girer, sorumluluk
+// raporlarda ve filtrelerde Ust Yonetim'e yazilir.
 const MS_BIRIM = { m1:'Dizayn', m2:'Dizayn', m3:'Şantiye', m4:'Satınalma',
-                   m5:'Satınalma', m6:'Satınalma', m7:'Satınalma', m8:'Şantiye' };
+                   m5:'Üst Yönetim', m6:'Satınalma', m7:'Satınalma', m8:'Şantiye' };
 // Durum -> milestone anahtari (durumTuret'in tersi)
 const DURUM_MS = { hazirlik:'m1', dizaydan_devir:'m2', satinalma_devir:'m3', firma_davet:'m4',
                    degerlendirme:'m5', yonetim_onayi:'m6', sozlesme:'m7', aktif:'m8' };
@@ -3985,23 +4133,22 @@ function sorumluBirim(i) {
   return 'Şantiye';
 }
 
+// Durum etiketleri — panelin tamaminda tek kaynak
 const DM={
-  hazirlik:{l:'M1-Tasarim Kararlari'}, dizaydan_devir:{l:'M2-Proje Yayin'}, satinalma_devir:{l:'M3-Talep (SAT)'},
-  firma_davet:{l:'M4-Ihale Yayini'}, degerlendirme:{l:'M5-Yonetime Sunum'}, yonetim_onayi:{l:'M6-Ihale Karar'},
-  sozlesme:{l:'M7-Sozlesme Imza'}, aktif:{l:'M8-Imalat Baslangic'}, tamamlandi:{l:'Tamamlandi'},
-  bloke:{l:'Bloke'}, iptal:{l:'Iptal'},
-  devir:{l:'M2-Proje Yayin'}, ilan:{l:'M4-Ihale Yayini'}
+  hazirlik:{l:'M1 · Tasarım Kararları'}, dizaydan_devir:{l:'M2 · Proje Yayın'},
+  satinalma_devir:{l:'M3 · Talep (SAT)'}, firma_davet:{l:'M4 · İhale Yayını'},
+  degerlendirme:{l:'M5 · Yönetime Sunum'}, yonetim_onayi:{l:'M6 · İhale Karar'},
+  sozlesme:{l:'M7 · Sözleşme İmza'}, aktif:{l:'M8 · İmalat Başlangıç'},
+  tamamlandi:{l:'Tamamlandı'}, bloke:{l:'Bloke'}, iptal:{l:'İptal'},
+  devir:{l:'M2 · Proje Yayın'}, ilan:{l:'M4 · İhale Yayını'}
 };
 function chip(d){
   const m={hazirlik:'c-haz',dizaydan_devir:'c-dev',satinalma_devir:'c-dev',
     firma_davet:'c-ila',degerlendirme:'c-deg',yonetim_onayi:'c-deg',
     sozlesme:'c-soz',aktif:'c-soz',tamamlandi:'c-tam',bloke:'c-blo',iptal:'c-blo',
     devir:'c-dev',ilan:'c-ila'};
-  const l={hazirlik:'M1-Tasarim Kararlari',dizaydan_devir:'M2-Proje Yayin',satinalma_devir:'M3-Talep (SAT)',
-    firma_davet:'M4-Ihale Yayini',degerlendirme:'M5-Yonetime Sunum',yonetim_onayi:'M6-Ihale Karar',
-    sozlesme:'M7-Sozlesme Imza',aktif:'M8-Imalat Baslangic',tamamlandi:'Tamamlandi',
-    bloke:'Bloke',iptal:'Iptal',devir:'M2-Proje Yayin',ilan:'M4-Ihale Yayini'};
-  return '<span class="chip '+(m[d]||'c-arc')+'"><span class="chip-dot"></span>'+(l[d]||d)+'</span>';
+  // Etiket DM'den okunur; iki yerde ayri liste tutmuyoruz
+  return '<span class="chip '+(m[d]||'c-arc')+'"><span class="chip-dot"></span>'+(DM[d]?.l||d)+'</span>';
 }
 function chipDizayn(d){const m={baslamamis:'c-bek',devam_ediyor:'c-bas',revizyon:'c-dev',ic_kontrol:'c-deg',isveren_onay:'c-ila',onaylandi:'c-ona',iptal:'c-blo'};const l={baslamamis:'Başlamamış',devam_ediyor:'Devam',revizyon:'Revizyon',ic_kontrol:'İç Kontrol',isveren_onay:'İşveren Onayı',onaylandi:'Onaylandı',iptal:'İptal'};return`<span class="chip ${m[d]||'c-arc'}"><span class="chip-dot"></span>${l[d]||d}</span>`;}
 function chipSantiye(d){const m={bekliyor:'c-bek',devam_ediyor:'c-bas',askiya_alindi:'c-blo',tamamlandi:'c-tam'};const l={bekliyor:'Bekliyor',devam_ediyor:'Devam',askiya_alindi:'Askıda',tamamlandi:'Tamamlandı'};return`<span class="chip ${m[d]||'c-arc'}"><span class="chip-dot"></span>${l[d]||d}</span>`;}
