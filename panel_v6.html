@@ -424,6 +424,13 @@ td strong{color:var(--text);font-weight:600;}
 #view-havuz .chip{white-space:normal;text-align:left;line-height:1.3;}
 #view-havuz .dl{white-space:normal;}
 .btn.ikon{padding:0 7px;min-width:28px;justify-content:center;font-size:13px;}
+/* Satin alma kartindaki tarih bloklari: etiket solda, tarih sagda hizali.
+   Uzun etiketler alt satira kaymasin diye tek kelimeye indirildi;
+   tam anlamlari title (tooltip) olarak duruyor. */
+.kart-tarih{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin-top:9px;
+  font-size:12.5px;align-items:baseline;}
+.kart-tarih>span:nth-child(odd){color:var(--faint);white-space:nowrap;cursor:help;}
+.kart-tarih>span:nth-child(even){text-align:right;font-weight:600;white-space:nowrap;}
 .ms-sahip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:none;background:var(--surface3);color:var(--text3);vertical-align:middle;}
 input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opacity:.55;cursor:not-allowed;}
 @media print{
@@ -635,9 +642,9 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
             <th>İhale No</th>
             <th>Paket</th>
             <th>Durum</th>
-            <th>Gerçekleşen talep tarihi</th>
-            <th>Hedeflenen tarih</th>
-            <th>Hedeflenen imalat başlangıcı</th>
+            <th>Gerçekleşen talep</th>
+            <th>Durum hedefi</th>
+            <th>İmalat başlangıcı</th>
             <th>Kalan</th>
             <th>İşlem</th>
           </tr>
@@ -2053,7 +2060,8 @@ async function loadDashboard() {
 
   const hazirlikN = aktifR.filter(i => ['hazirlik','dizaydan_devir'].includes(i.durum)).length;          // M1-M2
   const satinN    = aktifR.filter(i => ['satinalma_devir','firma_davet','degerlendirme','yonetim_onayi','sozlesme'].includes(i.durum)).length; // M3-M7
-  const gecN      = aktifR.filter(i => i.durum === 'bloke' || (i.gecikme && i.gecikme > 0)).length;
+  // Aksakliklar sayfasiyla AYNI olcut: mevcut asamada gecikme veya bloke
+  const gecN      = aktifR.filter(i => i.durum === 'bloke' || aktifAsamaGecikmesi(i) > 0).length;
 
   set('kv-top', aktifR.length);
   set('kv-haz', hazirlikN);
@@ -2063,9 +2071,10 @@ async function loadDashboard() {
   set('nb-havuz', SbData.length);
   const acikP = SbData.filter(i=>!['tamamlandi','iptal'].includes(i.durum));
   const blokeCount = acikP.filter(i=>i.durum==='bloke').length;
-  const gecikmeliCount = acikP.filter(i=>i.gecikme&&i.gecikme>0&&i.durum!=='bloke').length;
+  const gecikmeliCount = acikP.filter(i=>i.durum!=='bloke' && aktifAsamaGecikmesi(i)>0).length;
   const dizaynRedCount = acikP.filter(i=>i.santiye_onay_durum==='red').length;
-  set('nb-aksak', blokeCount + gecikmeliCount + dizaynRedCount);
+  const talepRedCount  = acikP.filter(i=>i.talep_onay_durum==='red').length;
+  set('nb-aksak', blokeCount + gecikmeliCount + dizaynRedCount + talepRedCount);
   set('nb-arsiv', SbArchive.length);
   set('oz-ts', 'Son güncelleme: '+new Date().toLocaleString('tr-TR'));
   // Header'da proje adını güncelle
@@ -2330,12 +2339,15 @@ function rPipeline() {
                   <div style="font-weight:600;color:var(--text);font-size:13.5px;margin-top:2px">${esc(i.paket)}</div>
                   <div class="pc-proj">${esc(i.proje)}</div>
                   ${i.talep_onay_durum === 'red' ? '<div style="margin-top:5px;font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}
-                  <div class="pc-id" style="margin-top:7px;font-size:12.5px;color:var(--text2);line-height:1.75">
-                    <div>Gerçekleşen talep tarihi: <strong>${fmtTarih(i._gm3)}</strong></div>
-                    <div>Hedeflenen tarih: <strong>${fmtTarih(durumPlanTarihi(i))}</strong></div>
-                    <div>Hedeflenen imalat başlangıcı: <strong>${fmtTarih(i._plan?.m8_imalat_baslangic)}</strong></div>
-                    <div style="margin-top:5px">${kalanGunMetni(i)}</div>
+                  <div class="kart-tarih">
+                    <span title="Gerçekleşen talep tarihi (M3)">Talep</span>
+                    <span class="mono">${fmtTarih(i._gm3)}</span>
+                    <span title="Mevcut durumu bitirmesi gereken tarih">Hedef</span>
+                    <span class="mono">${fmtTarih(durumPlanTarihi(i))}</span>
+                    <span title="Hedeflenen imalat başlangıç tarihi (M8)">İmalat</span>
+                    <span class="mono">${fmtTarih(i._plan?.m8_imalat_baslangic)}</span>
                   </div>
+                  <div style="margin-top:8px;font-size:12.5px">${kalanGunMetni(i)}</div>
                 </div>`;
             }).join('') : '<div class="empty" style="padding:14px">Paket yok</div>'}
           </div>
@@ -2627,7 +2639,9 @@ function rAksaklik() {
 
   // Once TUM aksakliklari bul, sonra birim sekmesine gore suz.
   const tumBloke     = acikPaketler.filter(i => i.durum === 'bloke');
-  const tumGecikmeli = acikPaketler.filter(i => i.gecikme && i.gecikme > 0 && i.durum !== 'bloke');
+  // Gecikme olcutu MEVCUT ASAMAYA gore. Kumulatifte geride olan ama su anki
+  // asamasini suresi icinde yuruten ihale aksaklik listesine GIRMEZ.
+  const tumGecikmeli = acikPaketler.filter(i => i.durum !== 'bloke' && aktifAsamaGecikmesi(i) > 0);
   const tumRed       = acikPaketler.filter(i => i.santiye_onay_durum === 'red');
   const tumTalepRed  = acikPaketler.filter(i => i.talep_onay_durum === 'red');
 
@@ -2663,7 +2677,17 @@ function rAksaklik() {
   });
 
   gecikmeli.forEach(i => {
-    html += `<div class="ak-item warn" onclick="openDetail('${i._id}')"><div class="ak-title">⚠️ [GECİKME] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id} · ${chip(i.durum)}</div><div class="ak-meta"><span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span><span>Net gecikme: <strong style="color:var(--yellow)">+${i.gecikme}g</strong></span></div></div>`;
+    const ag = aktifAsamaGecikmesi(i);
+    const aktif = (i._asamalar || []).find(x => x.durum === 'active');
+    html += `<div class="ak-item warn" onclick="openDetail('${i._id}')">
+      <div class="ak-title">⚠️ [GECİKME] ${esc(i.paket)}</div>
+      <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chip(i.durum)}</div>
+      <div class="ak-meta">
+        <span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span>
+        <span>Bekleyen aşama: <strong>${esc(aktif ? aktif.ad : '-')}</strong></span>
+        <span>Bu aşamada: <strong style="color:var(--red)">+${ag} gün</strong></span>
+        ${i.gecikme > 0 ? `<span style="color:var(--faint)">net: +${i.gecikme} gün</span>` : ''}
+      </div></div>`;
   });
 
   dizaynRed.forEach(i => {
@@ -4145,6 +4169,17 @@ function tarihSirali(a, b) {
   if (!a) return 1;
   if (!b) return -1;
   return a.localeCompare(b);
+}
+
+// Mevcut (aktif) asamanin KENDI gecikmesi, gun.
+// Bir ihale kumulatifte geride olabilir ama su anki asamasinda gecikmiyorsa
+// aksaklik sayilmaz. Bu deger asamalar[].segment'ten okunur:
+//   (bugun - onceki asamanin gerceklesen tarihi) - (asamaya ayrilan sure)
+// 0 veya negatif => su an gecikme yok.
+function aktifAsamaGecikmesi(i) {
+  if (!i || !i._asamalar) return 0;
+  const a = i._asamalar.find(x => x.durum === 'active');
+  return (a && a.segment != null && a.segment > 0) ? a.segment : 0;
 }
 
 function sorumluBirim(i) {
