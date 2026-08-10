@@ -2212,28 +2212,43 @@ function rDizayn() {
   const rows = projeFiltre(SbData).filter(i => i.durum !== 'tamamlandi' && i.durum !== 'iptal');
   // Siralama: M2 (Proje Yayin) PLANLANAN tarihine gore, en yakin en ustte.
   // Dizayni bitmis (M2 gerceklesmis) paketler listenin sonuna gider.
-  rows.sort((a, b) => {
-    const ab = a._gm2 ? 1 : 0, bb = b._gm2 ? 1 : 0;
-    if (ab !== bb) return ab - bb;
-    return tarihSirali(a._plan?.m2_proje_yayin, b._plan?.m2_proje_yayin);
-  });
+  // Siralama: 1) santiyenin iade ettikleri en uste (aksiyon bekliyor),
+  // 2) dizayni bitmis (M2 gerceklesmis) olanlar en alta,
+  // 3) kalanlar M2 PLANLANAN tarihine gore en yakin en ustte.
+  const oncelik = i => (i.santiye_onay_durum === 'red') ? 0 : (i._gm2 ? 2 : 1);
+  rows.sort((a, b) => (oncelik(a) - oncelik(b))
+                   || tarihSirali(a._plan?.m2_proje_yayin, b._plan?.m2_proje_yayin));
   document.getElementById('tb-dizayn').innerHTML = rows.length ? rows.map(i => {
     const pct = i.dizayn_yuz || 0;
-    
-    // Status text based on percentage
+    const od  = i.santiye_onay_durum;
+
+    // ── Calisma durumu ──
+    // Santiye onay akisi, yuzdeden ONCE gelir. Yuzde %100 olsa bile
+    // santiye paketi iade ettiyse is bitmis degildir; dizayn duzeltecek.
     let statusBadge = '';
-    if (pct === 0) {
+    if (od === 'red') {
+      statusBadge = '<span class="chip c-blo"><span class="chip-dot"></span>İade edildi</span>';
+    } else if (od === 'bekliyor') {
+      statusBadge = '<span class="chip c-deg"><span class="chip-dot"></span>Şantiye onayında</span>';
+    } else if (od === 'kabul') {
+      statusBadge = '<span class="chip c-tam"><span class="chip-dot"></span>Onaylandı</span>';
+    } else if (pct === 0) {
       statusBadge = '<span class="chip c-arc"><span class="chip-dot"></span>Çalışılmıyor</span>';
     } else if (pct < 100) {
-      statusBadge = '<span class="chip c-bas"><span class="chip-dot"></span>Aktif Çalışılıyor</span>';
+      statusBadge = '<span class="chip c-bas"><span class="chip-dot"></span>Aktif çalışılıyor</span>';
     } else {
       statusBadge = '<span class="chip c-tam"><span class="chip-dot"></span>Bitmiş</span>';
     }
 
+    // Iade edilmisse nedeni de gorunsun — dizayn ne duzeltecegini bilsin
+    const iadeNot = (od === 'red')
+      ? `<div style="font-size:13px;color:var(--red);margin-top:3px;white-space:pre-wrap">Son iade${redAdet(i)>1?' ('+redAdet(i)+' iade)':''}: ${esc(redSon(i))}</div>`
+      : '';
+
     return `
       <tr>
-        <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div></td>
-        <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
+        <td><strong>${esc(i.paket)}</strong><div class="mono" style="color:var(--text3);font-size:13px">${esc(i.id)}</div>${iadeNot}</td>
+        <td style="font-size:13px;color:var(--text2)">${esc(i.proje)}</td>
         <td style="min-width:110px">${pb(pct, pbColor(pct))}</td>
         <td>${statusBadge}</td>
         <td class="mono" style="font-size:13px">${fmtTarih(i._plan?.m2_proje_yayin)}</td>
@@ -4090,8 +4105,14 @@ const DURUM_SIRA = [
   { k:'iptal',           kisa:'İptal',      birim:'—',         renk:'var(--red)' },
 ];
 
-// Bir ihalenin AKTIF (ilk tamamlanmamis) milestone'una gore sorumlu birimi.
-// Aksakliklar sayfasindaki birim filtresi bunu kullanir.
+// Bir ihalenin sorumlu birimi, MEVCUT DURUMUNA gore belirlenir.
+// Yani en son GERCEKLESEN milestone hangisiyse, isin topu o asamanin
+// birimindedir. Ornek: M5 (Yonetime Sunum) gerceklesmis ve M6 (Ihale
+// Karar) henuz gerceklesmemisse, ihale UST YONETIM'in onundedir.
+// Ozet sayfasindaki durum grafigi (DURUM_SIRA) ile ayni eslemeyi
+// kullanir, boylece iki ekran birbirini tutar.
+// Onceden "ilk tamamlanmamis milestone"un birimi aliniyordu; bu, M5
+// gerceklesmis isleri Satinalma'ya yaziyordu.
 // M5 (Yonetime Sunum) sorumlusu UST YONETIM olarak etiketlenir.
 // Not: ayri bir kullanici rolu yok; tarihi satinalma girer, sorumluluk
 // raporlarda ve filtrelerde Ust Yonetim'e yazilir.
@@ -4127,10 +4148,17 @@ function tarihSirali(a, b) {
 }
 
 function sorumluBirim(i) {
-  // Santiyenin iade ettigi paket her halukarda dizaynin isidir
-  if (i.santiye_onay_durum === 'red') return 'Dizayn';
-  for (const m of MS_LISTE) if (!i['_g'+m]) return MS_BIRIM[m];
-  return 'Şantiye';
+  if (!i) return MS_BIRIM.m1;
+  // Iade durumlari kuralin onunde gelir: top, eksigi gidermesi gereken birimde
+  if (i.santiye_onay_durum === 'red') return 'Dizayn';    // santiye dizayni iade etti
+  if (i.talep_onay_durum   === 'red') return 'Şantiye';   // satinalma talebi iade etti
+  const m = DURUM_MS[i.durum];
+  if (m) return MS_BIRIM[m];
+  // tamamlandi / bloke / iptal: son gerceklesen milestone'un birimi
+  for (let ix = MS_LISTE.length - 1; ix >= 0; ix--) {
+    if (i['_g' + MS_LISTE[ix]]) return MS_BIRIM[MS_LISTE[ix]];
+  }
+  return MS_BIRIM.m1;
 }
 
 // Durum etiketleri — panelin tamaminda tek kaynak
