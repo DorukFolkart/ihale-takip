@@ -553,6 +553,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   <button class="tab" onclick="sw('p6',this)" id="tab-p6" style="display:none">🔄 P6 Senkron</button>
   <button class="tab" onclick="sw('sap',this)" id="tab-sap">🧩 SAP Senkron</button>
   <button class="tab" onclick="sw('arsiv',this)">✔ Tamamlananlar <span class="nbadge g" id="nb-arsiv">0</span></button>
+  <button class="tab" onclick="sw('rapor',this)">📈 Raporlar</button>
   <button class="tab" onclick="sw('kilavuz',this)">📖 Kılavuz</button>
   <button class="tab" onclick="sw('ayarlar',this)">⚙️ Ayarlar</button>
 </nav>
@@ -643,7 +644,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
             <th>Paket</th>
             <th>Durum</th>
             <th>Gerçekleşen talep</th>
-            <th>Durum hedefi</th>
+            <th>Hedef tarihi</th>
             <th>İmalat başlangıcı</th>
             <th>Kalan</th>
             <th>İşlem</th>
@@ -890,6 +891,19 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 </div>
 
 <!-- ARŞİV -->
+<!-- RAPORLAR -->
+<div class="view" id="view-rapor">
+  <div class="sh"><div class="st">KPI raporları</div>
+    <div class="fr">
+      <button class="btn btn-ghost btn-sm" onclick="raporExcel()">⬇ Excel olarak indir</button>
+    </div>
+  </div>
+  <div style="font-size:13px;color:var(--text3);margin:-6px 0 14px">
+    Üstteki proje, bölüm ve kategori filtreleri bu sayfada da geçerlidir.
+  </div>
+  <div id="rapor-icerik"></div>
+</div>
+
 <div class="view" id="view-arsiv">
   <div class="sh"><div class="st">Tamamlanan İhaleler — Arşiv</div>
     <button class="btn btn-ghost btn-sm" onclick="exportArchive()">⬇ Arşivi Dışa Aktar</button></div>
@@ -1470,7 +1484,7 @@ function projeFiltre(rows) {
 // Acik olan sekme hangisi olursa olsun hepsini guncelle.
 function tumSekmeleriCiz() {
   loadDashboard();
-  rHavuz(); rPipeline(); rDizayn(); rSantiye(); rAksaklik(); rArsiv();
+  rHavuz(); rPipeline(); rDizayn(); rSantiye(); rAksaklik(); rArsiv(); rRapor();
 }
 
 // ════════════════════════════════════════════
@@ -1929,6 +1943,11 @@ function hesaplaIhaleTarihleriV2(ihale) {
 
   // Sonraki asama gerceklesmisse onceki asamalar fiilen gecilmis demektir
   const sonGercekIdx = seq.reduce((acc, m, ix) => m.gercek ? ix : acc, -1);
+  // Milestone tarihi bir asamanin BASLANGICINI isaretler. Son gerceklesen
+  // milestone'dan sonraki henuz gerceklesmediyse, o asama SURMEKTEDIR.
+  // Ornek: M4 (Ihale Yayini) girildi, M5 bos -> is M4 asamasinda suruyor.
+  const suruyorIdx = (sonGercekIdx >= 0 && sonGercekIdx < seq.length - 1
+                      && !seq[sonGercekIdx + 1].gercek) ? sonGercekIdx : -1;
 
   seq.forEach((m, ix) => {
     const planT = plan[m.planKey];
@@ -1969,6 +1988,7 @@ function hesaplaIhaleTarihleriV2(ihale) {
 
     asamalar.push({
       key: m.key, ad: m.ad, birim: m.birim,
+      suruyor: ix === suruyorIdx,       // bu asama su an devam ediyor
       plan: planT, gercek: m.gercek || null,
       gecikme: gecildi ? null : cum,   // gecilen asamada gecikme bilgisi olmaz
       segment: gecildi ? null : segment,
@@ -2301,7 +2321,7 @@ async function saDrop(ev, targetStatus) {
 
 // Mevcut durumun planlanan hedefine gore kalan/gecen gun metni
 function kalanGunMetni(i) {
-  const hedef = durumPlanTarihi(i);
+  const hedef = hedefBitisTarihi(i);
   if (!hedef) return '<span style="color:var(--text3)">-</span>';
   const g = Math.round((new Date(hedef + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
   if (g > 0)   return '<span style="color:var(--green);font-weight:600">' + g + ' gün kaldı</span>';
@@ -2340,14 +2360,14 @@ function rPipeline() {
                   <div class="pc-proj">${esc(i.proje)}</div>
                   ${i.talep_onay_durum === 'red' ? '<div style="margin-top:5px;font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}
                   <div class="kart-tarih">
-                    <span title="Gerçekleşen talep tarihi (M3)">Talep</span>
+                    <span title="Gerçekleşen talep tarihi (M3)">Talep Tarihi</span>
                     <span class="mono">${fmtTarih(i._gm3)}</span>
-                    <span title="Mevcut durumu bitirmesi gereken tarih">Hedef</span>
-                    <span class="mono">${fmtTarih(durumPlanTarihi(i))}</span>
-                    <span title="Hedeflenen imalat başlangıç tarihi (M8)">İmalat</span>
+                    <span title="Bu aşamanın bitmesi gereken tarih: gerçekleşen başlangıç + aşamaya ayrılan planlanan süre">Hedef Tarihi</span>
+                    <span class="mono">${fmtTarih(hedefBitisTarihi(i))}</span>
+                    <span title="Hedeflenen imalat başlangıç tarihi (M8)">İmalat Tarihi</span>
                     <span class="mono">${fmtTarih(i._plan?.m8_imalat_baslangic)}</span>
                   </div>
-                  <div style="margin-top:8px;font-size:12.5px">${kalanGunMetni(i)}</div>
+                  <div style="margin-top:8px;font-size:12.5px" title="Mevcut aşamanın hedef tarihine kalan/geçen süre. İşin toplam gecikmesi detay penceresindedir.">${kalanGunMetni(i)}</div>
                 </div>`;
             }).join('') : '<div class="empty" style="padding:14px">Paket yok</div>'}
           </div>
@@ -2370,7 +2390,7 @@ function rPipeline() {
             ${i.talep_onay_durum === 'red' ? '<div style="font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}</td>
           <td>${chip(i.durum)}</td>
           <td class="mono" style="font-size:13px">${fmtTarih(i._gm3)}</td>
-          <td class="mono" style="font-size:13px">${fmtTarih(durumPlanTarihi(i))}</td>
+          <td class="mono" style="font-size:13px">${fmtTarih(hedefBitisTarihi(i))}</td>
           <td class="mono" style="font-size:13px">${fmtTarih(i._plan?.m8_imalat_baslangic)}</td>
           <td>${kalanGunMetni(i)}</td>
           <td><button class="btn btn-ghost btn-sm ikon" onclick="openDetail('${i._id}')" title="Detay">🔍</button></td>
@@ -3191,7 +3211,8 @@ function openDetail(id, fromArchive) {
     tlHtml = '<div style="color:var(--text3);font-size:14px;padding:10px 0">İş programı tarihi veya süre bilgileri eksik — tarihler hesaplanamadı.</div>';
   } else {
     asamalar.forEach(a => {
-      const cls = a.durum==='done' ? (a.segment>0?'late':'done') : a.durum==='active' ? 'act' : '';
+      const cls = a.suruyor ? (aktifAsamaGecikmesi(i) > 0 ? 'late' : 'act')
+                : a.durum==='done' ? (a.segment>0?'late':'done') : '';
 
       // ── Asama etiketi ──
       // Kumulatif gecikme ARTIK GOSTERILMIYOR. Her asamada yalnizca o
@@ -3210,9 +3231,14 @@ function openDetail(id, fromArchive) {
         } else {
           durum_lbl = '<span class="tag tag-done">Zamanında</span>';
         }
-      } else if (a.durum === 'active') {
-        if (seg > 0) durum_lbl = '<span class="tag tag-late">▲ ' + seg + ' gün geç · sürüyor</span>';
-        else         durum_lbl = '<span class="tag tag-act">Sürüyor</span>';
+      }
+      // Asama SURUYOR ise ikinci bir etiket: milestone tarihi girilmis ama
+      // sonraki asamaya gecilmemis. Sure asildiysa kirmizi.
+      if (a.suruyor) {
+        const acik = aktifAsamaGecikmesi(i);
+        durum_lbl += acik > 0
+          ? ' <span class="tag tag-late">⏳ sürüyor · ▲ ' + acik + ' gün geç</span>'
+          : ' <span class="tag tag-act">⏳ sürüyor</span>';
       }
       const seg_lbl = '';   // ayri segment etiketi kaldirildi, tek etikete birlesti
 
@@ -3387,6 +3413,227 @@ async function doSapSync() {
   // Hazırlık aşaması: DataSource üzerinden okur; SAP pasifse Supabase döner.
   await DataSource._sapIhaleleriGetir();
   if (spin) spin.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// KPI RAPORLARI
+// Iki eksen: BIRIM bazinda performans, PROJE bazinda durum.
+// Ust bardaki proje / bolum / kategori filtreleri burada da gecerli.
+//
+// Olcum birimi ASAMA'dir: her ihalenin her tamamlanmis asamasi, o
+// asamanin sorumlu birimine bir "olcum" olarak yazilir. Asamanin
+// sapmasi = kendi suresi eksi planlanan suresi (asamalar[].segment).
+// Gerceklesen tarihi girilmemis (gecildi) asamalar olcume KATILMAZ;
+// sapmasi bilinmedigi icin ortalamayi bozar.
+// ════════════════════════════════════════════════════════════════════
+const RAPOR_BIRIMLERI = ['Dizayn', 'Şantiye', 'Satınalma', 'Üst Yönetim'];
+
+function raporVerisi() {
+  const veri = projeFiltre(SbData);
+
+  // ── Birim bazinda ──
+  const birim = {};
+  RAPOR_BIRIMLERI.forEach(b => birim[b] = {
+    olculen: 0, zamaninda: 0, gecSayi: 0, gecGun: 0, kazancGun: 0,
+    sapmaToplam: 0, acikIs: 0, gecikmede: 0,
+  });
+
+  veri.forEach(i => {
+    (i._asamalar || []).forEach(a => {
+      if (a.durum !== 'done' || a.gecildi || a.segment == null) return;
+      const b = birim[a.birim];
+      if (!b) return;
+      b.olculen++;
+      b.sapmaToplam += a.segment;
+      if (a.segment > 0) { b.gecSayi++; b.gecGun += a.segment; }
+      else { b.zamaninda++; b.kazancGun += -a.segment; }
+    });
+    if (!['tamamlandi', 'iptal'].includes(i.durum)) {
+      const b = birim[sorumluBirim(i)];
+      if (b) { b.acikIs++; if (aktifAsamaGecikmesi(i) > 0) b.gecikmede++; }
+    }
+  });
+
+  // ── Proje bazinda ──
+  const projeMap = new Map();
+  veri.forEach(i => {
+    if (!projeMap.has(i.proje_id)) {
+      projeMap.set(i.proje_id, {
+        ad: i.proje || '(proje yok)', toplam: 0, acik: 0, tamamlandi: 0, iptal: 0,
+        gecikmede: 0, netGecikmeTop: 0, netGecikmeSayi: 0, tutar: 0,
+      });
+    }
+    const p = projeMap.get(i.proje_id);
+    p.toplam++;
+    if (i.durum === 'tamamlandi')      p.tamamlandi++;
+    else if (i.durum === 'iptal')      p.iptal++;
+    else {
+      p.acik++;
+      if (aktifAsamaGecikmesi(i) > 0) p.gecikmede++;
+      if (typeof i.gecikme === 'number') { p.netGecikmeTop += i.gecikme; p.netGecikmeSayi++; }
+    }
+    const t = (i.sozlesme_tl != null ? i.sozlesme_tl : parseTutar(i.tutar)) || 0;
+    p.tutar += t;
+  });
+
+  // ── En cok geciken isler (mevcut asama gecikmesine gore) ──
+  const gecikenler = veri
+    .filter(i => !['tamamlandi', 'iptal'].includes(i.durum) && aktifAsamaGecikmesi(i) > 0)
+    .map(i => {
+      const a = (i._asamalar || []).find(x => x.durum === 'active');
+      return { i: i, asama: a ? a.ad : '-', gun: aktifAsamaGecikmesi(i), birim: sorumluBirim(i) };
+    })
+    .sort((a, b) => b.gun - a.gun);
+
+  return { birim: birim, projeler: [...projeMap.values()].sort((a, b) => a.ad.localeCompare(b.ad, 'tr')), gecikenler: gecikenler };
+}
+
+// Ortalama: olcum yoksa '-' don
+function raporOrt(toplam, sayi) {
+  if (!sayi) return null;
+  return Math.round((toplam / sayi) * 10) / 10;
+}
+function raporGun(v) {
+  if (v == null) return '<span style="color:var(--text3)">-</span>';
+  if (v > 0)  return '<span style="color:var(--red);font-weight:600">+' + v + ' gün</span>';
+  if (v < 0)  return '<span style="color:var(--green);font-weight:600">' + v + ' gün</span>';
+  return '<span style="color:var(--green);font-weight:600">0 gün</span>';
+}
+function raporYuzde(pay, toplam) {
+  if (!toplam) return '<span style="color:var(--text3)">-</span>';
+  const y = Math.round((pay / toplam) * 100);
+  const renk = y >= 80 ? 'var(--green)' : y >= 50 ? 'var(--gold)' : 'var(--red)';
+  return '<span style="color:' + renk + ';font-weight:600">' + y + '%</span>';
+}
+
+function rRapor() {
+  const R = raporVerisi();
+
+  // ── Birim tablosu ──
+  const bSatir = RAPOR_BIRIMLERI.map(ad => {
+    const b = R.birim[ad];
+    const ort = raporOrt(b.sapmaToplam, b.olculen);
+    return '<tr>' +
+      '<td><strong>' + ad + '</strong></td>' +
+      '<td>' + b.olculen + '</td>' +
+      '<td>' + raporYuzde(b.zamaninda, b.olculen) + '</td>' +
+      '<td>' + raporGun(ort) + '</td>' +
+      '<td>' + (b.gecGun ? '<span style="color:var(--red)">+' + b.gecGun + '</span>' : '0') + '</td>' +
+      '<td>' + (b.kazancGun ? '<span style="color:var(--green)">' + b.kazancGun + '</span>' : '0') + '</td>' +
+      '<td>' + b.acikIs + '</td>' +
+      '<td>' + (b.gecikmede ? '<span style="color:var(--red);font-weight:600">' + b.gecikmede + '</span>' : '0') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  // ── Proje tablosu ──
+  const pSatir = R.projeler.length ? R.projeler.map(p => {
+    const ort = raporOrt(p.netGecikmeTop, p.netGecikmeSayi);
+    return '<tr>' +
+      '<td><strong>' + esc(p.ad) + '</strong></td>' +
+      '<td>' + p.toplam + '</td>' +
+      '<td>' + p.acik + '</td>' +
+      '<td>' + p.tamamlandi + '</td>' +
+      '<td>' + p.iptal + '</td>' +
+      '<td>' + (p.gecikmede ? '<span style="color:var(--red);font-weight:600">' + p.gecikmede + '</span>' : '0') + '</td>' +
+      '<td>' + raporGun(ort) + '</td>' +
+      '<td>' + raporYuzde(p.tamamlandi, p.toplam) + '</td>' +
+      '<td class="mono" style="text-align:right">' + (p.tutar ? '₺' + formatTutar(p.tutar) : '-') + '</td>' +
+      '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty">Kayıt yok</div></td></tr>';
+
+  // ── En cok geciken isler ──
+  const gSatir = R.gecikenler.length ? R.gecikenler.slice(0, 10).map(g =>
+    '<tr style="cursor:pointer" onclick="openDetail(\'' + g.i._id + '\')">' +
+      '<td class="mono" style="color:var(--blue-l)">' + esc(g.i.id) + '</td>' +
+      '<td><strong>' + esc(g.i.paket) + '</strong></td>' +
+      '<td style="font-size:13px;color:var(--text2)">' + esc(g.i.proje) + '</td>' +
+      '<td>' + esc(g.asama) + '</td>' +
+      '<td>' + esc(g.birim) + '</td>' +
+      '<td><span style="color:var(--red);font-weight:600">+' + g.gun + ' gün</span></td>' +
+    '</tr>').join('')
+    : '<tr><td colspan="6"><div class="empty">Mevcut aşamasında geciken iş yok</div></td></tr>';
+
+  const kart = (baslik, aciklama, ic) =>
+    '<div class="card" style="margin-bottom:16px">' +
+      '<div class="card-t"><div class="ct-dot" style="background:var(--blue-l)"></div>' + baslik + '</div>' +
+      (aciklama ? '<div style="font-size:13px;color:var(--text3);margin:-4px 0 10px">' + aciklama + '</div>' : '') +
+      ic + '</div>';
+
+  document.getElementById('rapor-icerik').innerHTML =
+    kart('Birim performansı',
+      'Ölçüm birimi aşamadır: her tamamlanmış aşama, sorumlu birimine bir ölçüm olarak yazılır. ' +
+      'Sapma = aşamanın gerçek süresi eksi planlanan süresi. Gerçekleşen tarihi girilmemiş aşamalar ölçüme katılmaz.',
+      '<div class="tw"><table><thead><tr>' +
+        '<th>Birim</th><th>Ölçülen aşama</th><th>Zamanında oranı</th><th>Ortalama sapma</th>' +
+        '<th>Toplam geç gün</th><th>Kazanılan gün</th><th>Açık iş</th><th>Şu an gecikmede</th>' +
+      '</tr></thead><tbody>' + bSatir + '</tbody></table></div>') +
+    kart('Proje bazlı durum', 'Ortalama net gecikme yalnızca açık ihaleler üzerinden hesaplanır.',
+      '<div class="tw"><table><thead><tr>' +
+        '<th>Proje</th><th>Toplam</th><th>Açık</th><th>Tamamlandı</th><th>İptal</th>' +
+        '<th>Gecikmede</th><th>Ort. net gecikme</th><th>Tamamlanma</th><th style="text-align:right">Sözleşme tutarı</th>' +
+      '</tr></thead><tbody>' + pSatir + '</tbody></table></div>') +
+    kart('Mevcut aşamasında en çok geciken işler',
+      R.gecikenler.length > 10 ? R.gecikenler.length + ' işten ilk 10 tanesi gösteriliyor.' : '',
+      '<div class="tw"><table><thead><tr>' +
+        '<th>İhale No</th><th>İhale adı</th><th>Proje</th><th>Bekleyen aşama</th><th>Sorumlu</th><th>Gecikme</th>' +
+      '</tr></thead><tbody>' + gSatir + '</tbody></table></div>');
+}
+
+// ── Raporu Excel olarak indir ──
+function raporExcel() {
+  const R = raporVerisi();
+  const wb = XLSX.utils.book_new();
+  const bugun = new Date().toLocaleDateString('tr-TR');
+  const kapsam = (AktifProje ? (SbProjeler.find(p => p.id === AktifProje)?.proje_adi || '') : 'Tüm projeler') +
+                 (AktifBolum ? ' · ' + AktifBolum : '') + (AktifKategori ? ' · ' + AktifKategori + ' kategori' : '');
+
+  const s1 = [
+    ['FOLKART · BİRİM PERFORMANSI', '', 'Rapor tarihi:', bugun],
+    ['Kapsam:', kapsam],
+    [],
+    ['Birim', 'Ölçülen aşama', 'Zamanında aşama', 'Zamanında oranı %', 'Ortalama sapma (gün)',
+     'Toplam geç gün', 'Kazanılan gün', 'Açık iş', 'Şu an gecikmede'],
+  ];
+  RAPOR_BIRIMLERI.forEach(ad => {
+    const b = R.birim[ad];
+    s1.push([ad, b.olculen, b.zamaninda,
+      b.olculen ? Math.round((b.zamaninda / b.olculen) * 100) : '',
+      raporOrt(b.sapmaToplam, b.olculen) ?? '',
+      b.gecGun, b.kazancGun, b.acikIs, b.gecikmede]);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(s1);
+  ws1['!cols'] = [{wch:16},{wch:14},{wch:16},{wch:17},{wch:20},{wch:15},{wch:15},{wch:10},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Birim performansi');
+
+  const s2 = [
+    ['FOLKART · PROJE BAZLI DURUM', '', 'Rapor tarihi:', bugun],
+    ['Kapsam:', kapsam],
+    [],
+    ['Proje', 'Toplam ihale', 'Açık', 'Tamamlandı', 'İptal', 'Gecikmede',
+     'Ortalama net gecikme (gün)', 'Tamamlanma %', 'Sözleşme tutarı (TL)'],
+  ];
+  R.projeler.forEach(p => s2.push([p.ad, p.toplam, p.acik, p.tamamlandi, p.iptal, p.gecikmede,
+    raporOrt(p.netGecikmeTop, p.netGecikmeSayi) ?? '',
+    p.toplam ? Math.round((p.tamamlandi / p.toplam) * 100) : '', p.tutar || '']));
+  const ws2 = XLSX.utils.aoa_to_sheet(s2);
+  ws2['!cols'] = [{wch:26},{wch:13},{wch:8},{wch:12},{wch:8},{wch:11},{wch:24},{wch:13},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Proje bazli durum');
+
+  const s3 = [
+    ['FOLKART · MEVCUT AŞAMASINDA GECİKEN İŞLER', '', 'Rapor tarihi:', bugun],
+    ['Kapsam:', kapsam],
+    [],
+    ['İhale No', 'İhale adı', 'Proje', 'Bölüm', 'Kategori', 'Bekleyen aşama', 'Sorumlu birim',
+     'Bu aşamada gecikme (gün)', 'Net gecikme (gün)'],
+  ];
+  R.gecikenler.forEach(g => s3.push([g.i.id, g.i.paket, g.i.proje, g.i.ihale_bolumu || '',
+    g.i.ihale_kategori || '', g.asama, g.birim, g.gun, g.i.gecikme]));
+  const ws3 = XLSX.utils.aoa_to_sheet(s3);
+  ws3['!cols'] = [{wch:18},{wch:40},{wch:20},{wch:9},{wch:13},{wch:24},{wch:14},{wch:22},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Geciken isler');
+
+  XLSX.writeFile(wb, 'Folkart_KPI_Raporu_' + today() + '.xlsx');
+  toast('Rapor Excel olarak indirildi', 'ok');
 }
 
 // ════════════════════════════════════════════
@@ -4104,7 +4351,7 @@ function sw(name,btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('view-'+name)?.classList.add('on');
   if (btn) btn.classList.add('on');
-  const fn={havuz:rHavuz,pipeline:rPipeline,dizayn:rDizayn,santiye:rSantiye,aksaklik:rAksaklik,arsiv:rArsiv,p6:rP6,sap:rSap,kilavuz:rKilavuz,ozet:()=>loadDashboard(),ayarlar:()=>{renderProjeSettings();rOnayBekleyenler(); rKullanicilar();}};
+  const fn={havuz:rHavuz,pipeline:rPipeline,dizayn:rDizayn,santiye:rSantiye,aksaklik:rAksaklik,arsiv:rArsiv,p6:rP6,sap:rSap,kilavuz:rKilavuz,rapor:rRapor,ozet:()=>loadDashboard(),ayarlar:()=>{renderProjeSettings();rOnayBekleyenler(); rKullanicilar();}};
   fn[name]?.();
 }
 document.querySelectorAll('.overlay').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('on');}));
@@ -4163,6 +4410,34 @@ function durumPlanTarihi(i) {
   }
   return (m && i._plan[MS_PLANKEY[m]]) || '';
 }
+// Mevcut asamanin BITMESI gereken tarih = siradaki (henuz gerceklesmemis)
+// milestone'un PLANLANAN tarihi.
+//
+// Milestone tarihleri bir asamanin BASLANGICINI isaretler: M4 (Ihale Yayini)
+// girildiginde ihale yayina cikmis, is M4 asamasinda SURMEKTEDIR ve bitis
+// hedefi M5'in planlanan tarihidir. Onceden bu deger durumPlanTarihi() ile
+// mevcut milestone'un plan tarihi olarak veriliyordu; o tarih coktan
+// gecmis oldugu icin kartlarda "52 gun gecti" gibi yaniltici sayilar
+// cikiyordu (net gecikme 23 gun iken).
+function hedefBitisTarihi(i) {
+  if (!i || !i._plan) return '';
+  let sonIx = -1;
+  MS_LISTE.forEach((m, ix) => { if (i['_g' + m]) sonIx = ix; });
+  const hedefIx = sonIx + 1;
+  if (hedefIx >= MS_LISTE.length) return i._plan[MS_PLANKEY.m8] || '';   // zincir bitti
+  const hedefPlan = i._plan[MS_PLANKEY[MS_LISTE[hedefIx]]] || '';
+  if (sonIx < 0) return hedefPlan;            // henuz hicbir asama gerceklesmedi
+  // Asama, milestone'un GERCEKLESEN tarihinde basladi. Bitis hedefi:
+  //     gerceklesen baslangic + asamaya ayrilan PLANLANAN sure
+  // Boylece gec baslamis bir asama, kendi suresi dolmadan "gecikmis"
+  // gorunmez. Aksaklik olcutu (aktifAsamaGecikmesi) ile ayni tarihi verir.
+  const bPlan   = i._plan[MS_PLANKEY[MS_LISTE[sonIx]]] || '';
+  const bGercek = i['_g' + MS_LISTE[sonIx]];
+  if (!hedefPlan || !bPlan || !bGercek) return hedefPlan;
+  const sure = Math.round((new Date(hedefPlan + 'T00:00:00') - new Date(bPlan + 'T00:00:00')) / 86400000);
+  return addGun(bGercek, sure);
+}
+
 // Bos tarihler her zaman en sona: artan siralama icin karsilastirici
 function tarihSirali(a, b) {
   if (!a && !b) return 0;
