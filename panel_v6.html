@@ -999,7 +999,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="form-sec">Durum</div>
     <div class="form-grid">
       <div class="fl"><label>Mevcut Durum</label>
-        <select id="f-durum" onchange="toggleSozFieldsModal()">
+        <select id="f-durum">
           <option value="hazirlik">M1 - Tasarim Kararlarinin Verilmesi</option>
           <option value="dizaydan_devir">M2 - Proje Yayin</option>
           <option value="satinalma_devir">M3 - Talep (SAT)</option>
@@ -1051,15 +1051,19 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
       <input type="text" id="f-firmalar" placeholder="Firma adı">
     </div>
 
-    <!-- Sözleşme — sadece bilgi -->
-    <div class="form-sec" id="soz-sec-m" style="display:none;margin-top:12px">Sozlesme Bilgileri</div>
-    <div class="form-grid" id="soz-fields-m" style="display:none">
-      <div class="fl"><label>Sozlesme Tutari (TL)</label><input type="text" id="f-tutar" placeholder="4.250.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
-      <div class="fl"><label>Sozlesme Tutari (USD)</label><input type="text" id="f-tutar-usd" placeholder="250.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
-      <div class="fl"><label>Sozlesme Tutari (EUR)</label><input type="text" id="f-tutar-eur" placeholder="230.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
-      <div class="fl"><label>Yuklenici Firma</label><input type="text" id="f-yuklenici" placeholder="Firma adi"></div>
-      <div class="fl"><label>SAT No</label><input type="text" id="f-sat-no" placeholder="SAT numarasi"></div>
-      <div class="fl"><label>SAS No (birden fazla girilebilir)</label><input type="text" id="f-sas-no" placeholder="SAS numarasi"></div>
+    <!-- Satinalma / sozlesme bilgileri.
+         Bu alanlar surec boyunca PARCA PARCA dolar (SAT No talep asamasinda,
+         SAS No ve tutar sozlesme asamasinda) ve Excel'de duruma bakilmaksizin
+         tasinir. Bu yuzden duruma bagli GIZLENMIYOR; her zaman gorunur,
+         yetkisi olmayan icin salt okunurdur. -->
+    <div class="form-sec" style="margin-top:12px">Satınalma ve sözleşme bilgileri</div>
+    <div class="form-grid" id="soz-fields-m">
+      <div class="fl"><label>SAT No</label><input type="text" id="f-sat-no" placeholder="3200000636"></div>
+      <div class="fl"><label>SAS No (birden fazla girilebilir)</label><input type="text" id="f-sas-no" placeholder="6800000805"></div>
+      <div class="fl form-full"><label>Yüklenici firma</label><input type="text" id="f-yuklenici" placeholder="Firma adı"></div>
+      <div class="fl"><label>Sözleşme tutarı (TL)</label><input type="text" id="f-tutar" placeholder="4.250.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
+      <div class="fl"><label>Sözleşme tutarı (USD)</label><input type="text" id="f-tutar-usd" placeholder="250.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
+      <div class="fl"><label>Sözleşme tutarı (EUR)</label><input type="text" id="f-tutar-eur" placeholder="230.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
     </div>
 
     <!-- Gerçekleşen M Tarihleri — sadece admin/planlama -->
@@ -1952,6 +1956,7 @@ function hesaplaIhaleTarihleriV2(ihale) {
   seq.forEach((m, ix) => {
     const planT = plan[m.planKey];
     let cum = null, segment = null, durum;
+    let hedef = null;          // yalnizca AKTIF asama icin: bitmesi gereken tarih
     let gecildi = false;
 
     if (!m.gercek && ix < sonGercekIdx) {
@@ -1974,12 +1979,28 @@ function hesaplaIhaleTarihleriV2(ihale) {
       // İlk tamamlanmamış aşama = AKTİF aşama
       aktifBulundu = true;
       durum = 'active';
+      // ── HEDEF TARİH KURALI ──────────────────────────────────────────
+      // hedef = MAX( planlanan hedef tarihi ,
+      //              gerçekleşen başlangıç + aşamaya ayrılan planlanan süre )
+      //  (a) İş plandan ÖNDE gidiyorsa hedef plandan erkene çekilmez;
+      //      kazanılan pay aşamanın gecikmesi gibi görünmez.
+      //  (b) İş plandan GERİDE ise hedef, gerçekleşen başlangıcın üstüne
+      //      aşamanın kendi süresi eklenerek bulunur; geç başlamış bir aşama
+      //      kendi süresi dolmadan gecikmiş sayılmaz.
+      hedef = planT;
+      const oncekiG    = ix > 0 ? seq[ix - 1].gercek : null;
+      const oncekiPlan = ix > 0 ? plan[seq[ix - 1].planKey] : null;
+      if (hedef && oncekiG && oncekiPlan) {
+        const sure = diffD(oncekiPlan, hedef);        // aşamaya ayrılan planlanan süre
+        const kaydirilmis = addD(oncekiG, sure > 0 ? sure : 0);
+        if (kaydirilmis && kaydirilmis > hedef) hedef = kaydirilmis;
+      }
       let proj = 0;
-      if (checkToday && planT) proj = diffD(planT, todayStr); // bugüne göre, + ise gecikmede
-      cum = (proj > oncekiCum) ? proj : oncekiCum;
-      segment = cum - oncekiCum;
+      if (checkToday && hedef) proj = diffD(hedef, todayStr); // + ise hedef geçildi
+      segment = proj > 0 ? proj : 0;      // aşamanın KENDİ gecikmesi
+      cum = oncekiCum + segment;
       net = Math.max(net, cum);
-      kaymali[m.planKey] = addD(planT, net > 0 ? net : 0);
+      kaymali[m.planKey] = hedef || addD(planT, net > 0 ? net : 0);
     } else {
       // Henüz sırası gelmemiş aşama
       durum = 'future';
@@ -1990,6 +2011,7 @@ function hesaplaIhaleTarihleriV2(ihale) {
       key: m.key, ad: m.ad, birim: m.birim,
       suruyor: ix === suruyorIdx,       // bu asama su an devam ediyor
       plan: planT, gercek: m.gercek || null,
+      hedef: hedef,                     // AKTIF asamanin bitmesi gereken tarih
       gecikme: gecildi ? null : cum,   // gecilen asamada gecikme bilgisi olmaz
       segment: gecildi ? null : segment,
       hizlandi: !gecildi && segment != null && segment < 0,
@@ -2249,7 +2271,7 @@ function rDizayn() {
                    || tarihSirali(a._plan?.m2_proje_yayin, b._plan?.m2_proje_yayin));
   document.getElementById('tb-dizayn').innerHTML = rows.length ? rows.map(i => {
     const pct = i.dizayn_yuz || 0;
-    const od  = i.santiye_onay_durum;
+    const od  = santiyeOnayDurumu(i);
 
     // ── Calisma durumu ──
     // Santiye onay akisi, yuzdeden ONCE gelir. Yuzde %100 olsa bile
@@ -2403,9 +2425,23 @@ function rPipeline() {
 // ŞANTİYE — Dizayn Onay & Talep Kuyruğu
 // Şantiye yetkisi: dizaynı kabul/red etmek ve talep girmek.
 // ════════════════════════════════════════════
+// ── ETKIN santiye onay durumu ────────────────────────────────────────
+// Onay bayragi (santiye_onay_durum) tek basina yeterli degil: tarihler
+// geri alininca bayrak veritabaninda "kabul" olarak kalabiliyordu ve
+// hicbir tarihi olmayan bir paket detayda "Onaylandi" gorunuyordu.
+// Kabulun fiili kaniti M2 (Proje Yayin) veya sonrasindaki bir tarihtir;
+// hicbiri yoksa onay yok sayilir. Iade (red) gecmisi bundan etkilenmez.
+function santiyeOnayDurumu(i) {
+  if (!i) return null;
+  const od = i.santiye_onay_durum || null;
+  if (od !== 'kabul') return od;
+  const kanit = !!(i._gm2 || i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
+  return kanit ? 'kabul' : null;
+}
+
 function santiyeOnayBadge(i) {
   if (!i) return '<span class="chip c-arc"><span class="chip-dot"></span>—</span>';
-  const od = i.santiye_onay_durum;
+  const od = santiyeOnayDurumu(i);
   if (od === 'kabul')    return '<span class="chip c-ona"><span class="chip-dot"></span>Onaylandı</span>';
   // M4 veya sonrasi gerceklesmisse dizayn->santiye devri fiilen olmustur
   const m4Gecti = !!(i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
@@ -2418,15 +2454,19 @@ function santiyeOnayBadge(i) {
 function rSantiye() {
   // Şantiyenin ilgilendiği kayıtlar: şantiyeye gönderilmiş ya da onay sürecindeki paketler.
   // Proje filtresi üst bardaki genel seçiciden gelir.
-  const rows = projeFiltre(SbData).filter(i =>
-    i.durum !== 'tamamlandi' && i.durum !== 'iptal' &&
-    (i.dizayn_santiyeye_gonderildi || i.santiye_onay_durum)
-  );
+  const rows = projeFiltre(SbData).filter(i => {
+    if (i.durum === 'tamamlandi' || i.durum === 'iptal') return false;
+    const od = santiyeOnayDurumu(i);
+    if (od) return true;
+    // Bayragi 'kabul' iken tarihleri geri alinmis kayit kuyrukta gorunmez
+    if (i.santiye_onay_durum === 'kabul') return false;
+    return !!i.dizayn_santiyeye_gonderildi;
+  });
 
   const yetkili = (CRole === 'admin' || CRole === 'santiye');
 
   document.getElementById('tb-santiye').innerHTML = rows.length ? rows.map(i => {
-    const od = i.santiye_onay_durum;
+    const od = santiyeOnayDurumu(i);
     let islem = '';
     if (!yetkili) {
       islem = '<span style="font-size:13px;color:var(--text3)">Salt okunur</span>';
@@ -2577,7 +2617,7 @@ async function santiyeTalepGir(id) {
   if (CRole !== 'admin' && CRole !== 'santiye') { toast('Şantiye yetkisi gerekli', 'err'); return; }
   const it = SbData.find(x => x._id === id);
   if (!it) return;
-  if (it.santiye_onay_durum !== 'kabul') { toast('Talep girmek için önce dizaynı KABUL etmelisiniz', 'err'); return; }
+  if (santiyeOnayDurumu(it) !== 'kabul') { toast('Talep girmek için önce dizaynı KABUL etmelisiniz', 'err'); return; }
   const t = today();
   // Tekrar talep girildiginde onceki satinalma iadesi 'cozuldu' sayilir
   // (gecmis silinmez, yalnizca uyari isareti kalkar).
@@ -2908,7 +2948,7 @@ function openForm(id) {
       const durumEl = document.getElementById('dizayn-onay-durum');
       const btn = document.getElementById('btn-dizayn-gonder');
       durumEl.innerHTML = santiyeOnayBadge(f);
-      const od = f.santiye_onay_durum;
+      const od = santiyeOnayDurumu(f);
       // M4+ gerceklesmisse devir fiilen olmus: gonderim butonu gereksiz
       const m4Gecti = !!(f._gm4 || f._gm5 || f._gm6 || f._gm7 || f._gm8);
       if (od === 'kabul' || m4Gecti) {
@@ -2929,10 +2969,16 @@ function openForm(id) {
   toggleSozFieldsModal();
   openOv('ov-form');
 }
+// Satinalma / sozlesme alanlarinin YETKISINI ayarlar.
+// Eskiden bu fonksiyon alanlari duruma gore GIZLIYORDU ("sozlesme" degilse
+// gizle). Durum artik milestone tarihlerinden otomatik turetildigi ve M7
+// girildiginde 'tamamlandi' oldugu icin 'sozlesme' degeri hic olusmuyordu;
+// dolayisiyla SAT No / SAS No / tutar alanlari hicbir zaman gorunmuyordu.
+// Artik alanlar her zaman gorunur, yalnizca yazma yetkisi kisitlanir.
 function toggleSozFieldsModal() {
-  const isSoz=document.getElementById('f-durum').value==='sozlesme';
-  document.getElementById('soz-sec-m').style.display=isSoz?'block':'none';
-  document.getElementById('soz-fields-m').style.display=isSoz?'grid':'none';
+  const yazabilir = (CRole === 'admin' || CRole === 'satinalma');
+  ['f-sat-no','f-sas-no','f-yuklenici','f-tutar','f-tutar-usd','f-tutar-eur']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !yazabilir; });
 }
 function toggleSozFields() {
   const isSoz=document.getElementById('vf-ih-durum').value==='sozlesme';
@@ -2997,7 +3043,7 @@ async function saveForm() {
   // Talep/İhale aşamasına (M3+) ancak şantiye dizaynı KABUL ettiyse geçilebilir.
   const yeniDurum = document.getElementById('f-durum').value;
   const ileriDurumlar = ['satinalma_devir','firma_davet','degerlendirme','yonetim_onayi','sozlesme','aktif','tamamlandi'];
-  if (editId && ileriDurumlar.includes(yeniDurum) && orig && orig.santiye_onay_durum !== 'kabul' && CRole!=='admin' && CRole!=='planlama') {
+  if (editId && ileriDurumlar.includes(yeniDurum) && orig && santiyeOnayDurumu(orig) !== 'kabul' && CRole!=='admin' && CRole!=='planlama') {
     toast('Bu aşamaya geçmek için önce şantiyenin dizaynı KABUL etmesi gerekir.','err');
     return;
   }
@@ -3026,6 +3072,24 @@ async function saveForm() {
     olusturan_id:     CU.id,
     ...gmVeri,
   };
+
+  // ── GERI ALINAN TARIHLER ONAY BAYRAKLARINI DA GERI ALIR ──
+  // Bir paket santiyeye gonderilip kabul edildikten sonra tarihler silinirse
+  // (test amacli ilerletip geri alma), veritabanindaki santiye_onay_durum
+  // 'kabul' olarak kaliyor ve detayda "Onaylandi" gorunuyordu. Kabulun
+  // kaniti M2 (Proje Yayin) tarihidir; M2 ve sonrasi bosaltilirsa bayraklar
+  // sifirlanir. IADE GECMISI (santiye_red_nedeni / talep_red_nedeni) SILINMEZ.
+  const ileriTarihVar = !!(gTum.m3||gTum.m4||gTum.m5||gTum.m6||gTum.m7||gTum.m8);
+  if ('gercek_m2' in gmVeri && !gmVeri.gercek_m2 && !ileriTarihVar) {
+    veri.santiye_onay_durum          = (orig && orig.santiye_onay_durum === 'red') ? 'red' : null;
+    veri.santiye_onay_tarihi         = null;
+    veri.dizayn_santiyeye_gonderildi = false;
+    veri.dizayn_gonderim_tarihi      = null;
+  }
+  // M3 (Talep/SAT) bosaltilirsa talep giris tarihi de birlikte silinir
+  if ('gercek_m3' in gmVeri && !gmVeri.gercek_m3) {
+    veri.talep_giris_tarihi = null;
+  }
 
   // ── OTOMATIK TAMAMLANMA KURALLARI ──
   // 1) Sadece-dizayn paket %100 olunca otomatik tamamlanir
@@ -4182,6 +4246,15 @@ async function xlYaz(proje, rows, iptaleGidecek) {
         if (v && v._id) {
           // Iptalden geri donuyorsa iptal izlerini temizle
           if (v.durum === 'iptal') { veri.iptal_nedeni = null; veri.iptal_tarihi = null; }
+          // Excel tarihleri esas: M2 ve sonrasi bos geldiyse santiye onay
+          // bayraklari da sifirlanir (bkz. saveForm'daki ayni kural).
+          const ileriVar = !!(veri.gercek_m2||veri.gercek_m3||veri.gercek_m4||veri.gercek_m5||
+                              veri.gercek_m6||veri.gercek_m7||veri.gercek_m8);
+          if (!ileriVar && v.santiye_onay_durum === 'kabul') {
+            veri.santiye_onay_durum = null; veri.santiye_onay_tarihi = null;
+            veri.dizayn_santiyeye_gonderildi = false; veri.dizayn_gonderim_tarihi = null;
+          }
+          if (!veri.gercek_m3) veri.talep_giris_tarihi = null;
           const { error } = await sb.from('ihaleler').update(veri).eq('id', v._id);
           if (error) throw error;
           guncellendi++;
@@ -4419,23 +4492,14 @@ function durumPlanTarihi(i) {
 // mevcut milestone'un plan tarihi olarak veriliyordu; o tarih coktan
 // gecmis oldugu icin kartlarda "52 gun gecti" gibi yaniltici sayilar
 // cikiyordu (net gecikme 23 gun iken).
+// Tek kaynak: hesaplaIhaleTarihleriV2 icindeki AKTIF asamanin "hedef" alani.
+//     hedef = MAX(planlanan hedef , gerceklesen baslangic + planlanan asama suresi)
+// Kartlar, aksaklik olcutu ve rapor ayni degeri kullanir; aralarinda fark olusmaz.
 function hedefBitisTarihi(i) {
-  if (!i || !i._plan) return '';
-  let sonIx = -1;
-  MS_LISTE.forEach((m, ix) => { if (i['_g' + m]) sonIx = ix; });
-  const hedefIx = sonIx + 1;
-  if (hedefIx >= MS_LISTE.length) return i._plan[MS_PLANKEY.m8] || '';   // zincir bitti
-  const hedefPlan = i._plan[MS_PLANKEY[MS_LISTE[hedefIx]]] || '';
-  if (sonIx < 0) return hedefPlan;            // henuz hicbir asama gerceklesmedi
-  // Asama, milestone'un GERCEKLESEN tarihinde basladi. Bitis hedefi:
-  //     gerceklesen baslangic + asamaya ayrilan PLANLANAN sure
-  // Boylece gec baslamis bir asama, kendi suresi dolmadan "gecikmis"
-  // gorunmez. Aksaklik olcutu (aktifAsamaGecikmesi) ile ayni tarihi verir.
-  const bPlan   = i._plan[MS_PLANKEY[MS_LISTE[sonIx]]] || '';
-  const bGercek = i['_g' + MS_LISTE[sonIx]];
-  if (!hedefPlan || !bPlan || !bGercek) return hedefPlan;
-  const sure = Math.round((new Date(hedefPlan + 'T00:00:00') - new Date(bPlan + 'T00:00:00')) / 86400000);
-  return addGun(bGercek, sure);
+  if (!i) return '';
+  const a = i._asamalar && i._asamalar.find(x => x.durum === 'active');
+  if (a) return a.hedef || a.plan || '';
+  return (i._plan && i._plan[MS_PLANKEY.m8]) || '';    // zincir bitti
 }
 
 // Bos tarihler her zaman en sona: artan siralama icin karsilastirici
