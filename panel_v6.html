@@ -116,6 +116,30 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .live{display:inline-flex;align-items:center;gap:6px;background:var(--green-glow);border:1px solid #A7F3D0;
   border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--green);white-space:nowrap;}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
+/* Tasarim asamasi anahtari (basliktaki tik kutusu) */
+.tsw{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 9px;
+  cursor:pointer;white-space:nowrap;user-select:none}
+.tsw input{cursor:pointer;margin:0}
+.tsw.on{border-color:var(--gold);color:var(--gold);background:var(--gold-glow);font-weight:600}
+/* Tasarim asamasi kaldirildiginda gizlenen ogeler */
+body.tasarimsiz .only-tasarim{display:none !important}
+/* Coklu secim menusu (durum filtresi) */
+.msel{position:relative;display:inline-block}
+.msel-btn{font-size:14px;padding:7px 10px;border-radius:6px;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text);cursor:pointer;min-width:158px;text-align:left}
+.msel-btn.on{border-color:var(--blue);color:var(--blue-l);font-weight:600}
+.msel-menu{display:none;position:absolute;z-index:60;top:calc(100% + 4px);left:0;min-width:238px;
+  background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px;
+  box-shadow:0 10px 26px rgba(0,0,0,.13);max-height:340px;overflow:auto}
+.msel-menu.on{display:block}
+.msel-menu label{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:5px 7px;
+  border-radius:5px;cursor:pointer}
+.msel-menu label:hover{background:var(--surface2)}
+.msel-sep{height:1px;background:var(--border);margin:5px 2px}
+.msel-alt{display:flex;gap:6px;padding:2px 6px 4px}
+.msel-alt button{font-size:12.5px;padding:3px 8px;border-radius:5px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text2);cursor:pointer}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.live-dot{animation:none}}
 .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);
@@ -133,6 +157,9 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
 .role-pill.santiye{background:var(--green-glow);color:var(--green);}
 .role-pill.planlama{background:var(--gold-glow);color:var(--gold);}
 .role-pill.izleyici,.role-pill.reddedildi{background:var(--neutral-glow);color:var(--neutral);}
+.role-pill.ust_yonetim{background:var(--red-glow);color:var(--red);}
+.role-pill.elektrik{background:var(--gold-glow);color:var(--gold);}
+.role-pill.mekanik{background:var(--blue-glow);color:var(--blue-l);}
 
 /* GOVDE YERLESIMI */
 .app-container{display:flex;flex-direction:row;min-height:calc(100vh - 60px);}
@@ -480,6 +507,9 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <option value="satinalma">Satın Alma / İhale</option>
           <option value="dizayn">Dizayn</option>
           <option value="santiye">Şantiye</option>
+          <option value="elektrik">Elektrik (yalnız ELK ihaleleri)</option>
+          <option value="mekanik">Mekanik (yalnız MEK ihaleleri)</option>
+          <option value="ust_yonetim">Üst Yönetim</option>
           <option value="planlama">Planlama</option>
           <option value="izleyici">İzleyici (Salt Okunur)</option>
         </select></div>
@@ -529,10 +559,10 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   </div>
   <div class="h-right">
     <span id="clk" style="font-size:13px;color:var(--text3)"></span>
-    <div class="live"><div class="live-dot"></div>Canlı</div>
-    <button class="btn btn-ghost btn-sm" onclick="if(CRole==='admin'||CRole==='satinalma'){openCsvModal();}else{toast('Excel içe aktarma yetkiniz yok','err');}">📥 Veri aktar</button>
+    <label class="tsw" id="tsw-lbl" title="İşaretlendiğinde M1 (Tasarım Kararları) ve M2 (Proje Yayın) panelde hiç yokmuş gibi davranır: plan tarihleri, gecikmeler, Dizayn sekmesi ve şantiye onay akışı devre dışı kalır, süreç M3 (Talep) ile başlar. Ayar yalnızca bu tarayıcıda geçerlidir."><input type="checkbox" id="hdr-tasarimsiz" onchange="tasarimsizDegisti()">Tasarım aşaması yok</label>
+    <button class="btn btn-ghost btn-sm" onclick="if(tamYetki()||CRole==='satinalma'){openCsvModal();}else{toast('Excel içe aktarma yetkiniz yok','err');}">📥 Veri aktar</button>
     <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Dışa aktar</button>
-    <button class="btn btn-primary btn-sm" onclick="if(CRole==='admin'||CRole==='satinalma'||CRole==='dizayn'){openForm();}else{toast('Yeni ihale açma yetkiniz yok','err');}">＋ Yeni ihale</button>
+    <button class="btn btn-primary btn-sm" onclick="if(tamYetki()||CRole==='satinalma'||CRole==='dizayn'||rolBolumu()){openForm();}else{toast('Yeni ihale açma yetkiniz yok','err');}">＋ Yeni ihale</button>
     <div class="user-chip" onclick="doLogout()" title="Çıkış yap">
       <div class="u-av admin" id="u-av">--</div>
       <span id="u-name" style="color:var(--text)">—</span>
@@ -545,7 +575,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   <button class="tab on" onclick="sw('ozet',this)">📊 Özet</button>
   <button class="tab" onclick="sw('havuz',this)">📋 İhale Havuzu <span class="nbadge b" id="nb-havuz">0</span></button>
   <button class="tab" onclick="sw('pipeline',this)">⚡ Satın Alma</button>
-  <button class="tab" onclick="sw('dizayn',this)">📐 Dizayn</button>
+  <button class="tab only-tasarim" id="tab-dizayn" onclick="sw('dizayn',this)">📐 Dizayn</button>
   <button class="tab" onclick="sw('santiye',this)">🏗 Şantiye</button>
   <button class="tab" onclick="sw('veri',this)">✏️ Veri Girişi</button>
   <button class="tab" onclick="sw('aksaklik',this)">⚠️ Aksaklıklar <span class="nbadge" id="nb-aksak">0</span></button>
@@ -581,28 +611,18 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="card-t"><div class="ct-dot" style="background:var(--gold)"></div>Proje bazlı dağılım</div>
     <div class="chart" id="ch-proje"></div>
   </div>
-  <div class="card"><div class="card-t"><div class="ct-dot" style="background:var(--green)"></div>Yaklaşan milestone hedefleri</div><div style="font-size:13px;color:var(--text3);margin:-4px 0 10px">Her ihalenin sıradaki aşaması, hedef tarihine en yakın olandan başlayarak. Tarihi geçenler Aksaklıklar sayfasında.</div><div id="son-list"></div></div>
+  <div class="card"><div class="card-t"><div class="ct-dot" style="background:var(--green)"></div>Birimimin yaklaşan tarihleri</div><div style="font-size:13px;color:var(--text3);margin:-4px 0 10px" id="son-list-alt">—</div><div id="son-list"></div></div>
 </div>
 
 <!-- İHALE HAVUZU -->
 <div class="view" id="view-havuz">
   <div class="sh"><div class="st">İhale havuzu</div>
     <div class="fr">
-      <select id="fd" onchange="rHavuz()">
-        <option value="">Tüm durumlar</option>
-        <option value="hazirlik">M1 · Tasarım Kararları</option>
-        <option value="dizaydan_devir">M2 - Proje Yayin</option>
-        <option value="satinalma_devir">M3 · Talep (SAT)</option>
-        <option value="firma_davet">M4 - Ihale Yayini</option>
-        <option value="degerlendirme">M5 - Sunum</option>
-        <option value="yonetim_onayi">M6 - Karar</option>
-        <option value="sozlesme">M7 · Sözleşme İmza</option>
-        <option value="aktif">M8 · İmalat Başlangıç</option>
-        <option value="bloke">Bloke</option>
-        <option disabled>──────</option>
-        <option value="geciken">⚠ Geciken</option>
-        <option value="zamaninda">✓ Zamaninda</option>
-      </select>
+      <!-- Durum filtresi: birden fazla durum secilebilir (bos secim = tumu) -->
+      <div class="msel" id="fd-wrap">
+        <button type="button" class="msel-btn" id="fd-btn" onclick="fdAcKapa(event)">Tüm durumlar ▾</button>
+        <div class="msel-menu" id="fd-menu"></div>
+      </div>
       <select id="fg" onchange="rHavuz()">
         <option value="">Tüm gecikmeler</option>
         <option value="geciken">Gecikenler</option>
@@ -614,11 +634,11 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   <div class="tw"><table>
   <colgroup>
     <col style="width:130px"><col style="min-width:180px"><col style="width:158px">
-    <col style="width:92px"><col style="width:92px"><col style="width:80px">
-    <col style="width:118px"><col style="width:96px"><col style="width:104px">
+    <col style="width:92px"><col style="width:92px"><col class="only-tasarim" style="width:80px">
+    <col class="only-tasarim" style="width:118px"><col style="width:96px"><col style="width:104px">
   </colgroup>
   <thead><tr>
-    <th>İhale No</th><th>Paket Adı</th><th>Durum</th><th>Durum tarihi</th><th>İş Başlangıç</th><th>Dizayn %</th><th>Şantiye Onay</th><th>Net Gecikme</th><th>İşlem</th>
+    <th>İhale No</th><th>Paket Adı</th><th>Durum</th><th>Durum tarihi</th><th>İş Başlangıç</th><th class="only-tasarim">Dizayn %</th><th class="only-tasarim">Şantiye Onay</th><th>Net Gecikme</th><th>İşlem</th>
   </tr></thead><tbody id="tb-havuz"></tbody></table></div>
 </div>
 
@@ -671,10 +691,10 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   <div class="arc-banner" style="background:var(--blue-glow);border-color:var(--border2)">
     <div style="font-size:20px">🏗</div>
     <div><div class="arc-title" style="color:var(--blue-l)">Şantiye Yetkisi</div>
-    <div class="arc-sub">Dizayn paketlerini <strong>kabul</strong> edebilir, eksikse <strong>red</strong> edebilir ve onayladıktan sonra <strong>talep girip</strong> ihale &amp; satınalma birimine iletebilirsiniz.</div></div>
+    <div class="arc-sub" id="santiye-alt">Dizayn paketlerini <strong>kabul</strong> edebilir, eksikse <strong>red</strong> edebilir ve onayladıktan sonra <strong>talep girip</strong> ihale &amp; satınalma birimine iletebilirsiniz.</div></div>
   </div>
   <div class="tw"><table><thead><tr>
-    <th>Paket</th><th>Proje</th><th>Dizayn %</th><th>Şantiyeye Gönderim</th><th>Onay Durumu</th><th>Talep Tarihi</th><th>İşlem</th>
+    <th>Paket</th><th>Proje</th><th class="only-tasarim">Dizayn %</th><th class="only-tasarim">Şantiyeye Gönderim</th><th class="only-tasarim">Onay Durumu</th><th>Talep Tarihi</th><th>İşlem</th>
   </tr></thead><tbody id="tb-santiye"></tbody></table></div>
 </div>
 
@@ -926,7 +946,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <div style="display:flex;align-items:center;gap:7px">
             <div class="ct-dot" style="background:var(--blue-l)"></div>Aktif projeler
           </div>
-          <button class="btn btn-primary btn-sm" onclick="if(CRole==='admin'||CRole==='satinalma'){openOv('ov-proje');}else{toast('Yeni proje açma yetkisi yok','err');}">＋ Yeni Proje</button>
+          <button class="btn btn-primary btn-sm" onclick="if(tamYetki()||CRole==='satinalma'){openOv('ov-proje');}else{toast('Yeni proje açma yetkisi yok','err');}">＋ Yeni Proje</button>
         </div>
         <div id="proje-list-settings"><div class="loading"><div class="spin"></div>Yükleniyor...</div></div>
       </div>
@@ -1016,8 +1036,8 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     </div>
 
     <!-- Dizayn İlerleme — sadece dizayn/admin düzenler -->
-    <div class="form-sec">Dizayn Ilerleme</div>
-    <div class="form-grid">
+    <div class="form-sec only-tasarim">Dizayn Ilerleme</div>
+    <div class="form-grid only-tasarim">
       <div class="fl">
         <label>Dizayn Ilerleme (%) <span id="dizayn-rol-not" style="color:var(--text3);font-size:13px;font-weight:400"></span></label>
         <div class="range-row">
@@ -1074,8 +1094,8 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
         Tarih girildiğinde ihalenin durumu otomatik güncellenir.
       </div>
       <div class="form-grid">
-        <div class="fl"><label>M1 · Tasarım Kararları <span class="ms-sahip">Dizayn</span></label><input type="date" id="f-gm-m1" oninput="msDurumTazele()"></div>
-        <div class="fl"><label>M2 · Proje Yayın <span class="ms-sahip">Şantiye kabulüyle otomatik</span></label><input type="date" id="f-gm-m2" oninput="msDurumTazele()"></div>
+        <div class="fl only-tasarim"><label>M1 · Tasarım Kararları <span class="ms-sahip">Dizayn</span></label><input type="date" id="f-gm-m1" oninput="msDurumTazele()"></div>
+        <div class="fl only-tasarim"><label>M2 · Proje Yayın <span class="ms-sahip">Şantiye kabulüyle otomatik</span></label><input type="date" id="f-gm-m2" oninput="msDurumTazele()"></div>
         <div class="fl"><label>M3 · Şantiye Talep (SAT) <span class="ms-sahip">Şantiye</span></label><input type="date" id="f-gm-m3" oninput="msDurumTazele()"><div class="calc" id="m3-hedef"></div></div>
         <div class="fl"><label>M4 · İhale Yayını <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m4" oninput="msDurumTazele()"></div>
         <div class="fl"><label>M5 · Yönetime Sunum <span class="ms-sahip">Satınalma</span></label><input type="date" id="f-gm-m5" oninput="msDurumTazele()"></div>
@@ -1397,7 +1417,9 @@ function getAktifMilestoneBilgi(i) {
   ];
 
   // Find the first milestone that is NOT completed
-  const activeMs = milestones.find(m => !m.gercek);
+  // (tasarim asamasi kapaliysa M1-M2 hic degerlendirilmez)
+  const gorunur = msGorunur();
+  const activeMs = milestones.filter(m => gorunur.indexOf(m.key) >= 0).find(m => !m.gercek);
   if (!activeMs) {
     return { ad: 'Tamamlandı', hedef: '', gun: 0, html: '<span class="chip c-tam"><span class="chip-dot"></span>Zamanında</span>' };
   }
@@ -1544,7 +1566,7 @@ async function loadProfile() {
   const ini = nm.split(' ').map(s=>s[0]).join('').toUpperCase().slice(0,2);
   set('u-av', ini); set('u-name', nm.split(' ')[0]);
   const roleEl = document.getElementById('u-role');
-  roleEl.textContent = p.rol; roleEl.className = `role-pill ${p.rol}`;
+  roleEl.textContent = ROL_ETIKET[p.rol] || p.rol; roleEl.className = `role-pill ${p.rol}`;
   document.getElementById('u-av').className = `u-av ${p.rol}`;
   const permMap = {
     admin:'✅ Tüm birimlere tam erişim',
@@ -1553,14 +1575,24 @@ async function loadProfile() {
     santiye:'✅ Dizaynı kabul / eksik-red\n📨 Talep girme (satınalmaya iletme)\n🔍 Diğerleri okuma',
     planlama:'✅ Planlama + P6 + SAP\n🔍 Diğerleri okuma',
     izleyici:'🔍 Tüm birimler salt okunur',
+    ust_yonetim:'✅ Tüm birimlere tam erişim (admin ile aynı)',
+    elektrik:'✅ ELK bölümü: dizayn + talep + satınalma\n🔍 Diğer bölümler salt okunur',
+    mekanik:'✅ MEK bölümü: dizayn + talep + satınalma\n🔍 Diğer bölümler salt okunur',
   };
   document.getElementById('perm-info').innerHTML = (permMap[p.rol]||'').replace(/\n/g,'<br>');
-  if (p.rol!=='admin' && p.rol!=='planlama') {
+  // Elektrik / Mekanik: ust bardaki Bolum filtresi kendi bolumune sabitlenir
+  const kilitB = ROL_BOLUM[p.rol];
+  if (kilitB) {
+    const bEl = document.getElementById('hdr-bolum');
+    if (bEl) { bEl.value = kilitB; bEl.title = 'Rolünüz yalnızca ' + kilitB + ' bölümünde yetkilidir'; }
+    genelFiltreDegisti();
+  }
+  if (!tamYetki() && p.rol!=='planlama') {
     document.getElementById('tab-p6')?.classList.add('hidden');
     document.getElementById('tab-sap')?.classList.add('hidden');
   }
-  // Sadece admin kullanıcı yönetimi kartını görür
-  if (p.rol === 'admin') {
+  // Kullanici yonetimi karti: admin ve ust yonetim
+  if (tamYetki()) {
     const kartKullanici = document.getElementById('kart-kullanici');
     if (kartKullanici) kartKullanici.style.display = '';
     const kartOnay = document.getElementById('kart-onay');
@@ -1568,7 +1600,13 @@ async function loadProfile() {
   }
 }
 function showLogin() { document.getElementById('login-page').classList.remove('hidden'); document.getElementById('main-app').classList.add('hidden'); }
-function showApp() { document.getElementById('login-page').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); loadAllData(); }
+function showApp() {
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  tasarimsizUygula();      // basliktaki tik ve gizlenen ogeler
+  fdMenuKur();             // havuz durum filtresi kutulari
+  loadAllData();
+}
 // ════════ GIRIS / KAYIT / ONAY FONKSIYONLARI ════════
 
 function loginTab(tab) {
@@ -1858,9 +1896,19 @@ async function loadIhaleler() {
     if (row._gm4 || row._gm5 || row._gm6 || row._gm7 || row._gm8) {
       row.dizayn_yuz = 100; row.dizayn = 100;
     }
+    // Tasarim asamasi kapaliyken GORUNTU durumu M3'ten turetilir:
+    // yalnizca M1/M2 girilmis bir kayit "Talep bekleniyor" gorunur.
+    // Veritabanindaki durum DEGISMEZ; kaydetme ve Excel yolu gercek
+    // tarihlerden hesaplamaya devam eder.
+    if (TASARIMSIZ && row.durum !== 'bloke' && row.durum !== 'iptal') {
+      row.durum = durumTuret({ m3:row._gm3, m4:row._gm4, m5:row._gm5,
+                               m6:row._gm6, m7:row._gm7, m8:row._gm8 });
+    }
     // Tarih zinciri hesapla
     const hesap = hesaplaIhaleTarihleriV2(row);
     row._plan   = hesap.plan;   // planlanan tarihler (salt is_prog'dan)
+    // Disa aktarimda kullanilan EKSIKSIZ plan (tasarimsiz modda bile M1-M2 dolu)
+    row._planTam = TASARIMSIZ ? hesaplaIhaleTarihleriV2(row, true).plan : hesap.plan;
     row._kaymali= hesap.kaymali;// projeksiyon (net gecikme kadar ötelenmiş tarihler)
     row._asamalar = hesap.asamalar;        // aşama bazlı gecikme dökümü
     row._gecikme_toplam = hesap.gecikme_toplam; // pozitif net (>=0)
@@ -1873,7 +1921,11 @@ async function loadIhaleler() {
 // TAR İH HESAPLAMA V2
 // Planlanan + Kaymalı (gerçekleşenlerden öteleme)
 // ════════════════════════════════════════════
-function hesaplaIhaleTarihleriV2(ihale) {
+// tumAsamalar=true ise TASARIMSIZ modu yok sayar ve M1-M8 zincirini
+// eksiksiz uretir. Disa aktarim bunu kullanir: Excel'e her zaman GERCEK
+// plan tarihleri yazilir, yoksa yeniden yuklemede M1-M2 plani silinirdi.
+function hesaplaIhaleTarihleriV2(ihale, tumAsamalar) {
+  const _tasarimsiz = TASARIMSIZ && !tumAsamalar;
   const subD = (dateStr, gun) => {
     if (!dateStr || !gun || gun <= 0) return dateStr;
     const d = new Date(dateStr + 'T00:00:00');
@@ -1924,7 +1976,7 @@ function hesaplaIhaleTarihleriV2(ihale) {
   // Örn: dizayn +15 geç, sonraki birim -10 hızlı → dizayn aşaması +15 görünür,
   //      sonraki aşama -10 (hızlandı) görünür, NET toplam +5 olur.
   // ════════════════════════════════════════════
-  const seq = [
+  const seqTum = [
     { key:'m1', planKey:'m1_tasarim',          gercek: ihale._gm1, ad:'M1 · Tasarım Kararları', birim:MS_BIRIM.m1 },
     { key:'m2', planKey:'m2_proje_yayin',      gercek: ihale._gm2, ad:'M2 · Proje Yayın',       birim:MS_BIRIM.m2 },
     { key:'m3', planKey:'m3_talep',            gercek: ihale._gm3, ad:'M3 · Talep (SAT)',       birim:MS_BIRIM.m3 },
@@ -1934,6 +1986,11 @@ function hesaplaIhaleTarihleriV2(ihale) {
     { key:'m7', planKey:'m7_sozlesme_imza',    gercek: ihale._gm7, ad:'M7 · Sözleşme İmza',     birim:MS_BIRIM.m7 },
     { key:'m8', planKey:'m8_imalat_baslangic', gercek: ihale._gm8, ad:'M8 · İmalat Başlangıç',  birim:MS_BIRIM.m8 },
   ];
+  // Tasarim asamasi kaldirildiysa M1-M2 hic yokmus gibi: zincirden dusurulur
+  // ve plan tarihleri bosaltilir. M3-M8 tarihleri M8'den geriye hesaplandigi
+  // icin DEGISMEZ — yani M1-M2 hicbir asamanin oncusu degilmis gibi olur.
+  const seq = _tasarimsiz ? seqTum.slice(2) : seqTum;
+  if (_tasarimsiz) { plan.m1_tasarim = null; plan.m2_proje_yayin = null; }
 
   const todayStr = today();
   const isFinished = ihale.durum === 'tamamlandi' || ihale.durum === 'iptal';
@@ -2147,7 +2204,11 @@ function rCharts() {
   const dc = {};
   rows.forEach(i => dc[i.durum] = (dc[i.durum] || 0) + 1);
   const maxD = Math.max(...Object.values(dc), 1);
-  document.getElementById('ch-durum').innerHTML = DURUM_SIRA.map(d => {
+  const durumSira = TASARIMSIZ
+    ? DURUM_SIRA.filter(d => d.k !== 'dizaydan_devir')
+                .map(d => d.k === 'hazirlik' ? {...d, kisa:'Talep bek.', birim:'Şantiye'} : d)
+    : DURUM_SIRA;
+  document.getElementById('ch-durum').innerHTML = durumSira.map(d => {
     const v = dc[d.k] || 0;
     const h = Math.max((v / maxD) * 78, 3);
     return '<div class="cb-wrap">' +
@@ -2168,55 +2229,177 @@ function rCharts() {
 // gosteriliyor: en yakin tarihli olan en ustte.
 // Tarihi gecmis olanlar buraya DEGIL, Aksakliklar sayfasina dusuyor.
 // ════════════════════════════════════════════════════════════════════
+// Rol -> Ozet sayfasinda takip ettigi PLANLANAN milestone'lar
+//   dizayn      : M2 Proje Yayin
+//   santiye     : M3 Talep (SAT)
+//   admin/satinalma : M4 Ihale Yayini
+//   ust_yonetim : M4 Ihale Yayini + M6 Ihale Karar
+//   elektrik/mekanik: M4 — yalnizca kendi bolumunun (ELK/MEK) ihaleleri
+//   planlama/izleyici: hepsi (gozlemci)
+const ROL_YAKLASAN = {
+  dizayn:      ['m2'],
+  santiye:     ['m3'],
+  satinalma:   ['m4'],
+  admin:       ['m4'],
+  ust_yonetim: ['m4','m6'],
+  elektrik:    ['m4'],
+  mekanik:     ['m4'],
+};
+const MS_ADI = { m1:'M1 · Tasarım Kararları', m2:'M2 · Proje Yayın', m3:'M3 · Talep (SAT)',
+                 m4:'M4 · İhale Yayını', m5:'M5 · Yönetime Sunum', m6:'M6 · İhale Karar',
+                 m7:'M7 · Sözleşme İmza', m8:'M8 · İmalat Başlangıç' };
+
 function rSonList() {
   const bugun = today();
-  const satirlar = projeFiltre(SbData)
-    .filter(i => i.durum !== 'tamamlandi' && i.durum !== 'iptal' && i.durum !== 'bloke')
-    // Gecikmede olanlar buraya girmez; onlarin yeri Aksakliklar sayfasi.
-    // (Aksi halde projeksiyon tarihi bugune cekildigi icin "Bugün" gorunurler.)
-    .filter(i => !(i.gecikme > 0))
-    .map(i => ({ i: i, ms: getAktifMilestoneBilgi(i) }))
-    .filter(x => x.ms && x.ms.hedef && x.ms.gun <= 0)   // gun<=0 => bugun veya ilerde
-    .sort((a, b) => a.ms.hedef.localeCompare(b.ms.hedef))
-    .slice(0, 8);
+  // Takip edilecek milestone'lar role gore; tanimsiz rol (planlama/izleyici)
+  // butun zinciri gorur. Tasarimsiz modda M1-M2 listeden tamamen duser.
+  let takip = ROL_YAKLASAN[CRole] || MS_LISTE.slice();
+  if (TASARIMSIZ) takip = takip.filter(m => m !== 'm1' && m !== 'm2');
+
+  const satirlar = [];
+  projeFiltre(SbData)
+    .filter(i => !['tamamlandi','iptal','bloke'].includes(i.durum))
+    // elektrik/mekanik yalnizca kendi bolumunu takip eder
+    .filter(i => !rolBolumu() || bolumumMu(i))
+    .forEach(i => {
+      takip.forEach(m => {
+        if (i['_g' + m]) return;                                  // GERCEKLESTI -> listeden dus
+        const plan = i._plan && i._plan[MS_PLANKEY[m]];
+        if (!plan) return;
+        satirlar.push({ i: i, key: m, ad: MS_ADI[m], hedef: plan,
+                        gun: Math.round((new Date(bugun+'T00:00:00') - new Date(plan+'T00:00:00'))/86400000) });
+      });
+    });
+  satirlar.sort((a,b) => a.hedef.localeCompare(b.hedef));
+  const toplam = satirlar.length;
+  const gosterilen = satirlar.slice(0, 12);
+
+  // Kart alt basligi: hangi rolun neyi gordugunu yazar
+  const altEl = document.getElementById('son-list-alt');
+  if (altEl) {
+    altEl.textContent = takip.length
+      ? (ROL_ETIKET[CRole] || CRole) + ' · takip edilen planlanan tarihler: '
+        + takip.map(m => MS_ADI[m]).join(' ve ')
+        + (rolBolumu() ? ' · yalnız ' + rolBolumu() + ' bölümü' : '')
+        + '. Gerçekleşen aşama listeden düşer.'
+      : 'Bu rol için takip edilen planlanan aşama yok.';
+  }
 
   const el = document.getElementById('son-list');
-  if (!satirlar.length) {
-    el.innerHTML = '<div class="empty">Yaklaşan milestone hedefi bulunmuyor</div>';
+  if (!gosterilen.length) {
+    el.innerHTML = '<div class="empty">Takip edilen planlanan tarih bulunmuyor</div>';
     return;
   }
 
   el.innerHTML =
     '<div class="tw"><table><thead><tr>' +
       '<th>İhale No</th><th>İhale adı</th><th>Proje</th>' +
-      '<th>Sıradaki aşama</th><th>Sorumlu</th><th>Hedef tarih</th><th>Kalan</th>' +
+      '<th>Bekleyen aşama</th><th>Bölüm</th><th>Planlanan tarih</th><th>Durum</th>' +
     '</tr></thead><tbody>' +
-    satirlar.map(x => {
-      const i = x.i, ms = x.ms;
-      const kalan = -ms.gun;   // ms.gun negatifse ilerde
-      const kalanHtml = kalan === 0
-        ? '<span style="color:var(--gold);font-weight:600">Bugün</span>'
-        : '<span style="color:' + (kalan <= 7 ? 'var(--gold)' : 'var(--green)') + '">' + kalan + ' gün</span>';
+    gosterilen.map(x => {
+      const i = x.i;
+      // gun > 0 => planlanan tarih GECTI (kirmizi), 0 => bugun, < 0 => ilerde
+      const durumHtml = x.gun > 0
+        ? '<span style="color:var(--red);font-weight:700">' + x.gun + ' gün geçti</span>'
+        : x.gun === 0
+          ? '<span style="color:var(--gold);font-weight:600">Bugün</span>'
+          : '<span style="color:' + (-x.gun <= 7 ? 'var(--gold)' : 'var(--green)') + '">' + (-x.gun) + ' gün kaldı</span>';
       return '<tr style="cursor:pointer" onclick="openDetail(\'' + i._id + '\')">' +
         '<td class="mono" style="color:var(--blue-l)">' + esc(i.id) + '</td>' +
         '<td><strong>' + esc(i.paket) + '</strong></td>' +
         '<td style="font-size:13px;color:var(--text2)">' + esc(i.proje) + '</td>' +
-        '<td>' + esc(ms.ad) + '</td>' +
-        '<td style="font-size:13px">' + esc(MS_BIRIM[ms.key] || '-') + '</td>' +
-        '<td class="mono" style="font-size:13px">' + fmtTarih(ms.hedef) + '</td>' +
-        '<td>' + kalanHtml + '</td>' +
+        '<td>' + esc(x.ad) + '</td>' +
+        '<td style="font-size:13px">' + esc(i.ihale_bolumu || '-') + '</td>' +
+        '<td class="mono" style="font-size:13px">' + fmtTarih(x.hedef) + '</td>' +
+        '<td>' + durumHtml + '</td>' +
       '</tr>';
     }).join('') +
-    '</tbody></table></div>';
+    '</tbody></table></div>' +
+    (toplam > gosterilen.length
+      ? '<div style="font-size:13px;color:var(--text3);margin-top:8px">' + gosterilen.length
+        + ' / ' + toplam + ' kayıt gösteriliyor — tamamı İhale Havuzu sekmesinde.</div>'
+      : '');
 }
 
+// ════════════════════════════════════════════════════════════════════
+// IHALE HAVUZU — COKLU DURUM FILTRESI
+// Eskiden tek secimli bir <select> vardi. Artik tiklenebilir kutularla
+// birden fazla durum secilebiliyor; hicbiri secilmezse TUMU gosterilir.
+// ════════════════════════════════════════════════════════════════════
+const HavuzDurumlar = new Set();
+const FD_SECENEK = [
+  { k:'hazirlik',        l:'M1 · Tasarım Kararları' },
+  { k:'dizaydan_devir',  l:'M2 · Proje Yayın' },
+  { k:'satinalma_devir', l:'M3 · Talep (SAT)' },
+  { k:'firma_davet',     l:'M4 · İhale Yayını' },
+  { k:'degerlendirme',   l:'M5 · Yönetime Sunum' },
+  { k:'yonetim_onayi',   l:'M6 · İhale Karar' },
+  { k:'sozlesme',        l:'M7 · Sözleşme İmza' },
+  { k:'aktif',           l:'M8 · İmalat Başlangıç' },
+  { k:'-' },
+  { k:'tamamlandi',      l:'Tamamlandı' },
+  { k:'bloke',           l:'Bloke' },
+  { k:'iptal',           l:'İptal' },
+];
+function fdMenuKur() {
+  const menu = document.getElementById('fd-menu');
+  if (!menu) return;
+  // Tasarimsiz modda M2 secenegi hic yok, M1 ise "Talep bekleniyor" olur
+  const liste = FD_SECENEK.filter(o => !(TASARIMSIZ && o.k === 'dizaydan_devir'));
+  menu.innerHTML =
+    '<div class="msel-alt"><button type="button" onclick="fdTumu(false)">Temizle</button>' +
+    '<button type="button" onclick="fdTumu(true)">Tümünü seç</button></div>' +
+    liste.map(o => o.k === '-' ? '<div class="msel-sep"></div>' :
+      '<label><input type="checkbox" value="' + o.k + '"' +
+      (HavuzDurumlar.has(o.k) ? ' checked' : '') + ' onchange="fdDegisti()">' +
+      esc(o.k === 'hazirlik' ? durumEtiket('hazirlik') : o.l) + '</label>').join('');
+  fdEtiket();
+}
+function fdEtiket() {
+  const btn = document.getElementById('fd-btn');
+  if (!btn) return;
+  const n = HavuzDurumlar.size;
+  let metin = 'Tüm durumlar';
+  if (n === 1) {
+    const k = [...HavuzDurumlar][0];
+    const o = FD_SECENEK.find(x => x.k === k);
+    metin = (k === 'hazirlik') ? durumEtiket('hazirlik') : (o ? o.l : k);
+  } else if (n > 1) metin = n + ' durum seçili';
+  btn.textContent = metin + ' ▾';
+  btn.classList.toggle('on', n > 0);
+}
+function fdAcKapa(ev) {
+  if (ev) ev.stopPropagation();
+  const menu = document.getElementById('fd-menu');
+  if (!menu) return;
+  if (!menu.innerHTML) fdMenuKur();
+  menu.classList.toggle('on');
+}
+function fdDegisti() {
+  HavuzDurumlar.clear();
+  document.querySelectorAll('#fd-menu input[type=checkbox]').forEach(cb => {
+    if (cb.checked) HavuzDurumlar.add(cb.value);
+  });
+  fdEtiket(); rHavuz();
+}
+function fdTumu(hepsi) {
+  HavuzDurumlar.clear();
+  if (hepsi) FD_SECENEK.forEach(o => { if (o.k !== '-') HavuzDurumlar.add(o.k); });
+  fdMenuKur(); rHavuz();
+}
+// Menu disina tiklaninca kapat
+document.addEventListener('click', e => {
+  const w = document.getElementById('fd-wrap');
+  if (w && !w.contains(e.target)) document.getElementById('fd-menu')?.classList.remove('on');
+});
+
 function rHavuz() {
-  const fd=document.getElementById('fd').value, fg=document.getElementById('fg').value, fs=document.getElementById('fs').value.toLowerCase();
+  const fg=document.getElementById('fg').value, fs=document.getElementById('fs').value.toLowerCase();
 
   // Proje / bolum / kategori suzgeci ortak fonksiyondan gecer,
   // sayfaya ozel olanlar (durum, gecikme, arama) burada uygulanir.
   const rows=projeFiltre(SbData).filter(i => {
-    const durumMatch = !fd || i.durum === fd;
+    const durumMatch = !HavuzDurumlar.size || HavuzDurumlar.has(i.durum);
     const searchMatch = !fs || i.paket.toLowerCase().includes(fs) || i.id.toLowerCase().includes(fs);
     
     let delayMatch = true;
@@ -2247,13 +2430,13 @@ function rHavuz() {
       <td>${chip(i.durum)}<div style="margin-top:3px">${ms.html}</div></td>
       <td class="mono" style="font-size:13px">${fmtTarih(durumPlanTarihi(i))}</td>
       <td class="mono" style="font-size:13px">${fmtTarih(i.acilis)}</td>
-      <td style="min-width:80px">${pb(i.dizayn,pbColor(i.dizayn))}</td>
-      <td>${santiyeOnayBadge(i)}</td>
+      <td class="only-tasarim" style="min-width:80px">${pb(i.dizayn,pbColor(i.dizayn))}</td>
+      <td class="only-tasarim">${santiyeOnayBadge(i)}</td>
       <td>${dl(i.gecikme)}</td>
       <td><div style="display:flex;gap:3px">
         <button class="btn btn-ghost btn-sm ikon" onclick="openDetail('${i._id}')" title="Detay">🔍</button>
         ${CRole!=='izleyici'?`<button class="btn btn-ghost btn-sm ikon" onclick="openForm('${i._id}')" title="Düzenle">✏</button>`:''}
-        ${(CRole==='admin'||CRole==='satinalma')&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm ikon" onclick="iptalAc('${i._id}')" title="İhaleyi iptal et">🚫</button>`:''}
+        ${birimYetkisi('satinalma',i)&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm ikon" onclick="iptalAc('${i._id}')" title="İhaleyi iptal et">🚫</button>`:''}
       </div></td>
     </tr>`;
   }).join(''):`<tr><td colspan="9"><div class="empty">Kayıt bulunamadı</div></td></tr>`;
@@ -2454,8 +2637,16 @@ function santiyeOnayBadge(i) {
 function rSantiye() {
   // Şantiyenin ilgilendiği kayıtlar: şantiyeye gönderilmiş ya da onay sürecindeki paketler.
   // Proje filtresi üst bardaki genel seçiciden gelir.
+  // Tasarimsiz modda dizayn->santiye onay akisi HIC YOK. Santiye sekmesi
+  // dogrudan "talep girilecek isler" kuyruguna doner: acik butun paketler.
+  const altEl = document.getElementById('santiye-alt');
+  if (altEl) altEl.innerHTML = TASARIMSIZ
+    ? 'Tasarım aşaması kapalı: dizayn onayı beklenmez, açık paketler için doğrudan <strong>talep girilir</strong>.'
+    : 'Dizayn paketlerini <strong>kabul</strong> edebilir, eksikse <strong>red</strong> edebilir ve onayladıktan sonra <strong>talep girip</strong> ihale &amp; satınalma birimine iletebilirsiniz.';
+
   const rows = projeFiltre(SbData).filter(i => {
     if (i.durum === 'tamamlandi' || i.durum === 'iptal') return false;
+    if (TASARIMSIZ) return true;                 // dizayn onayi yok -> hepsi kuyrukta
     const od = santiyeOnayDurumu(i);
     if (od) return true;
     // Bayragi 'kabul' iken tarihleri geri alinmis kayit kuyrukta gorunmez
@@ -2463,10 +2654,11 @@ function rSantiye() {
     return !!i.dizayn_santiyeye_gonderildi;
   });
 
-  const yetkili = (CRole === 'admin' || CRole === 'santiye');
-
   document.getElementById('tb-santiye').innerHTML = rows.length ? rows.map(i => {
-    const od = santiyeOnayDurumu(i);
+    const yetkili = birimYetkisi('santiye', i);
+    // Tasarimsiz modda onay durumu her zaman 'kabul' gibi davranir:
+    // dizayn adimi olmadigi icin talep dogrudan girilebilir.
+    const od = TASARIMSIZ ? 'kabul' : santiyeOnayDurumu(i);
     let islem = '';
     if (!yetkili) {
       islem = '<span style="font-size:13px;color:var(--text3)">Salt okunur</span>';
@@ -2502,9 +2694,9 @@ function rSantiye() {
       <tr>
         <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div>${redNot}</td>
         <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
-        <td style="min-width:90px">${pb(i.dizayn, pbColor(i.dizayn))}</td>
-        <td class="mono" style="font-size:13px">${fmtTarih(i.dizayn_gonderim_tarihi)}</td>
-        <td>${santiyeOnayBadge(i)}</td>
+        <td class="only-tasarim" style="min-width:90px">${pb(i.dizayn, pbColor(i.dizayn))}</td>
+        <td class="only-tasarim" class="mono" style="font-size:13px">${fmtTarih(i.dizayn_gonderim_tarihi)}</td>
+        <td class="only-tasarim">${santiyeOnayBadge(i)}</td>
         <td class="mono" style="font-size:13px">${fmtTarih(i.talep_giris_tarihi)}</td>
         <td>${islem}</td>
       </tr>`;
@@ -2514,7 +2706,7 @@ function rSantiye() {
 // ── Dizayn → Şantiye onay akışı aksiyonları ──
 async function dizaynSantiyeyeGonder() {
   if (!editId) { toast('Önce kaydı seçin', 'err'); return; }
-  if (CRole !== 'admin' && CRole !== 'dizayn') { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
+  if (!birimYetkisi('dizayn', SbData.find(x => x._id === editId))) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
   const dy = parseInt(document.getElementById('f-dizayn').value) || 0;
   if (dy < 100) { toast('Dizayn ilerlemesi %100 olmadan şantiyeye gönderilemez', 'err'); return; }
   const upd = {
@@ -2532,9 +2724,9 @@ async function dizaynSantiyeyeGonder() {
 }
 
 async function santiyeKabul(id) {
-  if (CRole !== 'admin' && CRole !== 'santiye') { toast('Şantiye yetkisi gerekli', 'err'); return; }
   const it = SbData.find(x => x._id === id);
   if (!it) return;
+  if (!birimYetkisi('santiye', it)) { toast('Şantiye yetkisi gerekli', 'err'); return; }
   const t = today();
   const upd = { santiye_onay_durum: 'kabul', santiye_onay_tarihi: t, santiye_red_nedeni: null };
   // Santiye kabulu = M2 (Proje Yayin) gerceklesti. Bu tarih OTOMATIK olusur,
@@ -2579,9 +2771,9 @@ async function redImza() {
 
 let redHedefId = null;
 function santiyeRed(id) {
-  if (CRole !== 'admin' && CRole !== 'santiye') { toast('Şantiye yetkisi gerekli', 'err'); return; }
   const it = SbData.find(x => x._id === id);
   if (!it) return;
+  if (!birimYetkisi('santiye', it)) { toast('Şantiye yetkisi gerekli', 'err'); return; }
   redHedefId = id;
   document.getElementById('red-sub').textContent = it.paket + ' (' + it.id + ')';
   document.getElementById('red-neden').value = '';
@@ -2614,17 +2806,20 @@ async function santiyeRedOnayla() {
 }
 
 async function santiyeTalepGir(id) {
-  if (CRole !== 'admin' && CRole !== 'santiye') { toast('Şantiye yetkisi gerekli', 'err'); return; }
   const it = SbData.find(x => x._id === id);
   if (!it) return;
-  if (santiyeOnayDurumu(it) !== 'kabul') { toast('Talep girmek için önce dizaynı KABUL etmelisiniz', 'err'); return; }
+  if (!birimYetkisi('santiye', it)) { toast('Şantiye yetkisi gerekli', 'err'); return; }
+  if (!TASARIMSIZ && santiyeOnayDurumu(it) !== 'kabul') { toast('Talep girmek için önce dizaynı KABUL etmelisiniz', 'err'); return; }
   const t = today();
   // Tekrar talep girildiginde onceki satinalma iadesi 'cozuldu' sayilir
   // (gecmis silinmez, yalnizca uyari isareti kalkar).
   const upd = { talep_giris_tarihi: t, gercek_m3: t, talep_onay_durum: null };
   // Onceki dizayn milestone'larini tutarlilik icin doldur
-  if (!it._gm2) upd.gercek_m2 = it.santiye_onay_tarihi || it.dizayn_gonderim_tarihi || t;
-  if (!it._gm1) upd.gercek_m1 = it.dizayn_gonderim_tarihi || t;
+  // (tasarim asamasi kapaliyken M1-M2 hic yok, doldurulmaz)
+  if (!TASARIMSIZ) {
+    if (!it._gm2) upd.gercek_m2 = it.santiye_onay_tarihi || it.dizayn_gonderim_tarihi || t;
+    if (!it._gm1) upd.gercek_m1 = it.dizayn_gonderim_tarihi || t;
+  }
   // Durum, ortak kuralla son girilen tarihten turetilir (M3 -> satinalma_devir)
   const g = {};
   MS_LISTE.forEach(m => { g[m] = ('gercek_'+m in upd) ? upd['gercek_'+m] : it['_g'+m]; });
@@ -2650,9 +2845,9 @@ function akBirimSec(b) { AkBirim = b; rAksaklik(); }
 // ════════════════════════════════════════════════════════════════════
 let talepRedHedefId = null;
 function talepRedAc(id) {
-  if (CRole !== 'admin' && CRole !== 'satinalma') { toast('Talebi iade etmek için satınalma yetkisi gerekli', 'err'); return; }
   const it = SbData.find(x => x._id === id);
   if (!it) return;
+  if (!birimYetkisi('satinalma', it)) { toast('Talebi iade etmek için satınalma yetkisi gerekli', 'err'); return; }
   if (!it._gm3) { toast('Bu ihalede girilmiş bir talep tarihi yok', 'err'); return; }
   talepRedHedefId = id;
   document.getElementById('trd-sub').textContent = it.paket + ' (' + it.id + ')';
@@ -2706,7 +2901,7 @@ function rAksaklik() {
   const tumTalepRed  = acikPaketler.filter(i => i.talep_onay_durum === 'red');
 
   // Birim sekmeleri — her sekmede kac aksaklik oldugu rozette yazar
-  const BIRIMLER = ['Dizayn','Şantiye','Satınalma','Üst Yönetim'];
+  const BIRIMLER = (TASARIMSIZ ? [] : ['Dizayn']).concat(['Şantiye','Satınalma','Üst Yönetim']);
   const say = b => [...tumBloke, ...tumGecikmeli, ...tumRed, ...tumTalepRed].filter(i => sorumluBirim(i) === b).length;
   const secimEl = document.getElementById('ak-birim-secim');
   if (secimEl) {
@@ -2851,7 +3046,7 @@ function openForm(id) {
   // Tamamlanan/iptal paketlerde admin disinda duzenleme yok
   if (id) {
     const kayit = SbData.find(i => i._id === id);
-    if (kayit && ['tamamlandi','iptal'].includes(kayit.durum) && CRole !== 'admin') {
+    if (kayit && ['tamamlandi','iptal'].includes(kayit.durum) && !tamYetki()) {
       toast('Tamamlanan/iptal edilen paketleri sadece admin düzenleyebilir', 'err');
       return;
     }
@@ -2909,7 +3104,7 @@ function openForm(id) {
     const el = document.getElementById('f-gm-'+m);
     if (!el) return;
     el.value = (f && f['_g'+m]) || '';
-    el.disabled = !msYetkiliMi(m) || CRole === 'izleyici';
+    el.disabled = !msYetkiliMi(m, f) || CRole === 'izleyici';
   });
   // M3 icin hedef talep tarihi: santiye kabulu + talep hazirlik suresi
   const m3h = document.getElementById('m3-hedef');
@@ -2927,7 +3122,7 @@ function openForm(id) {
   // Satınalma: durum (ihale/sözleşme) + firmalar
   // Şantiye: bu modalden düzenlemez (aksiyonlarını Şantiye sekmesinden yapar)
   // Admin/planlama: durum + gerçekleşen tarihler
-  const isAdmin    = CRole==='admin';
+  const isAdmin    = tamYetki();
   const isDizayn   = CRole==='dizayn';
   const isSantiye  = CRole==='santiye';
   const isSatinalma= CRole==='satinalma';
@@ -2942,7 +3137,7 @@ function openForm(id) {
   // Dizayn → Şantiye gönderim bloğu (dizayn/admin görür)
   const gonderWrap = document.getElementById('dizayn-gonder-wrap');
   if (gonderWrap) {
-    const gorebilir = (isAdmin || isDizayn) && !!f;
+    const gorebilir = !TASARIMSIZ && (isAdmin || isDizayn || birimYetkisi('dizayn', f)) && !!f;
     gonderWrap.style.display = gorebilir ? 'flex' : 'none';
     if (gorebilir) {
       const durumEl = document.getElementById('dizayn-onay-durum');
@@ -2976,7 +3171,7 @@ function openForm(id) {
 // dolayisiyla SAT No / SAS No / tutar alanlari hicbir zaman gorunmuyordu.
 // Artik alanlar her zaman gorunur, yalnizca yazma yetkisi kisitlanir.
 function toggleSozFieldsModal() {
-  const yazabilir = (CRole === 'admin' || CRole === 'satinalma');
+  const yazabilir = birimYetkisi('satinalma', editId ? SbData.find(i => i._id === editId) : null);
   ['f-sat-no','f-sas-no','f-yuklenici','f-tutar','f-tutar-usd','f-tutar-eur']
     .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !yazabilir; });
 }
@@ -3027,7 +3222,7 @@ async function saveForm() {
   // istege hic eklenmez, boylece veritabanindaki degerleri ezilmez.
   const gmVeri = {};
   MS_LISTE.forEach(m => {
-    if (!msYetkiliMi(m)) return;
+    if (!msYetkiliMi(m, orig)) return;
     const el = document.getElementById('f-gm-'+m);
     if (el) gmVeri['gercek_'+m] = el.value || null;
   });
@@ -3043,7 +3238,7 @@ async function saveForm() {
   // Talep/İhale aşamasına (M3+) ancak şantiye dizaynı KABUL ettiyse geçilebilir.
   const yeniDurum = document.getElementById('f-durum').value;
   const ileriDurumlar = ['satinalma_devir','firma_davet','degerlendirme','yonetim_onayi','sozlesme','aktif','tamamlandi'];
-  if (editId && ileriDurumlar.includes(yeniDurum) && orig && santiyeOnayDurumu(orig) !== 'kabul' && CRole!=='admin' && CRole!=='planlama') {
+  if (!TASARIMSIZ && editId && ileriDurumlar.includes(yeniDurum) && orig && santiyeOnayDurumu(orig) !== 'kabul' && !tamYetki() && CRole!=='planlama') {
     toast('Bu aşamaya geçmek için önce şantiyenin dizaynı KABUL etmesi gerekir.','err');
     return;
   }
@@ -3072,6 +3267,9 @@ async function saveForm() {
     olusturan_id:     CU.id,
     ...gmVeri,
   };
+  // Elektrik / Mekanik yeni ihale acarsa bolum otomatik kendi bolumu olur
+  // (aksi halde yetkisi olmayan bir kayit uretmis olurdu).
+  if (!editId && rolBolumu()) veri.ihale_bolumu = rolBolumu();
 
   // ── GERI ALINAN TARIHLER ONAY BAYRAKLARINI DA GERI ALIR ──
   // Bir paket santiyeye gonderilip kabul edildikten sonra tarihler silinirse
@@ -3196,7 +3394,7 @@ async function archiveItem(id) {
 // ════════════════════════════════════════════
 let iptalHedefId = null;
 function iptalAc(id) {
-  if (CRole !== 'admin' && CRole !== 'satinalma') { toast('İptal yetkisi yok', 'err'); return; }
+  if (!birimYetkisi('satinalma', SbData.find(x => x._id === id))) { toast('İptal yetkisi yok', 'err'); return; }
   const it = SbData.find(i => i._id === id);
   if (!it) return;
   iptalHedefId = id;
@@ -3258,8 +3456,9 @@ function openDetail(id, fromArchive) {
   const kartlar = '<div class="dg">' +
     '<div class="di"><div class="di-k">Durum</div><div class="di-v">' + chip(i.durum) + '</div></div>' +
     '<div class="di"><div class="di-k">İş programı hedefi (M8)</div><div class="di-v" style="font-family:var(--mono)">' + fmt(plan?.m8_imalat_baslangic) + '</div></div>' +
-    '<div class="di"><div class="di-k">Dizayn ilerleme</div><div class="di-v">' + pb(i.dizayn_yuz, pbColor(i.dizayn_yuz)) + '</div></div>' +
-    '<div class="di"><div class="di-k">Şantiye onayı</div><div class="di-v">' + santiyeOnayBadge(i) + '</div></div>' +
+    (TASARIMSIZ ? '' :
+      '<div class="di"><div class="di-k">Dizayn ilerleme</div><div class="di-v">' + pb(i.dizayn_yuz, pbColor(i.dizayn_yuz)) + '</div></div>' +
+      '<div class="di"><div class="di-k">Şantiye onayı</div><div class="di-v">' + santiyeOnayBadge(i) + '</div></div>') +
     '<div class="di"><div class="di-k">NET GECİKME (işin toplamı)</div><div class="di-v">' + dl(i.gecikme) + '</div></div>' +
     '<div class="di"><div class="di-k">Projeksiyon (gerçekleşene göre M8)</div><div class="di-v" style="font-family:var(--mono);color:' + (i.gecikme>0?'var(--red)':'var(--green)') + '">' + fmt(kaym?.m8_imalat_baslangic) + '</div></div>' +
     (i.tutar ? '<div class="di"><div class="di-k">Sözleşme tutarı</div><div class="di-v" style="color:var(--green)">\u20ba' + formatTutar(i.tutar) + '</div></div>' : '') +
@@ -3377,14 +3576,14 @@ function openDetail(id, fromArchive) {
   }
 
   document.getElementById('det-body').innerHTML = kartlar +
-    '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">M1–M8 aşama performansı</div>' +
+    '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">' + (TASARIMSIZ ? 'M3–M8' : 'M1–M8') + ' aşama performansı</div>' +
     '<div class="tl">' + tlHtml + '</div>' + redHtml + talepRedHtml + notHtml;
 
   document.getElementById('det-ft').innerHTML = fromArchive
     ? `<button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`
-    : `${(CRole==='admin'||CRole==='satinalma')&&i._gm3&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="closeOv('ov-detay');talepRedAc('${i._id}')" title="Talebi eksik bulup şantiyeye iade et">↩ Talebi iade et</button>`:''}
-       ${(CRole==='admin'||CRole==='satinalma')&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm" onclick="closeOv('ov-detay');iptalAc('${i._id}')">İptal Et</button>`:''}
-       ${(CRole!=='izleyici')&&(CRole==='admin'||!['tamamlandi','iptal'].includes(i.durum))?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>`:''}
+    : `${birimYetkisi('satinalma',i)&&i._gm3&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="closeOv('ov-detay');talepRedAc('${i._id}')" title="Talebi eksik bulup şantiyeye iade et">↩ Talebi iade et</button>`:''}
+       ${birimYetkisi('satinalma',i)&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm" onclick="closeOv('ov-detay');iptalAc('${i._id}')">İptal Et</button>`:''}
+       ${(CRole!=='izleyici')&&(tamYetki()||!['tamamlandi','iptal'].includes(i.durum))?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>`:''}
        <button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`;
   openOv('ov-detay');
 }
@@ -3393,7 +3592,7 @@ function openDetail(id, fromArchive) {
 // P6 SENKRONIZASYON
 // ════════════════════════════════════════════
 async function doP6Sync() {
-  if (CRole!=='admin'&&CRole!=='planlama') { toast('P6 senkronizasyonu için planlama yetkisi gerekli','err'); return; }
+  if (!tamYetki()&&CRole!=='planlama') { toast('P6 senkronizasyonu için planlama yetkisi gerekli','err'); return; }
   const btn=document.getElementById('sync-btn'), spin=document.getElementById('sync-spin');
   btn.disabled=true; spin.style.display='block';
   toast('P6 senkronizasyonu başlatıldı...','info');
@@ -3452,7 +3651,7 @@ function sapBaglantiTest() {
 }
 
 function sapKaynakAktiflestir() {
-  if (CRole !== 'admin' && CRole !== 'planlama') { toast('SAP kaynağını değiştirme yetkiniz yok', 'err'); return; }
+  if (!tamYetki() && CRole !== 'planlama') { toast('SAP kaynağını değiştirme yetkiniz yok', 'err'); return; }
   DataSource.sapConfig = {
     url:    document.getElementById('sap-url').value.trim(),
     client: document.getElementById('sap-client').value.trim(),
@@ -3471,7 +3670,7 @@ function sapKaynakSupabase() {
 }
 
 async function doSapSync() {
-  if (CRole !== 'admin' && CRole !== 'planlama') { toast('SAP senkronu için planlama yetkisi gerekli', 'err'); return; }
+  if (!tamYetki() && CRole !== 'planlama') { toast('SAP senkronu için planlama yetkisi gerekli', 'err'); return; }
   const spin = document.getElementById('sap-sync-spin');
   if (spin) spin.style.display = 'block';
   // Hazırlık aşaması: DataSource üzerinden okur; SAP pasifse Supabase döner.
@@ -3490,14 +3689,16 @@ async function doSapSync() {
 // Gerceklesen tarihi girilmemis (gecildi) asamalar olcume KATILMAZ;
 // sapmasi bilinmedigi icin ortalamayi bozar.
 // ════════════════════════════════════════════════════════════════════
-const RAPOR_BIRIMLERI = ['Dizayn', 'Şantiye', 'Satınalma', 'Üst Yönetim'];
+const RAPOR_BIRIMLERI_TUM = ['Dizayn', 'Şantiye', 'Satınalma', 'Üst Yönetim'];
+// Tasarim asamasi kapaliysa Dizayn birimi raporlarda da gorunmez
+function raporBirimleri(){ return TASARIMSIZ ? RAPOR_BIRIMLERI_TUM.slice(1) : RAPOR_BIRIMLERI_TUM.slice(); }
 
 function raporVerisi() {
   const veri = projeFiltre(SbData);
 
   // ── Birim bazinda ──
   const birim = {};
-  RAPOR_BIRIMLERI.forEach(b => birim[b] = {
+  raporBirimleri().forEach(b => birim[b] = {
     olculen: 0, zamaninda: 0, gecSayi: 0, gecGun: 0, kazancGun: 0,
     sapmaToplam: 0, acikIs: 0, gecikmede: 0,
   });
@@ -3574,7 +3775,7 @@ function rRapor() {
   const R = raporVerisi();
 
   // ── Birim tablosu ──
-  const bSatir = RAPOR_BIRIMLERI.map(ad => {
+  const bSatir = raporBirimleri().map(ad => {
     const b = R.birim[ad];
     const ort = raporOrt(b.sapmaToplam, b.olculen);
     return '<tr>' +
@@ -3658,7 +3859,7 @@ function raporExcel() {
     ['Birim', 'Ölçülen aşama', 'Zamanında aşama', 'Zamanında oranı %', 'Ortalama sapma (gün)',
      'Toplam geç gün', 'Kazanılan gün', 'Açık iş', 'Şu an gecikmede'],
   ];
-  RAPOR_BIRIMLERI.forEach(ad => {
+  raporBirimleri().forEach(ad => {
     const b = R.birim[ad];
     s1.push([ad, b.olculen, b.zamaninda,
       b.olculen ? Math.round((b.zamaninda / b.olculen) * 100) : '',
@@ -4353,14 +4554,14 @@ function exportExcel(projeId, dosyaAdi, sessiz) {
     i.paket || '',
     i.ihale_kategori || '',
     i.ihale_bolumu || '',
-    tarih(i._plan?.m1_tasarim),          tarih(i._gm1),
-    tarih(i._plan?.m2_proje_yayin),      tarih(i._gm2),
-    tarih(i._plan?.m3_talep),            tarih(i._gm3),
-    tarih(i._plan?.m4_ihale_yayin),      tarih(i._gm4),
-    tarih(i._plan?.m5_yonetim_sunum),    tarih(i._gm5),
-    tarih(i._plan?.m6_ihale_karar),      tarih(i._gm6),
-    tarih(i._plan?.m7_sozlesme_imza),    tarih(i._gm7),
-    tarih(i._plan?.m8_imalat_baslangic), tarih(i._gm8),
+    tarih((i._planTam||i._plan)?.m1_tasarim),          tarih(i._gm1),
+    tarih((i._planTam||i._plan)?.m2_proje_yayin),      tarih(i._gm2),
+    tarih((i._planTam||i._plan)?.m3_talep),            tarih(i._gm3),
+    tarih((i._planTam||i._plan)?.m4_ihale_yayin),      tarih(i._gm4),
+    tarih((i._planTam||i._plan)?.m5_yonetim_sunum),    tarih(i._gm5),
+    tarih((i._planTam||i._plan)?.m6_ihale_karar),      tarih(i._gm6),
+    tarih((i._planTam||i._plan)?.m7_sozlesme_imza),    tarih(i._gm7),
+    tarih((i._planTam||i._plan)?.m8_imalat_baslangic), tarih(i._gm8),
     i.sat_no || '',
     i.yuklenici || '',
     i.sas_no || '',
@@ -4476,6 +4677,8 @@ const MS_PLANKEY = { m1:'m1_tasarim', m2:'m2_proje_yayin', m3:'m3_talep', m4:'m4
 function durumPlanTarihi(i) {
   if (!i || !i._plan) return '';
   let m = DURUM_MS[i.durum];
+  // Tasarimsiz modda M1-M2 yok: hicbir tarihi olmayan is M3'u bekliyor
+  if (TASARIMSIZ && (m === 'm1' || m === 'm2')) m = 'm3';
   if (!m) {
     for (let ix = MS_LISTE.length - 1; ix >= 0; ix--) {
       if (i['_g' + MS_LISTE[ix]]) { m = MS_LISTE[ix]; break; }
@@ -4526,6 +4729,9 @@ function sorumluBirim(i) {
   // Iade durumlari kuralin onunde gelir: top, eksigi gidermesi gereken birimde
   if (i.santiye_onay_durum === 'red') return 'Dizayn';    // santiye dizayni iade etti
   if (i.talep_onay_durum   === 'red') return 'Şantiye';   // satinalma talebi iade etti
+  // Tasarimsiz modda M1-M2 yok: hicbir tarihi olmayan is M3'u bekliyor,
+  // yani top Santiye'de.
+  if (TASARIMSIZ && (i.durum === 'hazirlik' || i.durum === 'dizaydan_devir')) return MS_BIRIM.m3;
   const m = DURUM_MS[i.durum];
   if (m) return MS_BIRIM[m];
   // tamamlandi / bloke / iptal: son gerceklesen milestone'un birimi
@@ -4544,13 +4750,19 @@ const DM={
   tamamlandi:{l:'Tamamlandı'}, bloke:{l:'Bloke'}, iptal:{l:'İptal'},
   devir:{l:'M2 · Proje Yayın'}, ilan:{l:'M4 · İhale Yayını'}
 };
+// Durum etiketi tek kaynak. Tasarimsiz modda hicbir tarihi girilmemis kayit
+// "M1 · Tasarim Kararlari" degil "Talep bekleniyor" olarak okunur.
+function durumEtiket(d){
+  if (TASARIMSIZ && d === 'hazirlik') return 'Talep bekleniyor (M3)';
+  return (DM[d] && DM[d].l) || d;
+}
 function chip(d){
   const m={hazirlik:'c-haz',dizaydan_devir:'c-dev',satinalma_devir:'c-dev',
     firma_davet:'c-ila',degerlendirme:'c-deg',yonetim_onayi:'c-deg',
     sozlesme:'c-soz',aktif:'c-soz',tamamlandi:'c-tam',bloke:'c-blo',iptal:'c-blo',
     devir:'c-dev',ilan:'c-ila'};
   // Etiket DM'den okunur; iki yerde ayri liste tutmuyoruz
-  return '<span class="chip '+(m[d]||'c-arc')+'"><span class="chip-dot"></span>'+(DM[d]?.l||d)+'</span>';
+  return '<span class="chip '+(m[d]||'c-arc')+'"><span class="chip-dot"></span>'+durumEtiket(d)+'</span>';
 }
 function chipDizayn(d){const m={baslamamis:'c-bek',devam_ediyor:'c-bas',revizyon:'c-dev',ic_kontrol:'c-deg',isveren_onay:'c-ila',onaylandi:'c-ona',iptal:'c-blo'};const l={baslamamis:'Başlamamış',devam_ediyor:'Devam',revizyon:'Revizyon',ic_kontrol:'İç Kontrol',isveren_onay:'İşveren Onayı',onaylandi:'Onaylandı',iptal:'İptal'};return`<span class="chip ${m[d]||'c-arc'}"><span class="chip-dot"></span>${l[d]||d}</span>`;}
 function chipSantiye(d){const m={bekliyor:'c-bek',devam_ediyor:'c-bas',askiya_alindi:'c-blo',tamamlandi:'c-tam'};const l={bekliyor:'Bekliyor',devam_ediyor:'Devam',askiya_alindi:'Askıda',tamamlandi:'Tamamlandı'};return`<span class="chip ${m[d]||'c-arc'}"><span class="chip-dot"></span>${l[d]||d}</span>`;}
@@ -4577,6 +4789,75 @@ function addGun(tarih, gun){
 // M2 (Proje Yayin) santiye kabulu ile OTOMATIK olusur; elle degistirilemez.
 // ════════════════════════════════════════════════════════════════════
 const MS_LISTE = ['m1','m2','m3','m4','m5','m6','m7','m8'];
+
+// ════════════════════════════════════════════════════════════════════
+// ROLLER
+//  admin, ust_yonetim   : tam yetki (ust yonetim admin ile ayni)
+//  satinalma, dizayn, santiye, planlama, izleyici : mevcut roller
+//  elektrik, mekanik    : YALNIZ kendi bolumunun (ELK / MEK) ihalelerinde
+//                         dizayn + santiye talep + satinalma yetkisi tasir.
+//                         Diger bolumleri gorur ama duzenleyemez.
+// ════════════════════════════════════════════════════════════════════
+const ROL_TAM   = ['admin', 'ust_yonetim'];
+const ROL_BOLUM = { elektrik: 'ELK', mekanik: 'MEK' };
+const ROL_ETIKET = { admin:'Admin', ust_yonetim:'Üst Yönetim', satinalma:'Satın Alma',
+                     dizayn:'Dizayn', santiye:'Şantiye', elektrik:'Elektrik',
+                     mekanik:'Mekanik', planlama:'Planlama', izleyici:'İzleyici',
+                     reddedildi:'Reddedildi' };
+function tamYetki()  { return ROL_TAM.indexOf(CRole) >= 0; }
+function rolBolumu() { return ROL_BOLUM[CRole] || ''; }          // '' = kisitsiz
+// Kayit, rolun yetkili oldugu bolumde mi? (kisitsiz roller icin her zaman true)
+function bolumumMu(i) {
+  const b = rolBolumu();
+  if (!b) return true;
+  if (!i) return true;                        // yeni kayit — bolum sonra belirlenir
+  return String(i.ihale_bolumu || '').toUpperCase() === b;
+}
+// birim: 'dizayn' | 'santiye' | 'satinalma' — o birimin yetkisi var mi?
+function birimYetkisi(birim, i) {
+  if (tamYetki()) return true;
+  if (CRole === birim) return true;
+  if (rolBolumu()) return bolumumMu(i);       // elektrik/mekanik kendi bolumunde 3 yetki
+  return false;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// TASARIM ASAMASI ANAHTARI (gecici ara yontem)
+// Isaretliyken M1 (Tasarim Kararlari) ve M2 (Proje Yayin) panelde HIC
+// YOKMUS gibi davranir: plan tarihleri uretilmez, gerceklesen tarihleri
+// yok sayilir, gecikme hesabina girmez, Dizayn sekmesi ve santiye onay
+// akisi kapanir. Surec M3 (Talep) ile baslar.
+// Ayar yalnizca bu tarayicida tutulur (localStorage), veritabanina
+// yazilmaz — yani baska kullanicilari etkilemez.
+// ════════════════════════════════════════════════════════════════════
+let TASARIMSIZ = false;
+try { TASARIMSIZ = localStorage.getItem('ihale_tasarimsiz') === '1'; } catch (e) {}
+// Tasarimsiz modda gorunen milestone'lar
+function msGorunur() { return TASARIMSIZ ? MS_LISTE.slice(2) : MS_LISTE.slice(); }
+
+function tasarimsizUygula() {
+  const cb = document.getElementById('hdr-tasarimsiz');
+  if (cb) cb.checked = TASARIMSIZ;
+  const lbl = document.getElementById('tsw-lbl');
+  if (lbl) lbl.classList.toggle('on', TASARIMSIZ);
+  document.body.classList.toggle('tasarimsiz', TASARIMSIZ);
+}
+
+async function tasarimsizDegisti() {
+  const cb = document.getElementById('hdr-tasarimsiz');
+  TASARIMSIZ = !!(cb && cb.checked);
+  try { localStorage.setItem('ihale_tasarimsiz', TASARIMSIZ ? '1' : '0'); } catch (e) {}
+  tasarimsizUygula();
+  // Dizayn sekmesi gizlenirken oradaysak Ozet'e don
+  if (TASARIMSIZ && document.getElementById('view-dizayn')?.classList.contains('on')) {
+    sw('ozet', document.querySelectorAll('.tab')[0]);
+  }
+  fdMenuKur();                       // M1/M2 secenekleri degisir
+  await loadIhaleler();              // tarih zinciri yeniden hesaplanir
+  renderAll(); rHavuz(); loadDashboard();
+  toast(TASARIMSIZ ? 'Tasarım aşaması (M1-M2) devre dışı' : 'Tasarım aşaması geri açıldı', 'ok');
+}
+
 const MS_SAHIP = {
   m1: ['dizayn'],      // Tasarim kararlari
   m2: [],              // Proje yayin — otomatik, sadece admin duzeltir
@@ -4588,8 +4869,13 @@ const MS_SAHIP = {
   m7: ['satinalma'],   // Sozlesme imza
   m8: ['santiye'],     // Imalat baslangic
 };
-function msYetkiliMi(m){
-  if (CRole === 'admin') return true;
+// elektrik/mekanik kendi bolumunde bu milestone'lari girer
+// (M2 her rolde otomatiktir, M8 santiyenin isidir)
+const MS_BOLUM_ROL = ['m1','m3','m4','m5','m6','m7'];
+function msYetkiliMi(m, i){
+  if (tamYetki()) return true;
+  if (TASARIMSIZ && (m === 'm1' || m === 'm2')) return false;   // asama yok
+  if (rolBolumu()) return bolumumMu(i) && MS_BOLUM_ROL.indexOf(m) >= 0;
   return (MS_SAHIP[m] || []).indexOf(CRole) >= 0;
 }
 
@@ -4609,7 +4895,8 @@ function durumTuret(g){
 // Formdaki tarih kutularindan durumu canli hesaplayip secime yansitir
 function msDurumTazele(){
   const g = {};
-  MS_LISTE.forEach(m => { const el = document.getElementById('f-gm-'+m); g[m] = el ? el.value : ''; });
+  // Tasarimsiz modda M1/M2 kutulari hesaba katilmaz (asama yok sayilir)
+  msGorunur().forEach(m => { const el = document.getElementById('f-gm-'+m); g[m] = el ? el.value : ''; });
   const sel = document.getElementById('f-durum');
   if (!sel) return;
   if (sel.value === 'bloke' || sel.value === 'iptal') return;   // elle isaretlenmis
@@ -4878,7 +5165,7 @@ async function davetGonder() {
 // ONAY YONETIMI (admin)
 // ════════════════════════════════════════════
 async function rOnayBekleyenler() {
-  if (CRole !== 'admin') return;
+  if (!tamYetki()) return;
   const { data } = await sb.from('kullanici_profilleri')
     .select('id,ad_soyad,email,rol,olusturulma')
     .eq('aktif', false)
@@ -4897,12 +5184,15 @@ async function rOnayBekleyenler() {
         <div style="font-size:13px;color:var(--text3)">${u.id} · Talep: ${fmtTarih(u.olusturulma)}</div>
       </div>
       <select id="rol-sec-${u.id}" style="font-size:13px;padding:4px 8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
-        <option value="satinalma" ${u.rol==='satinalma'?'selected':''}>Satın Alma</option>
-        <option value="dizayn"    ${u.rol==='dizayn'?'selected':''}>Dizayn</option>
-        <option value="santiye"   ${u.rol==='santiye'?'selected':''}>Şantiye</option>
-        <option value="planlama"  ${u.rol==='planlama'?'selected':''}>Planlama</option>
-        <option value="izleyici"  ${u.rol==='izleyici'?'selected':''}>İzleyici</option>
-        <option value="admin"     ${u.rol==='admin'?'selected':''}>Admin</option>
+        <option value="satinalma"   ${u.rol==='satinalma'?'selected':''}>Satın Alma</option>
+        <option value="dizayn"      ${u.rol==='dizayn'?'selected':''}>Dizayn</option>
+        <option value="santiye"     ${u.rol==='santiye'?'selected':''}>Şantiye</option>
+        <option value="elektrik"    ${u.rol==='elektrik'?'selected':''}>Elektrik (ELK)</option>
+        <option value="mekanik"     ${u.rol==='mekanik'?'selected':''}>Mekanik (MEK)</option>
+        <option value="ust_yonetim" ${u.rol==='ust_yonetim'?'selected':''}>Üst Yönetim</option>
+        <option value="planlama"    ${u.rol==='planlama'?'selected':''}>Planlama</option>
+        <option value="izleyici"    ${u.rol==='izleyici'?'selected':''}>İzleyici</option>
+        <option value="admin"       ${u.rol==='admin'?'selected':''}>Admin</option>
       </select>
       <button class="btn btn-primary btn-sm" onclick="kullaniciOnayla('${u.id}')">Onayla</button>
       <button class="btn btn-danger btn-sm" onclick="kullaniciReddet('${u.id}')">Reddet</button>
@@ -4958,23 +5248,27 @@ async function rKullanicilar() {
   if (!data?.length) { el.innerHTML = '<div class="empty">Henüz kullanıcı yok</div>'; return; }
 
   const rolRenk = {
-    admin:'var(--red)', satinalma:'var(--blue-l)', dizayn:'var(--purple)',
-    santiye:'var(--green)', planlama:'var(--gold)', izleyici:'var(--text3)',
+    admin:'var(--red)', ust_yonetim:'var(--red)', satinalma:'var(--blue-l)',
+    dizayn:'var(--purple)', santiye:'var(--green)', elektrik:'var(--gold)',
+    mekanik:'var(--blue-l)', planlama:'var(--gold)', izleyici:'var(--text3)',
     reddedildi:'var(--text3)'
   };
-  const isAdmin = CRole === 'admin';
+  const isAdmin = tamYetki();
 
   el.innerHTML = data.map(u => {
     const initials = (u.ad_soyad||u.email||'?').split(' ').map(s=>s[0]).join('').toUpperCase().slice(0,2);
     const rolSecim = isAdmin && u.id !== CU?.id
       ? `<select id="rol-usr-${u.id}" style="font-size:13px;padding:3px 7px;border-radius:4px;
            background:var(--surface2);border:1px solid var(--border);color:var(--text);margin-left:4px">
-          <option value="admin"     ${u.rol==='admin'     ?'selected':''}>Admin</option>
-          <option value="satinalma" ${u.rol==='satinalma' ?'selected':''}>Satın Alma</option>
-          <option value="dizayn"    ${u.rol==='dizayn'    ?'selected':''}>Dizayn</option>
-          <option value="santiye"   ${u.rol==='santiye'   ?'selected':''}>Şantiye</option>
-          <option value="planlama"  ${u.rol==='planlama'  ?'selected':''}>Planlama</option>
-          <option value="izleyici"  ${u.rol==='izleyici'  ?'selected':''}>İzleyici</option>
+          <option value="admin"       ${u.rol==='admin'      ?'selected':''}>Admin</option>
+          <option value="ust_yonetim" ${u.rol==='ust_yonetim'?'selected':''}>Üst Yönetim</option>
+          <option value="satinalma"   ${u.rol==='satinalma'  ?'selected':''}>Satın Alma</option>
+          <option value="dizayn"      ${u.rol==='dizayn'     ?'selected':''}>Dizayn</option>
+          <option value="santiye"     ${u.rol==='santiye'    ?'selected':''}>Şantiye</option>
+          <option value="elektrik"    ${u.rol==='elektrik'   ?'selected':''}>Elektrik (ELK)</option>
+          <option value="mekanik"     ${u.rol==='mekanik'    ?'selected':''}>Mekanik (MEK)</option>
+          <option value="planlama"    ${u.rol==='planlama'   ?'selected':''}>Planlama</option>
+          <option value="izleyici"    ${u.rol==='izleyici'   ?'selected':''}>İzleyici</option>
         </select>
         <button class="btn btn-ghost btn-sm" style="padding:3px 8px;font-size:13px"
           onclick="rolGuncelle('${u.id}')">Güncelle</button>`
@@ -4996,7 +5290,7 @@ async function rKullanicilar() {
 }
 
 async function rolGuncelle(uid) {
-  if (CRole !== 'admin') { toast('Yetki yok','err'); return; }
+  if (!tamYetki()) { toast('Yetki yok','err'); return; }
   const select = document.getElementById('rol-usr-' + uid);
   if (!select) return;
   const yeniRol = select.value;
