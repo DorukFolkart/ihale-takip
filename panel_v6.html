@@ -82,10 +82,11 @@ table,.mono,.kpi-v,.pb-lbl,.dl,.range-val,.di-v{font-variant-numeric:tabular-num
 .login-footer{text-align:center;margin-top:20px;font-size:13px;color:var(--text3);}
 
 /* UST BAR — 60 px */
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;min-height:60px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:90;
-  flex-wrap:wrap;}
-.hd-left{display:flex;align-items:center;gap:12px;min-width:0;flex-wrap:wrap;padding:8px 0;}
+/* Baslik TEK SATIR: ogeler alt satira kaymaz (992px altinda sarilir) */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:90;
+  flex-wrap:nowrap;}
+.hd-left{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:nowrap;}
 .logo{font-size:16px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text);white-space:nowrap;}
 .logo em{color:var(--blue);font-style:normal;}
 .hd{font-size:13px;color:var(--text3);padding-left:16px;border-left:1px solid var(--border);white-space:nowrap;}
@@ -110,9 +111,21 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:0
   background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230043D1' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;}
 #hdr-proje:hover{border-color:var(--blue-hover);}
-.h-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;}
-@media (max-width:1650px){#clk{display:none;}}
-@media (max-width:1450px){.hd{display:none;}}
+.h-right{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;flex-shrink:0;}
+.hd-left{flex:1 1 auto;overflow:hidden;}
+.hd{white-space:nowrap;flex-shrink:0;}
+#clk{white-space:nowrap;flex-shrink:0;}
+.proje-secici,.h-right>*,#hdr-proje,#hdr-bolum,#hdr-kategori{flex-shrink:0;}
+/* Yer daralinca once saat, sonra alt baslik, sonra filtre etiketleri duser */
+@media (max-width:1800px){#clk{display:none;}}
+@media (max-width:1560px){.hd{display:none;}}
+@media (max-width:1400px){.proje-secici label{display:none;} #hdr-proje{min-width:170px;}}
+/* 1200px altinda tek satira sigmiyor: kirpmak yerine duzgunce sar */
+@media (max-width:1200px){
+  header{flex-wrap:wrap;height:auto;padding:8px 20px;}
+  .hd-left{overflow:visible;flex-wrap:wrap;}
+  .h-right{flex-wrap:wrap;}
+}
 .live{display:inline-flex;align-items:center;gap:6px;background:var(--green-glow);border:1px solid #A7F3D0;
   border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--green);white-space:nowrap;}
 .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
@@ -539,18 +552,16 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
       </select>
     </div>
     <div class="proje-secici">
-      <label for="hdr-bolum">Bölüm</label>
       <select id="hdr-bolum" onchange="genelFiltreDegisti()" title="İhale bölümüne göre filtreler">
-        <option value="">Tümü</option>
+        <option value="">Tüm bölümler</option>
         <option value="İNŞ">İNŞ</option>
         <option value="ELK">ELK</option>
         <option value="MEK">MEK</option>
       </select>
     </div>
     <div class="proje-secici">
-      <label for="hdr-kategori">Kategori</label>
       <select id="hdr-kategori" onchange="genelFiltreDegisti()" title="İhale kategorisine göre filtreler">
-        <option value="">Tümü</option>
+        <option value="">Tüm kategoriler</option>
         <option value="A">A</option>
         <option value="B">B</option>
         <option value="C">C</option>
@@ -562,7 +573,6 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <label class="tsw" id="tsw-lbl" title="İşaretlendiğinde M1 (Tasarım Kararları) ve M2 (Proje Yayın) panelde hiç yokmuş gibi davranır: plan tarihleri, gecikmeler, Dizayn sekmesi ve şantiye onay akışı devre dışı kalır, süreç M3 (Talep) ile başlar. Ayar yalnızca bu tarayıcıda geçerlidir."><input type="checkbox" id="hdr-tasarimsiz" onchange="tasarimsizDegisti()">Tasarım aşaması yok</label>
     <button class="btn btn-ghost btn-sm" onclick="if(tamYetki()||CRole==='satinalma'){openCsvModal();}else{toast('Excel içe aktarma yetkiniz yok','err');}">📥 Veri aktar</button>
     <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Dışa aktar</button>
-    <button class="btn btn-primary btn-sm" onclick="if(tamYetki()||CRole==='satinalma'||CRole==='dizayn'||rolBolumu()){openForm();}else{toast('Yeni ihale açma yetkiniz yok','err');}">＋ Yeni ihale</button>
     <div class="user-chip" onclick="doLogout()" title="Çıkış yap">
       <div class="u-av admin" id="u-av">--</div>
       <span id="u-name" style="color:var(--text)">—</span>
@@ -629,6 +639,9 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
         <option value="zamaninda">Zamanında / Kalan Süreli</option>
       </select>
       <input type="text" placeholder="Ara…" id="fs" oninput="rHavuz()" style="width:160px">
+      <!-- Basliktan buraya tasindi (ust bar tek satira sigsin diye) -->
+      <button class="btn btn-primary btn-sm" id="btn-yeni-ihale"
+        onclick="if(tamYetki()||CRole==='satinalma'||CRole==='dizayn'||rolBolumu()){openForm();}else{toast('Yeni ihale açma yetkiniz yok','err');}">＋ Yeni ihale</button>
     </div>
   </div>
   <div class="tw"><table>
@@ -720,85 +733,100 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
       <div id="perm-info" style="font-size:13px;color:var(--text3);line-height:2">—</div>
     </div>
     <div id="vg-forms">
-      <!-- İHALE FORMU -->
+      <!-- İHALE FORMU — YENI MODEL (Excel "Satınalma Takvimi Veri Girişi" ile ayni alanlar) -->
       <div id="vgf-ihale" class="vg-form-card">
-        <div class="vg-form-hd"><h3>📋 İhale Paketi Girişi</h3><p>Yeni ihale paketi oluştur. * ile işaretli alanlar zorunludur.</p></div>
+        <div class="vg-form-hd"><h3>📋 İhale Paketi Girişi</h3>
+          <p>Excel'deki <strong>Satınalma Takvimi Veri Girişi</strong> sekmesiyle aynı alanlar.
+             İhale No otomatik üretilir, durum girilen tarihlerden türetilir. * zorunlu.</p></div>
         <div class="vg-form-body">
           <div class="fsec">📌 Temel Bilgiler</div>
           <div class="frow">
-            <div class="ff"><label>Proje *</label><select id="vf-ih-proje"><option value="">— Seçin —</option></select></div>
-            <div class="ff"><label>İhale Kodu *</label><input type="text" id="vf-ih-kod" placeholder="FLK-001-IH-045" style="font-family:var(--mono)"></div>
+            <div class="ff"><label>Proje *</label>
+              <select id="vf-ih-proje" onchange="vgIhaleNoUret()"><option value="">— Seçin —</option></select></div>
+            <div class="ff"><label>İhale No (otomatik)</label>
+              <input type="text" id="vf-ih-no" readonly placeholder="Proje seçin"
+                style="font-family:var(--mono);background:var(--surface2);color:var(--text2)">
+              <div class="hint">IHL.&lt;proje kodu&gt;.&lt;sıra&gt;/1 — Excel'deki İHALE NO ile aynı biçim</div></div>
           </div>
-          <div class="frow c1"><div class="ff"><label>İhale Adı *</label><input type="text" id="vf-ih-adi" placeholder="ör: B Blok Çelik Konstrüksiyon İmalatı"></div></div>
-          <div class="frow">
-            <div class="ff"><label>İmalat Grubu</label>
-              <select id="vf-ih-grup"><option value="">— Seçin —</option>
-                <option>Kaba İnşaat</option><option>Çelik Konstrüksiyon</option><option>Cephe</option>
-                <option>Mekanik</option><option>Elektrik</option><option>Zayıf Akım</option>
-                <option>Asansör</option><option>Peyzaj</option><option>İç İmalat</option><option>Altyapı</option><option>Diğer</option>
-              </select></div>
-            <div class="ff"><label>Durum *</label>
-              <select id="vf-ih-durum" onchange="toggleSozFields()">
-                <option value="">— Seçin —</option>
-                <option value="hazirlik">M1 - Tasarim Kararlari</option>
-                <option value="dizaydan_devir">M2 - Proje Yayin</option>
-                <option value="satinalma_devir">M3 - Talep</option>
-                <option value="firma_davet">M4 - Ihale Yayini</option>
-                <option value="degerlendirme">M5 - Yonetime Sunum</option>
-                <option value="yonetim_onayi">M6 - Ihale Karar</option>
-                <option value="sozlesme">M7 - Sozlesme Imza</option>
-                <option value="aktif">M8 - Imalat Baslangic</option>
-                <option value="tamamlandi">Tamamlandi</option>
-                <option value="bloke">Bloke</option>
-                <option value="iptal">Iptal</option>
-              </select></div>
-          </div>
-          <div class="frow">
-            <div class="ff"><label>P6 Aktivite Kodu</label>
-              <input type="text" id="vf-ih-p6" placeholder="A1050" style="font-family:var(--mono)">
-              <div class="hint">P6 eşleştirme için</div></div>
-            <div class="ff"><label>İmalat Başlangıç (P6)</label>
-              <input type="date" id="vf-ih-imbas" oninput="calcIhaleDates()"></div>
-          </div>
-          <div class="fsec">⏱ Süre Bilgileri (Takvim Günü)</div>
+          <div class="frow c1"><div class="ff"><label>İhale Adı / Açıklama *</label>
+            <input type="text" id="vf-ih-adi" placeholder="ör: B BLOK ÇELİK KONSTRÜKSİYON İMALATI"></div></div>
           <div class="frow c3">
-            <div class="ff"><label>Dizayn Süresi</label><div class="day-row"><input type="number" id="vf-d1" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd1"></div></div>
-            <div class="ff"><label>Talep Süresi</label><div class="day-row"><input type="number" id="vf-d2" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd2"></div></div>
-            <div class="ff"><label>İhale Hazırlık</label><div class="day-row"><input type="number" id="vf-d3" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd3"></div></div>
+            <div class="ff"><label>İhale Kodu</label>
+              <input type="text" id="vf-ih-kod" placeholder="05.03.00 ZEMİN ETÜDÜ" style="font-family:var(--mono)">
+              <div class="hint">Excel'deki İHALE KODU (teknik kod)</div></div>
+            <div class="ff"><label>İhale Kategorisi</label>
+              <select id="vf-ih-kategori"><option value="">— Seçin —</option>
+                <option value="A KATEGORİ">A KATEGORİ</option>
+                <option value="B KATEGORİ">B KATEGORİ</option>
+                <option value="C KATEGORİ">C KATEGORİ</option></select></div>
+            <div class="ff"><label>İhale Bölümü</label>
+              <select id="vf-ih-bolum"><option value="">— Seçin —</option>
+                <option value="İNŞ">İNŞ</option><option value="ELK">ELK</option>
+                <option value="MEK">MEK</option></select></div>
           </div>
-          <div class="frow c3">
-            <div class="ff"><label>İhale Süresi</label><div class="day-row"><input type="number" id="vf-d4" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd4"></div></div>
-            <div class="ff"><label>İhale Karar</label><div class="day-row"><input type="number" id="vf-d5" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd5"></div></div>
-            <div class="ff"><label>Sözleşme Süresi</label><div class="day-row"><input type="number" id="vf-d6" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd6"></div></div>
-          </div>
-          <div class="frow c3">
-            <div class="ff"><label>Üretim / Mobilizasyon</label><div class="day-row"><input type="number" id="vf-d7" min="0" max="999" placeholder="0" oninput="calcIhaleDates()"><span class="day-lbl">gün</span></div><div class="calc" id="cd7"></div></div>
-          </div>
-          <div class="fsec">🔧 Dizayn İlerleme</div>
+
+          <div class="fsec">🗓 İş Programı ve Süreler</div>
           <div class="frow">
+            <div class="ff"><label>İmalat Başlangıç — M8 planlanan *</label>
+              <input type="date" id="vf-ih-imbas" oninput="vgPlanOnizle()">
+              <div class="hint">Zincirin çıpası: M1–M7 planı bu tarihten GERİYE hesaplanır</div></div>
             <div class="ff"><label>Dizayn İlerleme (%)</label>
-              <div class="range-row"><input type="range" id="vf-ih-dizayn" min="0" max="100" step="5" value="0" oninput="document.getElementById('vf-dv').textContent=this.value+'%'"><span class="range-val" id="vf-dv">0%</span></div></div>
+              <div class="range-row"><input type="range" id="vf-ih-dizayn" min="0" max="100" step="5" value="0"
+                oninput="document.getElementById('vf-dv').textContent=this.value+'%'"><span class="range-val" id="vf-dv">0%</span></div></div>
           </div>
-          <div class="frow">
-            <div class="ff"><label>Bloke Eden Birim</label>
-              <select id="vf-ih-bloken"><option value="—">—</option><option>Dizayn</option><option>Şantiye</option><option>Satın Alma</option><option>Yönetim</option><option>Hukuk</option></select></div>
-            <div class="ff"><label>Gecikme (İş Günü)</label><input type="number" id="vf-ih-gecikme" min="0" placeholder="0"></div>
+          <div class="frow c3">
+            <div class="ff only-tasarim"><label>M1→M2 Dizayn süresi</label><div class="day-row"><input type="number" id="vf-d1" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
+            <div class="ff only-tasarim"><label>M2→M3 Talep süresi</label><div class="day-row"><input type="number" id="vf-d2" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
+            <div class="ff"><label>M3→M4 İhale hazırlık</label><div class="day-row"><input type="number" id="vf-d3" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
           </div>
-          <div id="soz-section" style="display:none">
-            <div class="fsec">✅ Sözleşme Bilgileri</div>
-            <div class="frow">
-              <div class="ff"><label>Sözleşme Tutarı (₺)</label><input type="text" id="vf-ih-tutar" placeholder="4.250.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
-              <div class="ff"><label>Yüklenici Firma</label><input type="text" id="vf-ih-yuklenici" placeholder="Firma A.Ş."></div>
-            </div>
-            <div class="frow c3">
-              <div class="ff"><label>Para Birimi</label><select id="vf-ih-para"><option value="TRY">TRY — ₺</option><option value="USD">USD — $</option><option value="EUR">EUR — €</option></select></div>
-              <div class="ff"><label>Sözleşme Başlangıç</label><input type="date" id="vf-ih-sozbas"></div>
-              <div class="ff"><label>Sözleşme Bitiş</label><input type="date" id="vf-ih-sozbit"></div>
-            </div>
+          <div class="frow c3">
+            <div class="ff"><label>M4→M5 İhale süresi</label><div class="day-row"><input type="number" id="vf-d4" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
+            <div class="ff"><label>M5→M6 İhale karar</label><div class="day-row"><input type="number" id="vf-d5" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
+            <div class="ff"><label>M6→M7 Sözleşme süresi</label><div class="day-row"><input type="number" id="vf-d6" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
           </div>
+          <div class="frow c3">
+            <div class="ff"><label>M7→M8 Üretim / mobilizasyon</label><div class="day-row"><input type="number" id="vf-d7" min="0" max="999" placeholder="0" oninput="vgPlanOnizle()"><span class="day-lbl">gün</span></div></div>
+          </div>
+          <div id="vf-plan-onizleme" style="background:var(--surface2);border:1px solid var(--border);
+            border-radius:7px;padding:10px 12px;font-size:13px;color:var(--text2);margin-top:2px">
+            İmalat başlangıcı ve süreleri girin — planlanan M1–M8 tarihleri burada görünecek.</div>
+
+          <div class="fsec">✅ Gerçekleşen Tarihler <span style="font-weight:400;color:var(--text3);font-size:13px">— boş bırakılabilir, durum bunlardan türetilir</span></div>
+          <div class="frow c3">
+            <div class="ff only-tasarim"><label>M1 · Tasarım Kararları <span class="ms-sahip">Dizayn</span></label><input type="date" id="vf-gm-m1" oninput="vgDurumOnizle()"></div>
+            <div class="ff only-tasarim"><label>M2 · Proje Yayın <span class="ms-sahip">Şantiye kabulüyle otomatik</span></label><input type="date" id="vf-gm-m2" oninput="vgDurumOnizle()"></div>
+            <div class="ff"><label>M3 · Talep (SAT) <span class="ms-sahip">Şantiye</span></label><input type="date" id="vf-gm-m3" oninput="vgDurumOnizle()"></div>
+          </div>
+          <div class="frow c3">
+            <div class="ff"><label>M4 · İhale Yayını <span class="ms-sahip">Satınalma</span></label><input type="date" id="vf-gm-m4" oninput="vgDurumOnizle()"></div>
+            <div class="ff"><label>M5 · Yönetime Sunum <span class="ms-sahip">Satınalma</span></label><input type="date" id="vf-gm-m5" oninput="vgDurumOnizle()"></div>
+            <div class="ff"><label>M6 · İhale Karar <span class="ms-sahip">Satınalma</span></label><input type="date" id="vf-gm-m6" oninput="vgDurumOnizle()"></div>
+          </div>
+          <div class="frow c3">
+            <div class="ff"><label>M7 · Sözleşme İmza <span class="ms-sahip">Satınalma</span></label><input type="date" id="vf-gm-m7" oninput="vgDurumOnizle()"></div>
+            <div class="ff"><label>M8 · İmalat Başlangıç <span class="ms-sahip">Şantiye</span></label><input type="date" id="vf-gm-m8" oninput="vgDurumOnizle()"></div>
+            <div class="ff"><label>Oluşacak durum</label>
+              <div id="vf-durum-onizleme" style="height:36px;display:flex;align-items:center"></div></div>
+          </div>
+
+          <div class="fsec">📑 Satınalma ve Sözleşme Bilgileri</div>
+          <div class="frow c3">
+            <div class="ff"><label>SAT No</label><input type="text" id="vf-ih-sat" placeholder="3200000636" style="font-family:var(--mono)"></div>
+            <div class="ff"><label>SAS No</label><input type="text" id="vf-ih-sas" placeholder="6800000805" style="font-family:var(--mono)"></div>
+            <div class="ff"><label>Yüklenici Firma</label><input type="text" id="vf-ih-yuklenici" placeholder="Firma A.Ş."></div>
+          </div>
+          <div class="frow c3">
+            <div class="ff"><label>Sözleşme Tutarı (₺)</label><input type="text" id="vf-ih-tutar" placeholder="4.250.000" oninput="onTutarInput(this)" inputmode="decimal"></div>
+            <div class="ff"><label>Sözleşme Tutarı ($)</label><input type="text" id="vf-ih-usd" placeholder="0" oninput="onTutarInput(this)" inputmode="decimal"></div>
+            <div class="ff"><label>Sözleşme Tutarı (€)</label><input type="text" id="vf-ih-eur" placeholder="0" oninput="onTutarInput(this)" inputmode="decimal"></div>
+          </div>
+
           <div class="fsec">📋 Ek Bilgiler</div>
-          <div class="frow c1"><div class="ff"><label>Açıklama / Notlar</label><textarea id="vf-ih-not" rows="3" placeholder="İhale ile ilgili notlar…"></textarea></div></div>
-          <div class="frow c1"><div class="ff"><label>Firma Adı</label><input type="text" id="vf-ih-firmalar" placeholder="Firma A, Firma B, Firma C"></div></div>
+          <div class="frow c1"><div class="ff"><label>Davet Edilecek Firmalar</label>
+            <input type="text" id="vf-ih-firmalar" placeholder="Firma A, Firma B, Firma C"></div></div>
+          <div class="frow c1"><div class="ff"><label>Açıklama / Not</label>
+            <textarea id="vf-ih-not" rows="3" placeholder="İhale ile ilgili notlar…"></textarea>
+            <div class="hint">Not, adınız ve tarihle birlikte kayda eklenir</div></div></div>
         </div>
         <div class="vg-actions">
           <button class="btn btn-ghost btn-sm" onclick="clearVGForm('ihale')">Temizle</button>
@@ -2144,10 +2172,6 @@ function mapDurum(d) {
   };
   return m[d] || 'hazirlik';
 }
-function mapDurumRev(d) {
-  // panel display degeri → Supabase DB degeri (ayni, gecisi kaldir)
-  return d || 'hazirlik';
-}
 
 async function loadDashboard() {
   const pid = AktifProje || null;   // genel filtre (ust bar)
@@ -3175,10 +3199,6 @@ function toggleSozFieldsModal() {
   ['f-sat-no','f-sas-no','f-yuklenici','f-tutar','f-tutar-usd','f-tutar-eur']
     .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !yazabilir; });
 }
-function toggleSozFields() {
-  const isSoz=document.getElementById('vf-ih-durum').value==='sozlesme';
-  document.getElementById('soz-section').style.display=isSoz?'block':'none';
-}
 
 async function saveForm() {
   // Edit modunda id/proje/paket zaten SbData'dan geliyor
@@ -3326,17 +3346,82 @@ function setCat(cat) {
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('view-veri')?.classList.add('on');
+  if (cat === 'ihale') { vgIhaleNoUret(); vgIhaleYetkiUygula(); vgDurumOnizle(); }
 }
 
 async function submitVGForm(tip) {
   let veri={}, tablo='';
   if (tip==='ihale') {
+    // ── YENI MODEL: Excel "Satinalma Takvimi Veri Girisi" ile ayni alanlar ──
+    // Eski form ihale_kodu alanina serbest bir kod (FLK-001-IH-045) yaziyordu;
+    // bu kayitlar IHL kalibina uymadigi icin sonraki Excel yuklemesinde
+    // "Excel'de yok" sayilip IPTAL'e tasiniyordu. Artik Ihale No otomatik
+    // uretiliyor ve butun alanlar panel modeliyle birebir ayni.
+    const v = id => (document.getElementById(id)?.value || '').trim();
     tablo='ihaleler';
-    const projeId=document.getElementById('vf-ih-proje').value, kod=document.getElementById('vf-ih-kod').value.trim();
-    const adi=document.getElementById('vf-ih-adi').value.trim(), durum=document.getElementById('vf-ih-durum').value;
-    if (!projeId||!kod||!adi||!durum) { toast('Proje, Kod, Ad ve Durum zorunludur','err'); return; }
-    const blokey=document.getElementById('vf-ih-bloken').value, not=document.getElementById('vf-ih-not').value;
-    veri={proje_id:projeId,ihale_kodu:kod.toUpperCase(),ihale_adi:adi,imalt_grubu:document.getElementById('vf-ih-grup').value||null,durum:mapDurumRev(durum),p6_aktivite_kodu:document.getElementById('vf-ih-p6').value.trim()||null,imalat_baslangic_tarihi:document.getElementById('vf-ih-imbas').value||null,dizayn_suresi_gun:parseInt(document.getElementById('vf-d1').value)||null,talep_suresi_gun:parseInt(document.getElementById('vf-d2').value)||null,ihale_hazirlik_gun:parseInt(document.getElementById('vf-d3').value)||null,ihale_suresi_gun:parseInt(document.getElementById('vf-d4').value)||null,ihale_karar_gun:parseInt(document.getElementById('vf-d5').value)||null,sozlesme_suresi_gun:parseInt(document.getElementById('vf-d6').value)||null,uretim_mobilizasyon_gun:parseInt(document.getElementById('vf-d7').value)||null,sozlesme_bedeli:parseTutar(document.getElementById('vf-ih-tutar').value)||null,sozlesme_para_birimi:document.getElementById('vf-ih-para').value,yuklenci_firma:document.getElementById('vf-ih-yuklenici').value.trim()||null,sozlesme_baslangic:document.getElementById('vf-ih-sozbas').value||null,sozlesme_bitis:document.getElementById('vf-ih-sozbit').value||null,ozel_notlar:[not,blokey!=='-'?`Bloke: ${blokey}`:''].filter(Boolean).join('\n')||null,olusturan_id:CU.id};
+    const projeId = v('vf-ih-proje');
+    const adi     = v('vf-ih-adi');
+    const imbas   = v('vf-ih-imbas');
+    if (!projeId || !adi || !imbas) {
+      toast('Proje, İhale Adı ve İmalat Başlangıç (M8) zorunludur','err'); return;
+    }
+    if (!(tamYetki() || CRole==='satinalma' || CRole==='dizayn' || rolBolumu())) {
+      toast('Yeni ihale açma yetkiniz yok','err'); return;
+    }
+    vgIhaleNoUret();
+    const ihaleNo = v('vf-ih-no');
+    if (!ihaleNo) { toast('İhale No üretilemedi — proje kodunu kontrol edin','err'); return; }
+    if (SbData.find(x => String(x.id).toUpperCase() === ihaleNo.toUpperCase() && x.proje_id === projeId)) {
+      toast('Bu İhale No bu projede zaten var','err'); return;
+    }
+    // Elektrik / Mekanik yalniz kendi bolumunde kayit acabilir
+    let bolum = v('vf-ih-bolum');
+    if (rolBolumu()) bolum = rolBolumu();
+    if (rolBolumu() && v('vf-ih-bolum') && v('vf-ih-bolum') !== rolBolumu()) {
+      toast('Yalnızca ' + rolBolumu() + ' bölümünde ihale açabilirsiniz','err'); return;
+    }
+    // Gerceklesen tarihler — yalniz yetkili oldugun milestone'lar gonderilir
+    const gVeri = {}, gTum = {};
+    MS_LISTE.forEach(m => {
+      const el = document.getElementById('vf-gm-'+m);
+      const deger = (el && msYetkiliMi(m, {ihale_bolumu: bolum})) ? (el.value || null) : null;
+      gVeri['gercek_'+m] = deger;
+      gTum[m] = deger;
+    });
+    const notMetni = document.getElementById('vf-ih-not').value.trim();
+    const imza = notMetni ? '[' + new Date().toLocaleDateString('tr-TR') + ' - '
+      + ((await sb.from('kullanici_profilleri').select('ad_soyad').eq('id',CU.id).single()).data?.ad_soyad || CU.email)
+      + ']: ' : '';
+    const sayi = id => parseTutar(v(id)) || null;
+    veri = {
+      proje_id: projeId,
+      takvim_no: ihaleNo, ihale_kodu: ihaleNo,      // panelin "Ihale No"su
+      teknik_kod: v('vf-ih-kod') || null,           // Excel'deki "IHALE KODU"
+      ihale_adi: adi,
+      ihale_kategori: v('vf-ih-kategori') || null,
+      ihale_bolumu: bolum || null,
+      ihale_tipi: 'standart',
+      plan_acilis: imbas, imalat_baslangic_tarihi: imbas,
+      dizayn_suresi_gun:       parseInt(v('vf-d1')) || 0,
+      talep_suresi_gun:        parseInt(v('vf-d2')) || 0,
+      ihale_hazirlik_gun:      parseInt(v('vf-d3')) || 0,
+      ihale_suresi_gun:        parseInt(v('vf-d4')) || 0,
+      ihale_karar_gun:         parseInt(v('vf-d5')) || 0,
+      sozlesme_suresi_gun:     parseInt(v('vf-d6')) || 0,
+      uretim_mobilizasyon_gun: parseInt(v('vf-d7')) || 0,
+      uretim_termin_gun: 0,
+      dizayn_yuzdesi: parseInt(document.getElementById('vf-ih-dizayn').value) || 0,
+      sat_no: v('vf-ih-sat') || null,
+      sas_no: v('vf-ih-sas') || null,
+      yuklenci_firma: v('vf-ih-yuklenici') || null,
+      sozlesme_tutari_tl: sayi('vf-ih-tutar'), sozlesme_bedeli: sayi('vf-ih-tutar'),
+      sozlesme_tutari_usd: sayi('vf-ih-usd'), sozlesme_tutari_eur: sayi('vf-ih-eur'),
+      davet_firmalar: v('vf-ih-firmalar') || null,
+      ozel_notlar: notMetni ? imza + notMetni : null,
+      durum: durumTuret(gTum),                      // durum tarihlerden turetilir
+      olusturan_id: CU.id,
+      ...gVeri,
+    };
   } else if (tip==='dizayn') {
     tablo='dizayn_paketleri';
     if (!document.getElementById('vf-dz-proje').value||!document.getElementById('vf-dz-kod').value||!document.getElementById('vf-dz-adi').value) { toast('Proje, Kod ve Ad zorunludur','err'); return; }
@@ -3361,21 +3446,101 @@ function clearVGForm(tip) {
   });
   document.querySelectorAll('.calc').forEach(el=>el.textContent='');
   ['vf-dv'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='0%';});
+  if (tip === 'ihale') { vgIhaleNoUret(); vgPlanOnizle(); vgDurumOnizle(); vgIhaleYetkiUygula(); }
 }
 
 // ════════════════════════════════════════════
 // GÜN → TARİH HESAPLAMA
 // ════════════════════════════════════════════
-function calcIhaleDates() {
-  const bas=document.getElementById('vf-ih-imbas').value; if (!bas) return;
-  let cur=new Date(bas+'T00:00:00');
-  [['vf-d1','cd1','Dizayn bitiş'],['vf-d2','cd2','Talep bitiş'],['vf-d3','cd3','İhale hazırlık bitiş'],
-   ['vf-d4','cd4','İhale bitiş'],['vf-d5','cd5','Karar tarihi'],['vf-d6','cd6','Sözleşme bitiş'],
-   ['vf-d7','cd7','Üretim başlangıç']].forEach(([inId,outId,lbl])=>{
-    const g=parseInt(document.getElementById(inId).value)||0, el=document.getElementById(outId);
-    if (g>0) { cur=new Date(cur.getTime()+g*86400000); el.textContent=`→ ${lbl}: ${cur.toLocaleDateString('tr-TR')}`; }
-    else el.textContent='';
+// ════════════════════════════════════════════════════════════════════
+// VERI GIRISI — IHALE FORMU YARDIMCILARI
+// Panelin geri kalaniyla AYNI motoru kullanir: plan M8'den GERIYE
+// hesaplanir, durum girilen tarihlerden turetilir.
+// ════════════════════════════════════════════════════════════════════
+// Secilen projeye gore siradaki Ihale No'yu uretir (IHL.<kod>.<sira>/1)
+function vgIhaleNoUret() {
+  const projeId = document.getElementById('vf-ih-proje')?.value;
+  const el = document.getElementById('vf-ih-no');
+  if (!el) return;
+  if (!projeId) { el.value = ''; el.placeholder = 'Proje seçin'; return; }
+  const proj = SbProjeler.find(p => p.id === projeId);
+  if (!proj) { el.value = ''; return; }
+  const prefix = 'IHL.' + (proj.proje_kodu || '0000') + '.';
+  let maxSira = 0;
+  SbData.forEach(i => {
+    if (i.proje_id === projeId && i.id && String(i.id).startsWith(prefix)) {
+      const m = String(i.id).match(/\.(\d{3})\//);
+      if (m) { const n = parseInt(m[1]); if (n > maxSira) maxSira = n; }
+    }
   });
+  el.value = prefix + String(maxSira + 1).padStart(3, '0') + '/1';
+  // Elektrik / Mekanik: bolum kendi bolumune sabitlenir
+  const bEl = document.getElementById('vf-ih-bolum');
+  if (bEl && rolBolumu()) { bEl.value = rolBolumu(); bEl.disabled = true; }
+  vgPlanOnizle();
+}
+
+// M8'den geriye planlanan M1-M8 tarihlerini gosterir
+function vgPlanOnizle() {
+  const kutu = document.getElementById('vf-plan-onizleme');
+  if (!kutu) return;
+  const imbas = document.getElementById('vf-ih-imbas')?.value;
+  if (!imbas) {
+    kutu.innerHTML = 'İmalat başlangıcı ve süreleri girin — planlanan M1–M8 tarihleri burada görünecek.';
+    return;
+  }
+  const sayi = id => parseInt(document.getElementById(id)?.value) || 0;
+  const sahte = {
+    _is_prog: imbas,
+    _s_dizayn: sayi('vf-d1'), _s_talep: sayi('vf-d2'), _s_ihazirlik: sayi('vf-d3'),
+    _s_ihale: sayi('vf-d4'),  _s_karar: sayi('vf-d5'), _s_avans_sozlesme: sayi('vf-d6'),
+    _s_mobilizasyon: sayi('vf-d7'), _s_uretim_termin: 0,
+    _gm1:null,_gm2:null,_gm3:null,_gm4:null,_gm5:null,_gm6:null,_gm7:null,_gm8:null,
+  };
+  const plan = hesaplaIhaleTarihleriV2(sahte).plan;
+  if (!plan) { kutu.innerHTML = 'Plan hesaplanamadı.'; return; }
+  const satir = (ad, tarih) =>
+    '<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0">' +
+    '<span>' + ad + '</span><strong style="font-family:var(--mono);color:var(--text)">' +
+    fmtTarih(tarih) + '</strong></div>';
+  const parcalar = [];
+  if (!TASARIMSIZ) {
+    parcalar.push(satir('M1 · Tasarım Kararları', plan.m1_tasarim));
+    parcalar.push(satir('M2 · Proje Yayın',       plan.m2_proje_yayin));
+  }
+  parcalar.push(satir('M3 · Talep (SAT)',        plan.m3_talep));
+  parcalar.push(satir('M4 · İhale Yayını',       plan.m4_ihale_yayin));
+  parcalar.push(satir('M5 · Yönetime Sunum',     plan.m5_yonetim_sunum));
+  parcalar.push(satir('M6 · İhale Karar',        plan.m6_ihale_karar));
+  parcalar.push(satir('M7 · Sözleşme İmza',      plan.m7_sozlesme_imza));
+  parcalar.push(satir('M8 · İmalat Başlangıç',   plan.m8_imalat_baslangic));
+  kutu.innerHTML = '<div style="font-weight:600;color:var(--text);margin-bottom:5px">'
+    + 'Planlanan tarihler (M8\'den geriye)</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0 18px">'
+    + parcalar.join('') + '</div>';
+}
+
+// Girilen gerceklesen tarihlerden olusacak durumu gosterir
+function vgDurumOnizle() {
+  const kutu = document.getElementById('vf-durum-onizleme');
+  if (!kutu) return;
+  const g = {};
+  msGorunur().forEach(m => { g[m] = document.getElementById('vf-gm-'+m)?.value || ''; });
+  kutu.innerHTML = chip(durumTuret(g));
+}
+
+// Rol yetkisi olmayan gerceklesen tarih kutularini kilitler
+function vgIhaleYetkiUygula() {
+  const bolum = document.getElementById('vf-ih-bolum')?.value || rolBolumu() || '';
+  MS_LISTE.forEach(m => {
+    const el = document.getElementById('vf-gm-'+m);
+    if (el) el.disabled = !msYetkiliMi(m, {ihale_bolumu: bolum}) || CRole === 'izleyici';
+  });
+  const yaz = tamYetki() || CRole==='satinalma' || !!rolBolumu();
+  ['vf-ih-sat','vf-ih-sas','vf-ih-yuklenici','vf-ih-tutar','vf-ih-usd','vf-ih-eur']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !yaz; });
+  const dz = document.getElementById('vf-ih-dizayn');
+  if (dz) dz.disabled = !(tamYetki() || CRole==='dizayn' || !!rolBolumu());
 }
 
 // ════════════════════════════════════════════
