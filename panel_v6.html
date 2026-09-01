@@ -877,8 +877,9 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="fr" id="ak-birim-secim"></div>
   </div>
   <div style="font-size:13px;color:var(--text3);margin:-6px 0 12px">
-    Gecikmesi en fazla olan en üstte. Bloke edilen işler burada değil,
-    İhale Havuzu'nda "Bloke" durumuyla listelenir.</div>
+    Gecikmesi en fazla olan en üstte. Bloke edilen işler ve sözleşmesi
+    imzalanmış (M7 gerçekleşmiş) işler burada listelenmez — ikisi de
+    İhale Havuzu'nda görünür.</div>
   <div id="ak-list"></div>
 </div>
 
@@ -1452,6 +1453,10 @@ function getAktifMilestoneBilgi(i) {
     { key:'m8', ad:'M8 · İmalat Başlangıç',  planKey:'m8_imalat_baslangic', gercek:i._gm8 }
   ];
 
+  // Ihale sureci M7 ile biter: M7 gerceklestiyse M8 bekleyisi icin
+  // "gecikme" gostergesi uretilmez (yalnizca bilgi satiri bos kalir).
+  if (i._gm7 && !i._gm8) return { ad:'M8 · İmalat Başlangıç', hedef:'', gun:0, html:'' };
+
   // Find the first milestone that is NOT completed
   // (tasarim asamasi kapaliysa M1-M2 hic degerlendirilmez)
   const gorunur = msGorunur();
@@ -1939,7 +1944,12 @@ async function loadIhaleler() {
     // kayitlar da dogru gorunur — veritabani yeniden yuklemeyi beklemez.
     // bloke / iptal elle isaretlenir, sadece-dizayn paketleri yuzdeyle
     // tamamlanir; bu ucu korunur.
-    if (row.durum !== 'bloke' && row.durum !== 'iptal' &&
+    // ONEMLI: hicbir gerceklesen tarihi olmayan kayitta veritabanindaki
+    // durum korunur. Aksi halde (ornegin tarihler henuz yazilamamissa)
+    // butun kayitlar "hazirlik"a duser ve hepsi gecikmis gorunur.
+    const tarihVar = !!(row._gm1||row._gm2||row._gm3||row._gm4||
+                        row._gm5||row._gm6||row._gm7||row._gm8);
+    if (tarihVar && row.durum !== 'bloke' && row.durum !== 'iptal' &&
         row.ihale_tipi !== 'sadece_dizayn') {
       row.durum = durumTuret({ m1:row._gm1, m2:row._gm2, m3:row._gm3, m4:row._gm4,
                                m5:row._gm5, m6:row._gm6, m7:row._gm7, m8:row._gm8 });
@@ -2042,7 +2052,12 @@ function hesaplaIhaleTarihleriV2(ihale, tumAsamalar) {
 
   const todayStr = today();
   const isFinished = ihale.durum === 'tamamlandi' || ihale.durum === 'iptal';
-  const checkToday = !isFinished;
+  // Panel IHALE surecini izler ve bu surec M7 (sozlesme imza) ile biter.
+  // M7 gerceklestiyse sirada yalnizca imalat baslangici (M8) kalir; bu
+  // bekleyis ihale gecikmesi sayilmaz. Aksi halde M8'i hic girilmemis
+  // eski isler her gun buyuyen bir gecikme uretiyordu.
+  const surecBitti = isFinished || !!ihale._gm7;
+  const checkToday = !surecBitti;
 
   const kaymali = { ...plan };
   const asamalar = [];
@@ -2205,7 +2220,9 @@ async function loadDashboard() {
   const satinN    = aktifR.filter(i => ['satinalma_devir','firma_davet','degerlendirme','yonetim_onayi','sozlesme'].includes(i.durum)).length; // M3-M7
   // Aksakliklar sayfasiyla AYNI olcut: yalnizca mevcut asamada gecikme.
   // Bloke ayri bir isaret; sayisi kartin alt satirinda bilgi olarak durur.
-  const gecN      = aktifR.filter(i => i.durum !== 'bloke' && aktifAsamaGecikmesi(i) > 0).length;
+  // Aksakliklar sayfasiyla AYNI kapsam: M7 gerceklesmis isler sayilmaz
+  const gecN      = aktifR.filter(i => i.durum !== 'bloke' && i.durum !== 'sozlesme'
+                                    && !i._gm7 && aktifAsamaGecikmesi(i) > 0).length;
   const blokeN    = aktifR.filter(i => i.durum === 'bloke').length;
 
   set('kv-top', aktifR.length);
@@ -2221,7 +2238,7 @@ async function loadDashboard() {
   // Rozet, Aksakliklar sayfasiyla AYNI olcut ve TEKRARSIZ saymali:
   // bir kayit hem gecikmede hem iadede olabilir, bir kez sayilir.
   const aksakTekil = acikP.filter(i =>
-    i.durum !== 'bloke' &&
+    i.durum !== 'bloke' && i.durum !== 'sozlesme' && !i._gm7 &&
     (aktifAsamaGecikmesi(i) > 0 || i.santiye_onay_durum === 'red' || i.talep_onay_durum === 'red'));
   set('nb-aksak', aksakTekil.length);
   set('nb-arsiv', SbArchive.length);
@@ -2964,7 +2981,11 @@ async function talepRedOnayla() {
 function rAksaklik() {
   // Tamamlanan ve iptal edilen paketler aksaklik sayilmaz.
   // Ust bardaki proje/bolum/kategori filtreleri burada da gecerli.
-  const acikPaketler = projeFiltre(SbData).filter(i => !['tamamlandi','iptal'].includes(i.durum));
+  // Aksaklik kapsami: tamamlanan, iptal edilen ve SOZLESMESI IMZALANMIS
+  // (M7 gerceklesmis) isler girmez. M7 sonrasi ihale sureci fiilen
+  // bitmistir; kalan M8 imalat baslangicidir, ihale aksakligi degildir.
+  const acikPaketler = projeFiltre(SbData)
+    .filter(i => !['tamamlandi','iptal','sozlesme'].includes(i.durum) && !i._gm7);
 
   // Once TUM aksakliklari bul, sonra birim sekmesine gore suz.
   // BLOKE artik aksaklik sayilmiyor (Doruk): bloke elle isaretlenen bir
