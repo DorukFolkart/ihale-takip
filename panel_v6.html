@@ -1047,7 +1047,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="form-sec">Durum</div>
     <div class="form-grid">
       <div class="fl"><label>Mevcut Durum</label>
-        <select id="f-durum">
+        <select id="f-durum" onchange="blokeAlaniTazele()">
           <option value="hazirlik">M1 - Tasarim Kararlarinin Verilmesi</option>
           <option value="dizaydan_devir">M2 - Proje Yayin</option>
           <option value="satinalma_devir">M3 - Talep (SAT)</option>
@@ -1060,6 +1060,11 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <option value="bloke">Bloke</option>
           <option value="iptal">Iptal</option>
         </select>
+      </div>
+      <div class="fl" id="bloke-neden-wrap" style="display:none">
+        <label>Bloke nedeni / bloke eden birim</label>
+        <input type="text" id="f-bloke-neden" placeholder="ör: Dizayn — cephe detayı bekleniyor">
+        <div class="hint" style="font-size:13px;color:var(--text3);margin-top:4px">Excel'e "BLOKE NEDENİ" sütunu olarak aktarılır</div>
       </div>
     </div>
 
@@ -1889,7 +1894,9 @@ async function loadIhaleler() {
       _gm7: i.gercek_m7||null,
       _gm8: i.gercek_m8||null,
       // diğer
-      bloken:      extractBloken(i.ozel_notlar),
+      // Bloke nedeni artik kendi kolonunda; eski kayitlar icin nottan okunur
+      bloke_nedeni: i.bloke_nedeni || null,
+      bloken:      i.bloke_nedeni || extractBloken(i.ozel_notlar),
       guncel:      i.guncelleme?.split('T')[0]||'',
       firmalar:    (i.davet_firmalar||'').split(',').map(s=>s.trim()).filter(Boolean),
       aciklama:    i.ozel_notlar||'',
@@ -3184,7 +3191,10 @@ function openForm(id) {
     }
   }
 
+  const blokeEl = document.getElementById('f-bloke-neden');
+  if (blokeEl) { blokeEl.value = f?.bloke_nedeni || ''; blokeEl.disabled = !tamYetki(); }
   msDurumTazele();
+  blokeAlaniTazele();
   toggleSozFieldsModal();
   openOv('ov-form');
 }
@@ -3284,6 +3294,8 @@ async function saveForm() {
     yuklenci_firma:   document.getElementById('f-yuklenici').value.trim()||null,
     sat_no:           document.getElementById('f-sat-no').value.trim()||null,
     sas_no:           document.getElementById('f-sas-no').value.trim()||null,
+    bloke_nedeni:     (document.getElementById('f-durum').value === 'bloke')
+                        ? (document.getElementById('f-bloke-neden').value.trim() || null) : null,
     olusturan_id:     CU.id,
     ...gmVeri,
   };
@@ -4197,6 +4209,17 @@ function xlNorm(v) {
 // Excel gunleri saat tasimaz ama kutuphane Date'i UTC ya da lokal
 // geceyarisi olarak uretebilir; iki durumda da dogru gunu verir.
 function xlTarih(v) {
+  // Excel SERI NUMARASI: hucre bicimi "Genel"e dondugunde (ozellikle
+  // kopyala-yapistir sonrasi) kutuphane tarih yerine 46320 gibi bir sayi
+  // dondurur. Bu satirlar eskiden "tarih olarak okunamadi" hatasi verip
+  // butun yuklemeyi durduruyordu.
+  if (typeof v === 'number' && isFinite(v) && v > 20000 && v < 80000) {
+    const d = new Date(Math.round((v - 25569) * 86400000));   // 25569 = 1970-01-01
+    if (!isNaN(d)) {
+      return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0')
+           + '-' + String(d.getUTCDate()).padStart(2,'0');
+    }
+  }
   if (v instanceof Date && !isNaN(v)) {
     if (v.getUTCHours() === 0 && v.getUTCMinutes() === 0) {
       return v.getUTCFullYear()+'-'+String(v.getUTCMonth()+1).padStart(2,'0')+'-'+String(v.getUTCDate()).padStart(2,'0');
@@ -4246,7 +4269,13 @@ const XL_BASIT = [
   { alan:'usd',        h:'SÖZLEŞME TUTARI USD'                     },
   { alan:'eur',        h:'SÖZLEŞME TUTARI EURO'                    },
   { alan:'dizayn_yuz', h:'DİZAYN İLERLEME YÜZDESİ'                 },
+  // Bloke: opsiyonel sutunlar. Dolu ise ihale BLOKE olarak isaretlenir;
+  // bos ise durum her zamanki gibi girilen tarihlerden turetilir.
+  { alan:'bloke',        h:'BLOKE'                                   },
+  { alan:'bloke_nedeni', h:'BLOKE NEDENİ'                            },
 ];
+// "BLOKE" sutununda bloke sayilan degerler (buyuk/kucuk ve Turkce harf farki gozetmez)
+const XL_BLOKE_EVET = ['EVET','E','X','VAR','1','BLOKE','YES','TRUE','DOGRU'];
 
 // Kirmizi hata kutusu goster ve okunan veriyi temizle
 function xlHataGoster(baslik, satirlar) {
@@ -4385,6 +4414,13 @@ function parseXlFile(file) {
         const eksikPlan = XL_MS.filter(x => !p[x.key]).map(x => x.key.toUpperCase());
         if (eksikPlan.length) uyarilar.push('Satir '+excelSatir+' ('+no+'): planlanan tarih bos → '+eksikPlan.join(', '));
 
+        // ── Bloke sutunlari (opsiyonel) ──
+        const blokeHam = xlMetin(r[K.bloke]);
+        const blokeMi  = blokeHam !== '';
+        // "EVET / X / 1" gibi bir isaret degilse, yazilan metnin kendisi neden sayilir
+        const blokeNedeni = xlMetin(r[K.bloke_nedeni])
+          || (blokeMi && XL_BLOKE_EVET.indexOf(xlNorm(blokeHam)) < 0 ? blokeHam : '');
+
         let dz = xlSayi(r[K.dizayn_yuz]);
         if (dz != null && dz > 0 && dz <= 1) dz = Math.round(dz * 100);   // %85 yerine 0,85 yazilmissa
         if (dz != null) dz = Math.max(0, Math.min(100, Math.round(dz)));
@@ -4403,6 +4439,8 @@ function parseXlFile(file) {
           sas_no: xlMetin(r[K.sas_no]),
           tl: xlSayi(r[K.tl]), usd: xlSayi(r[K.usd]), eur: xlSayi(r[K.eur]),
           dizayn_yuz: dz,
+          // Bloke isareti: sutun yoksa K.bloke undefined olur, deger bos gelir
+          bloke: blokeMi, bloke_nedeni: blokeNedeni,
         });
       }
 
@@ -4502,10 +4540,16 @@ async function importCsv() {
   await loadIhaleler();
   const mevcut     = SbData.filter(i => i.proje_id === proje.id);
   const mevcutMap  = new Map(mevcut.map(i => [i.id, i]));
+  // Ayni Ihale No veritabaninda iki kez varsa guncelleme "unique" kisitina
+  // takilir ve o satir yazilamaz. Once uyar, yukleme oncesi duzeltilsin.
+  const sayac = new Map();
+  mevcut.forEach(i => sayac.set(i.id, (sayac.get(i.id) || 0) + 1));
+  const cift = [...sayac.entries()].filter(([, n]) => n > 1).map(([no, n]) => no + ' (' + n + ' kayit)');
   const excelNolar = new Set(rows.map(r => r.ihale_no));
 
   // ── Ozet hesapla ──
   let yeni = 0, guncellenecek = 0, silinecekTarih = 0, tamamlanacak = 0, iptaldenDonecek = 0;
+  let blokeOlacak = 0, blokeCikacak = 0;
   const silinecekDetay = [];
   rows.forEach(r => {
     const v = mevcutMap.get(r.ihale_no);
@@ -4520,7 +4564,9 @@ async function importCsv() {
       if ((v.dizayn_yuz || 0) > 0 && !r.dizayn_yuz) kayip.push('Dizayn %');
       if (kayip.length) { silinecekTarih++; silinecekDetay.push(r.ihale_no + ' → ' + kayip.join(', ')); }
     }
-    if (xlDurumTuret(r.g) === 'tamamlandi') tamamlanacak++;
+    if (!r.bloke && xlDurumTuret(r.g) === 'tamamlandi') tamamlanacak++;
+    if (r.bloke) { if (!v || v.durum !== 'bloke') blokeOlacak++; }
+    else if (v && v.durum === 'bloke') blokeCikacak++;
   });
   const iptaleGidecek = mevcut.filter(i => !excelNolar.has(i.id) && i.durum !== 'iptal');
 
@@ -4533,6 +4579,9 @@ async function importCsv() {
     satir('var(--green)', '<strong>'+yeni+'</strong> yeni ihale eklenecek') +
     satir('var(--blue-l)', '<strong>'+guncellenecek+'</strong> ihale guncellenecek') +
     (tamamlanacak    ? satir('var(--text3)', '<strong>'+tamamlanacak+'</strong> ihale "Tamamlandı" olarak işaretlenecek (M7 Sözleşme İmza veya M8 gerçekleşmiş)') : '') +
+    (cift.length     ? satir('var(--red)',   '<strong>'+cift.length+'</strong> İhale No panelde <strong>birden fazla kayıtta</strong> var — bu satırlar yazılamayabilir: ' + cift.slice(0,5).join(', ')) : '') +
+    (blokeOlacak     ? satir('var(--red)',   '<strong>'+blokeOlacak+'</strong> ihale <strong>BLOKE</strong> olarak işaretlenecek (Excel\'de BLOKE sütunu dolu)') : '') +
+    (blokeCikacak    ? satir('var(--green)', '<strong>'+blokeCikacak+'</strong> ihale blokeden çıkacak (Excel\'de BLOKE sütunu boş)') : '') +
     (iptaldenDonecek ? satir('var(--green)', '<strong>'+iptaldenDonecek+'</strong> iptal edilmis ihale tekrar aktif olacak') : '') +
     (silinecekTarih  ? satir('var(--red)', '<strong>'+silinecekTarih+'</strong> ihalede panelde DOLU olan veri silinecek (Excel\'de bos)') : '') +
     (iptaleGidecek.length ? satir('var(--red)', '<strong>'+iptaleGidecek.length+'</strong> ihale IPTAL\'e tasinacak (Excel\'de yok)') : '') +
@@ -4598,7 +4647,9 @@ async function xlYaz(proje, rows, iptaleGidecek) {
     sozlesme_tutari_tl:      r.tl, sozlesme_bedeli: r.tl,
     sozlesme_tutari_usd:     r.usd, sozlesme_tutari_eur: r.eur,
     dizayn_yuzdesi:          r.dizayn_yuz == null ? 0 : r.dizayn_yuz,
-    durum:                   xlDurumTuret(r.g),
+    // Excel'de BLOKE isaretliyse durum bloke olur; degilse tarihlerden turetilir
+    durum:                   r.bloke ? 'bloke' : xlDurumTuret(r.g),
+    bloke_nedeni:            r.bloke ? (r.bloke_nedeni || null) : null,
   });
 
   // 8'erli gruplar halinde — tek tek gondermekten cok daha hizli
@@ -4631,8 +4682,16 @@ async function xlYaz(proje, rows, iptaleGidecek) {
           eklendi++;
         }
       } catch(err) {
-        hatalar.push(r.ihale_no + ': ' + (err.message || err));
-        console.error('Import satiri basarisiz:', r.ihale_no, err);
+        // Supabase/PostgREST hatasi yalnizca "message" degildir: code, details
+        // ve hint alanlari genelde HANGI kolonun sorun cikardigini soyler.
+        // Tanilama icin hepsini goster.
+        const p = [];
+        if (err && err.code)    p.push('kod ' + err.code);
+        if (err && err.message) p.push(err.message);
+        if (err && err.details) p.push('ayrinti: ' + err.details);
+        if (err && err.hint)    p.push('ipucu: ' + err.hint);
+        hatalar.push(r.ihale_no + ' → ' + (p.length ? p.join(' | ') : String(err)));
+        console.error('Import satiri basarisiz:', r.ihale_no, err, 'gonderilen veri:', veri);
       }
     }));
     if (rows.length > 20) toast('Yukleniyor… ' + Math.min(i + PARCA, rows.length) + '/' + rows.length, 'info');
@@ -4658,7 +4717,25 @@ async function xlYaz(proje, rows, iptaleGidecek) {
   if (hatalar.length) {
     msg += ' | ' + hatalar.length + ' hata';
     console.error('Import hatalari:', hatalar);
-    xlHataGoster(hatalar.length + ' kayit yazilamadi (digerleri yazildi).', hatalar.slice(0, 20));
+    // Ayni hata butun satirlarda tekrarliyorsa sebep genelde veritabani
+    // tarafindadir (eksik kolon / tip uyusmazligi / yetki). Kullaniciya ne
+    // yapacagini soyle, 100 satirlik ayni mesaji okumak zorunda kalmasin.
+    const liste = hatalar.slice(0, 20);
+    const ipucu = [];
+    const hepsi = hatalar.join(' ');
+    if (/schema cache|column .* does not exist|could not find/i.test(hepsi)) {
+      ipucu.push('Veritabaninda EKSIK KOLON var. Cozum: depodaki "ihaleler-kolonlar.sql" dosyasini Supabase > SQL Editor icinde bir kez calistir.');
+    }
+    if (/invalid input syntax|numeric|integer/i.test(hepsi)) {
+      ipucu.push('Bir kolonun TIPI beklenenden farkli olabilir (ornegin SAS No sayi tipinde ama metin geliyor). "ihaleler-kolonlar.sql" dosyasinin sonundaki tip sorgusunu calistirip ciktiyi paylas.');
+    }
+    if (/row-level security|permission|policy/i.test(hepsi)) {
+      ipucu.push('Yetki (RLS) engelledi. "yeni-roller.sql" dosyasini calistirdiginizdan emin olun.');
+    }
+    if (hatalar.length > 3 && new Set(hatalar.map(h => String(h).replace(/^[^:]*:\s*/, ''))).size === 1) {
+      ipucu.push('Butun satirlar AYNI hatayi verdi — sorun tek tek kayitlarda degil, tablo yapisinda ya da yetkide.');
+    }
+    xlHataGoster(hatalar.length + ' kayit yazilamadi (digerleri yazildi).', ipucu.concat(liste));
     openOv('ov-csv');
   }
   toast(msg, hatalar.length ? 'err' : 'ok');
@@ -4691,10 +4768,11 @@ const XL_DISA_ANA = [
   'SÖZLEŞME İMZA TARİHİ','', 'İMALAT BAŞLANGIÇ TARİHİ','',
   'SAT NO', 'FİRMA ADI', 'SAS NO',
   'SÖZLEŞME TUTARI TL', 'SÖZLEŞME TUTARI USD', 'SÖZLEŞME TUTARI EURO',
-  'DİZAYN İLERLEME YÜZDESİ'
+  'DİZAYN İLERLEME YÜZDESİ',
+  'BLOKE', 'BLOKE NEDENİ'
 ];
 const XL_DISA_ALT = (() => {
-  const a = new Array(29).fill('');
+  const a = new Array(31).fill('');
   for (let c = 6; c <= 20; c += 2) { a[c] = 'PLANLANAN'; a[c+1] = 'GERÇEKLEŞEN'; }
   return a;
 })();
@@ -4734,9 +4812,12 @@ function exportExcel(projeId, dosyaAdi, sessiz) {
     sayi(i.sozlesme_usd),
     sayi(i.sozlesme_eur),
     sayi(i.dizayn_yuz),
+    // Bloke durumu Excel'e de yazilir: panelde bloke edilen is dosyada gorunur
+    i.durum === 'bloke' ? 'EVET' : '',
+    i.durum === 'bloke' ? (i.bloke_nedeni || (i.bloken && i.bloken !== '-' ? i.bloken : '') || '') : '',
   ]));
 
-  const b1 = new Array(29).fill('');
+  const b1 = new Array(31).fill('');
   b1[1] = (proje.proje_kodu || '') + ' - ' + String(proje.proje_adi || '').toUpperCase();
 
   const aoa = [b1, XL_DISA_ANA, XL_DISA_ALT].concat(veri);
@@ -4751,7 +4832,7 @@ function exportExcel(projeId, dosyaAdi, sessiz) {
   }
   ws['!cols'] = [{wch:3},{wch:18},{wch:32},{wch:40},{wch:14},{wch:10}]
     .concat(new Array(16).fill({wch:13}))
-    .concat([{wch:14},{wch:34},{wch:14},{wch:18},{wch:16},{wch:16},{wch:12}]);
+    .concat([{wch:14},{wch:34},{wch:14},{wch:18},{wch:16},{wch:16},{wch:12},{wch:8},{wch:32}]);
   ws['!merges'] = [
     {s:{r:1,c:6}, e:{r:1,c:7}},  {s:{r:1,c:8}, e:{r:1,c:9}},
     {s:{r:1,c:10},e:{r:1,c:11}}, {s:{r:1,c:12},e:{r:1,c:13}},
@@ -5058,6 +5139,13 @@ function durumTuret(g){
 }
 
 // Formdaki tarih kutularindan durumu canli hesaplayip secime yansitir
+// Bloke nedeni alani yalnizca durum "Bloke" secildiginde gorunur
+function blokeAlaniTazele(){
+  const sel = document.getElementById('f-durum');
+  const wrap = document.getElementById('bloke-neden-wrap');
+  if (sel && wrap) wrap.style.display = (sel.value === 'bloke') ? 'block' : 'none';
+}
+
 function msDurumTazele(){
   const g = {};
   // Tasarimsiz modda M1/M2 kutulari hesaba katilmaz (asama yok sayilir)
@@ -5067,6 +5155,7 @@ function msDurumTazele(){
   if (sel.value === 'bloke' || sel.value === 'iptal') return;   // elle isaretlenmis
   const yeni = durumTuret(g);
   if ([...sel.options].some(o => o.value === yeni)) sel.value = yeni;
+  blokeAlaniTazele();
 }
 
 // HTML kacisi: veritabanindan gelen metinler innerHTML'e yazilirken
