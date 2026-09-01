@@ -315,6 +315,27 @@ td strong{color:var(--text);font-weight:600;}
 .pc-proj{font-size:13px;color:var(--text3);}
 .pc-id{font-size:12px;color:var(--text3);margin-top:4px;}
 
+/* YONETIM RAPORU — 3 kolon, yalnizca no + ad + gecikme/kalan */
+.yr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+.yr-col{background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  overflow:hidden;box-shadow:var(--shadow)}
+.yr-hd{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;
+  align-items:center;justify-content:space-between;gap:8px}
+.yr-hd-ad{font-size:14px;font-weight:700;color:var(--text)}
+.yr-hd-alt{font-size:12px;color:var(--faint);margin-top:2px}
+.yr-hd-adet{font-size:18px;font-weight:700;font-family:var(--mono)}
+.yr-body{padding:8px;max-height:none}
+.yr-item{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent}
+.yr-item:hover{background:var(--surface2);border-color:var(--border)}
+.yr-item + .yr-item{border-top:1px solid var(--border)}
+.yr-no{font-family:var(--mono);font-size:12px;color:var(--blue-l)}
+.yr-ad{font-size:13.5px;font-weight:600;color:var(--text);line-height:1.35;
+  overflow-wrap:anywhere}
+.yr-gun{font-size:13px;font-weight:700;white-space:nowrap;text-align:right;flex-shrink:0}
+.yr-bos{padding:26px 10px;text-align:center;font-size:13px;color:var(--text3)}
+@media (max-width:1100px){.yr-grid{grid-template-columns:1fr}}
+
 /* AKSAKLIK */
 .ak-item{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);
   border-radius:8px;padding:16px;margin-bottom:12px;cursor:pointer;transition:background .1s;box-shadow:var(--shadow);}
@@ -477,6 +498,12 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   nav,header,#toast,.overlay{display:none!important;}
   main{padding:0;}
   .card,.tw,.kpi{box-shadow:none;border-color:#CBD5E1;}
+  /* Yonetim raporu: 3 kolon yazdirmada da yan yana kalsin, kolonlar
+     sayfa arasinda bolunmesin */
+  .yr-grid{grid-template-columns:repeat(3,1fr)!important;gap:8px}
+  .yr-col{box-shadow:none;border-color:#CBD5E1;break-inside:avoid}
+  .yr-item{break-inside:avoid}
+  .sh .fr{display:none!important}
 }
 </style>
 </head>
@@ -583,6 +610,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 <div class="app-container">
 <nav>
   <button class="tab on" onclick="sw('ozet',this)">📊 Özet</button>
+  <button class="tab" onclick="sw('yrapor',this)">📈 Yönetim Raporu</button>
   <button class="tab" onclick="sw('havuz',this)">📋 İhale Havuzu <span class="nbadge b" id="nb-havuz">0</span></button>
   <button class="tab" onclick="sw('pipeline',this)">⚡ Satın Alma</button>
   <button class="tab only-tasarim" id="tab-dizayn" onclick="sw('dizayn',this)">📐 Dizayn</button>
@@ -622,6 +650,18 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="chart" id="ch-proje"></div>
   </div>
   <div class="card"><div class="card-t"><div class="ct-dot" style="background:var(--green)"></div>Birimimin yaklaşan tarihleri</div><div style="font-size:13px;color:var(--text3);margin:-4px 0 10px" id="son-list-alt">—</div><div id="son-list"></div></div>
+</div>
+
+<!-- YÖNETİM RAPORU — yönetime sunum görünümü -->
+<div class="view" id="view-yrapor">
+  <div class="sh">
+    <div class="st">Yönetim raporu</div>
+    <div class="fr">
+      <button class="btn btn-ghost btn-sm" onclick="yrYazdir()">🖨 Yazdır / PDF</button>
+    </div>
+  </div>
+  <div style="font-size:13px;color:var(--text3);margin:-6px 0 14px" id="yr-alt">—</div>
+  <div class="yr-grid" id="yr-grid"></div>
 </div>
 
 <!-- İHALE HAVUZU -->
@@ -1551,7 +1591,7 @@ function projeFiltre(rows) {
 // Acik olan sekme hangisi olursa olsun hepsini guncelle.
 function tumSekmeleriCiz() {
   loadDashboard();
-  rHavuz(); rPipeline(); rDizayn(); rSantiye(); rAksaklik(); rArsiv(); rRapor();
+  rHavuz(); rYRapor(); rPipeline(); rDizayn(); rSantiye(); rAksaklik(); rArsiv(); rRapor();
 }
 
 // ════════════════════════════════════════════
@@ -2608,6 +2648,89 @@ function kalanGunMetni(i) {
   if (g === 0) return '<span style="color:var(--gold);font-weight:700">Bugün hedef</span>';
   return '<span style="color:var(--red);font-weight:700">' + Math.abs(g) + ' gün geçti</span>';
 }
+
+// ════════════════════════════════════════════════════════════════════
+// YONETIM RAPORU (yonetime sunum)
+// Uc kolon: Dizayn | Şantiye (talep) | Satınalma.
+// Her kolonda o birimde BEKLEYEN isler; satirda yalnizca ihale no,
+// ihale adi ve gecikme/kalan gun bilgisi var.
+// Kolon esleme sorumluBirim() ile yapilir — panelin geri kalaniyla ayni
+// kaynak, boylece Aksakliklar ve Ozet ile celismez.
+// Ust Yonetim'de bekleyen isler (M5 girilmis, M6 bekleniyor) Satınalma
+// kolonunda gosterilir; ayirmak istersen YR_KOLON'a bir satir eklemek
+// yeterli.
+// ════════════════════════════════════════════════════════════════════
+const YR_KOLON = [
+  { ad:'Dizayn',    alt:'Tasarım kararı ve proje yayını bekleyenler',
+    birimler:['Dizayn'],                 renk:'var(--purple)' },
+  { ad:'Şantiye',   alt:'Talep (SAT) girilmesi bekleyenler',
+    birimler:['Şantiye'],                renk:'var(--green)' },
+  { ad:'Satınalma', alt:'İhale yayını, sunum, karar ve sözleşme',
+    birimler:['Satınalma','Üst Yönetim'],renk:'var(--blue-l)' },
+];
+
+// Bir isin gecikme / kalan gun ozeti (kisa, rapor icin)
+function yrGunMetni(i) {
+  const gec = aktifAsamaGecikmesi(i);
+  if (gec > 0) return { html:'<span style="color:var(--red)">'+gec+' gün gecikme</span>', sira:-gec };
+  const hedef = hedefBitisTarihi(i);
+  if (!hedef) return { html:'<span style="color:var(--text3)">—</span>', sira:99999 };
+  const g = Math.round((new Date(hedef+'T00:00:00') - new Date(today()+'T00:00:00')) / 86400000);
+  if (g === 0) return { html:'<span style="color:var(--gold)">bugün hedef</span>', sira:0 };
+  if (g < 0)   return { html:'<span style="color:var(--red)">'+Math.abs(g)+' gün geçti</span>', sira:g };
+  return { html:'<span style="color:'+(g<=7?'var(--gold)':'var(--green)')+'">'+g+' gün kaldı</span>', sira:g };
+}
+
+function rYRapor() {
+  const grid = document.getElementById('yr-grid');
+  if (!grid) return;
+
+  // Kapanmis isler ve sureci bitmis (M7 girilmis) isler raporda yok
+  const isler = projeFiltre(SbData).filter(i =>
+    !['tamamlandi','iptal'].includes(i.durum) && !i._gm7);
+
+  const altEl = document.getElementById('yr-alt');
+  if (altEl) {
+    const proje = AktifProje ? (SbProjeler.find(p=>p.id===AktifProje)||{}).proje_adi : 'Tüm projeler';
+    altEl.textContent = (proje || 'Tüm projeler')
+      + (AktifBolum ? ' · ' + AktifBolum : '')
+      + (AktifKategori ? ' · ' + AktifKategori + ' kategori' : '')
+      + ' · ' + isler.length + ' açık iş · '
+      + new Date().toLocaleDateString('tr-TR', {day:'2-digit',month:'long',year:'numeric'});
+  }
+
+  grid.innerHTML = YR_KOLON.map(k => {
+    const liste = isler
+      .filter(i => k.birimler.indexOf(sorumluBirim(i)) >= 0)
+      .map(i => ({ i, g: yrGunMetni(i) }))
+      .sort((a,b) => a.g.sira - b.g.sira);          // en gecikmisten en rahata
+    const gecikenAdet = liste.filter(x => x.g.sira < 0).length;
+
+    return '<div class="yr-col">' +
+      '<div class="yr-hd" style="border-top:3px solid '+k.renk+'">' +
+        '<div><div class="yr-hd-ad">'+k.ad+'</div><div class="yr-hd-alt">'+k.alt+'</div></div>' +
+        '<div style="text-align:right">' +
+          '<div class="yr-hd-adet" style="color:'+k.renk+'">'+liste.length+'</div>' +
+          (gecikenAdet ? '<div style="font-size:12px;color:var(--red)">'+gecikenAdet+' geciken</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="yr-body">' +
+        (liste.length
+          ? liste.map(x =>
+              '<div class="yr-item" onclick="openDetail(\''+x.i._id+'\')">' +
+                '<div style="min-width:0">' +
+                  '<div class="yr-no">'+esc(x.i.id)+'</div>' +
+                  '<div class="yr-ad">'+esc(x.i.paket)+'</div>' +
+                '</div>' +
+                '<div class="yr-gun">'+x.g.html+'</div>' +
+              '</div>').join('')
+          : '<div class="yr-bos">Bu birimde bekleyen iş yok</div>') +
+      '</div></div>';
+  }).join('');
+}
+
+// Yazdirma: tarayicinin yazdirma penceresi (PDF olarak kaydedilebilir)
+function yrYazdir() { window.print(); }
 
 function rPipeline() {
   const btnToggle = document.getElementById('btn-sa-toggle');
@@ -4954,7 +5077,7 @@ function sw(name,btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('view-'+name)?.classList.add('on');
   if (btn) btn.classList.add('on');
-  const fn={havuz:rHavuz,pipeline:rPipeline,dizayn:rDizayn,santiye:rSantiye,aksaklik:rAksaklik,arsiv:rArsiv,p6:rP6,sap:rSap,kilavuz:rKilavuz,rapor:rRapor,ozet:()=>loadDashboard(),ayarlar:()=>{renderProjeSettings();rOnayBekleyenler(); rKullanicilar();}};
+  const fn={havuz:rHavuz,yrapor:rYRapor,pipeline:rPipeline,dizayn:rDizayn,santiye:rSantiye,aksaklik:rAksaklik,arsiv:rArsiv,p6:rP6,sap:rSap,kilavuz:rKilavuz,rapor:rRapor,ozet:()=>loadDashboard(),ayarlar:()=>{renderProjeSettings();rOnayBekleyenler(); rKullanicilar();}};
   fn[name]?.();
 }
 document.querySelectorAll('.overlay').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('on');}));
@@ -4965,14 +5088,15 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelect
 // ════════════════════════════════════════════
 // Ozet grafiginde durum sutunlarinin SABIT sirasi ve sorumlu birimleri.
 // Birim eslemesi: M1-M2 Dizayn, M3 ve M8 Santiye, M4-M7 Satinalma.
+// "birim" = o durumda BEKLENEN isi yapacak birim (sorumluBirim ile ayni)
 const DURUM_SIRA = [
-  { k:'hazirlik',        kisa:'M1',         birim:'Dizayn',    renk:'var(--neutral)' },
-  { k:'dizaydan_devir',  kisa:'M2',         birim:'Dizayn',    renk:'var(--s1)' },
-  { k:'satinalma_devir', kisa:'M3',         birim:'Şantiye',   renk:'var(--s1)' },
-  { k:'firma_davet',     kisa:'M4',         birim:'Satınalma', renk:'var(--s1)' },
+  { k:'hazirlik',        kisa:'M1',         birim:'Dizayn',      renk:'var(--neutral)' },
+  { k:'dizaydan_devir',  kisa:'M2',         birim:'Şantiye',     renk:'var(--s1)' },
+  { k:'satinalma_devir', kisa:'M3',         birim:'Satınalma',   renk:'var(--s1)' },
+  { k:'firma_davet',     kisa:'M4',         birim:'Satınalma',   renk:'var(--s1)' },
   { k:'degerlendirme',   kisa:'M5',         birim:'Üst Yönetim', renk:'var(--s4)' },
-  { k:'yonetim_onayi',   kisa:'M6',         birim:'Satınalma', renk:'var(--s4)' },
-  { k:'sozlesme',        kisa:'M7',         birim:'Satınalma', renk:'var(--s2)' },
+  { k:'yonetim_onayi',   kisa:'M6',         birim:'Satınalma',   renk:'var(--s4)' },
+  { k:'sozlesme',        kisa:'M7',         birim:'Şantiye',     renk:'var(--s2)' },
   { k:'tamamlandi',      kisa:'Tamamlandı', birim:'—',         renk:'var(--green)' },
   { k:'bloke',           kisa:'Bloke',      birim:'—',         renk:'var(--red)' },
   { k:'iptal',           kisa:'İptal',      birim:'—',         renk:'var(--red)' },
@@ -5052,21 +5176,34 @@ function aktifAsamaGecikmesi(i) {
   return (a && a.segment != null && a.segment > 0) ? a.segment : 0;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// BEKLEYEN milestone'u URETECEK birim.
+// MS_BIRIM ile ayni sey DEGIL: MS_BIRIM bir asamanin etiketidir
+// (cizelgede "M5 · Yönetime Sunum [Üst Yönetim]" gibi), bu tablo ise
+// "su an kim bekletiyor" sorusunu yanitlar.
+//   bekleyen M1/M2 -> Dizayn        (tasarim karari, proje yayini)
+//   bekleyen M3     -> Şantiye      (talep/SAT girisi)
+//   bekleyen M4/M5  -> Satınalma    (ihale yayini, yonetime sunum hazirligi)
+//   bekleyen M6     -> Üst Yönetim  (ihale karari)
+//   bekleyen M7     -> Satınalma    (sozlesme imza)
+//   bekleyen M8     -> Şantiye      (imalat baslangici)
+// Bu tablo Doruk'un kuralini karsilar: M5 gerceklestikten sonra is
+// M6 (karar) beklendigi icin Üst Yönetim'de gorunur.
+// ════════════════════════════════════════════════════════════════════
+const MS_BEKLEYEN_BIRIM = { m1:'Dizayn', m2:'Dizayn', m3:'Şantiye', m4:'Satınalma',
+                            m5:'Satınalma', m6:'Üst Yönetim', m7:'Satınalma', m8:'Şantiye' };
+
 function sorumluBirim(i) {
-  if (!i) return MS_BIRIM.m1;
+  if (!i) return MS_BEKLEYEN_BIRIM.m1;
   // Iade durumlari kuralin onunde gelir: top, eksigi gidermesi gereken birimde
   if (i.santiye_onay_durum === 'red') return 'Dizayn';    // santiye dizayni iade etti
   if (i.talep_onay_durum   === 'red') return 'Şantiye';   // satinalma talebi iade etti
-  // Tasarimsiz modda M1-M2 yok: hicbir tarihi olmayan is M3'u bekliyor,
-  // yani top Santiye'de.
-  if (TASARIMSIZ && (i.durum === 'hazirlik' || i.durum === 'dizaydan_devir')) return MS_BIRIM.m3;
-  const m = DURUM_MS[i.durum];
-  if (m) return MS_BIRIM[m];
-  // tamamlandi / bloke / iptal: son gerceklesen milestone'un birimi
-  for (let ix = MS_LISTE.length - 1; ix >= 0; ix--) {
-    if (i['_g' + MS_LISTE[ix]]) return MS_BIRIM[MS_LISTE[ix]];
-  }
-  return MS_BIRIM.m1;
+  // Bekleyen (ilk gerceklesmemis) milestone'u bul; onu uretecek birim sorumludur
+  const gorunur = msGorunur();
+  const bekleyen = gorunur.find(m => !i['_g' + m]);
+  if (bekleyen) return MS_BEKLEYEN_BIRIM[bekleyen];
+  // Butun tarihler girilmis (is bitti): son asamanin birimi
+  return MS_BEKLEYEN_BIRIM.m8;
 }
 
 // Durum etiketleri — panelin tamaminda tek kaynak
