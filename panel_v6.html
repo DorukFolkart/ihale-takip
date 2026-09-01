@@ -609,7 +609,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     <div class="kpi bl"><div class="kpi-lbl">Aktif İhale</div><div class="kpi-v bl" id="kv-top">—</div><div class="kpi-sub">Tamamlanan/iptal hariç</div></div>
     <div class="kpi yw"><div class="kpi-lbl">Hazırlık</div><div class="kpi-v yw" id="kv-haz">—</div><div class="kpi-sub">M1-M2 · Satınalmaya kadar</div></div>
     <div class="kpi go"><div class="kpi-lbl">Satın Almada</div><div class="kpi-v go" id="kv-sa">—</div><div class="kpi-sub">M3-M7</div></div>
-    <div class="kpi rd"><div class="kpi-lbl">Geciken / Bloke</div><div class="kpi-v rd" id="kv-gec">—</div><div class="kpi-sub">Aksiyon gerekli</div></div>
+    <div class="kpi rd"><div class="kpi-lbl">Geciken</div><div class="kpi-v rd" id="kv-gec">—</div><div class="kpi-sub" id="kv-gec-sub">Mevcut aşamasında gecikme</div></div>
     <div class="kpi gn"><div class="kpi-lbl">Tamamlandı</div><div class="kpi-v gn" id="kv-arc">—</div><div class="kpi-sub">Tamamlanan + İptal</div></div>
   </div>
   <!-- Durum dagilimi 11 sutunlu; birim adlari sigsin diye tam genislikte -->
@@ -646,12 +646,12 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   </div>
   <div class="tw"><table>
   <colgroup>
-    <col style="width:130px"><col style="min-width:180px"><col style="width:158px">
-    <col style="width:92px"><col style="width:92px"><col class="only-tasarim" style="width:80px">
-    <col class="only-tasarim" style="width:118px"><col style="width:96px"><col style="width:104px">
+    <col style="width:130px"><col style="min-width:200px"><col style="width:215px">
+    <col style="width:100px"><col style="width:100px">
+    <col style="width:104px"><col style="width:108px">
   </colgroup>
   <thead><tr>
-    <th>İhale No</th><th>Paket Adı</th><th>Durum</th><th>Durum tarihi</th><th>İş Başlangıç</th><th class="only-tasarim">Dizayn %</th><th class="only-tasarim">Şantiye Onay</th><th>Net Gecikme</th><th>İşlem</th>
+    <th>İhale No</th><th>Paket Adı</th><th>Durum</th><th>Durum tarihi</th><th>İş Başlangıç</th><th>Net Gecikme</th><th>İşlem</th>
   </tr></thead><tbody id="tb-havuz"></tbody></table></div>
 </div>
 
@@ -876,6 +876,9 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   <div class="sh"><div class="st">Aksaklık paneli</div>
     <div class="fr" id="ak-birim-secim"></div>
   </div>
+  <div style="font-size:13px;color:var(--text3);margin:-6px 0 12px">
+    Gecikmesi en fazla olan en üstte. Bloke edilen işler burada değil,
+    İhale Havuzu'nda "Bloke" durumuyla listelenir.</div>
   <div id="ak-list"></div>
 </div>
 
@@ -1931,6 +1934,16 @@ async function loadIhaleler() {
     if (row._gm4 || row._gm5 || row._gm6 || row._gm7 || row._gm8) {
       row.dizayn_yuz = 100; row.dizayn = 100;
     }
+    // Durum veritabaninda onbellek olarak duruyor; GERCEK kaynak tarihlerdir.
+    // Boylece kural degistiginde (ornegin M7 artik "tamamlandi" degil) eski
+    // kayitlar da dogru gorunur — veritabani yeniden yuklemeyi beklemez.
+    // bloke / iptal elle isaretlenir, sadece-dizayn paketleri yuzdeyle
+    // tamamlanir; bu ucu korunur.
+    if (row.durum !== 'bloke' && row.durum !== 'iptal' &&
+        row.ihale_tipi !== 'sadece_dizayn') {
+      row.durum = durumTuret({ m1:row._gm1, m2:row._gm2, m3:row._gm3, m4:row._gm4,
+                               m5:row._gm5, m6:row._gm6, m7:row._gm7, m8:row._gm8 });
+    }
     // Tasarim asamasi kapaliyken GORUNTU durumu M3'ten turetilir:
     // yalnizca M1/M2 girilmis bir kayit "Talep bekleniyor" gorunur.
     // Veritabanindaki durum DEGISMEZ; kaydetme ve Excel yolu gercek
@@ -2190,21 +2203,27 @@ async function loadDashboard() {
 
   const hazirlikN = aktifR.filter(i => ['hazirlik','dizaydan_devir'].includes(i.durum)).length;          // M1-M2
   const satinN    = aktifR.filter(i => ['satinalma_devir','firma_davet','degerlendirme','yonetim_onayi','sozlesme'].includes(i.durum)).length; // M3-M7
-  // Aksakliklar sayfasiyla AYNI olcut: mevcut asamada gecikme veya bloke
-  const gecN      = aktifR.filter(i => i.durum === 'bloke' || aktifAsamaGecikmesi(i) > 0).length;
+  // Aksakliklar sayfasiyla AYNI olcut: yalnizca mevcut asamada gecikme.
+  // Bloke ayri bir isaret; sayisi kartin alt satirinda bilgi olarak durur.
+  const gecN      = aktifR.filter(i => i.durum !== 'bloke' && aktifAsamaGecikmesi(i) > 0).length;
+  const blokeN    = aktifR.filter(i => i.durum === 'bloke').length;
 
   set('kv-top', aktifR.length);
   set('kv-haz', hazirlikN);
   set('kv-sa',  satinN);
   set('kv-gec', gecN);
+  set('kv-gec-sub', blokeN
+    ? 'Mevcut aşamasında gecikme · ayrıca ' + blokeN + ' bloke'
+    : 'Mevcut aşamasında gecikme');
   set('kv-arc', pid ? bitmis.length : SbArchive.length);
   set('nb-havuz', SbData.length);
   const acikP = SbData.filter(i=>!['tamamlandi','iptal'].includes(i.durum));
-  const blokeCount = acikP.filter(i=>i.durum==='bloke').length;
-  const gecikmeliCount = acikP.filter(i=>i.durum!=='bloke' && aktifAsamaGecikmesi(i)>0).length;
-  const dizaynRedCount = acikP.filter(i=>i.santiye_onay_durum==='red').length;
-  const talepRedCount  = acikP.filter(i=>i.talep_onay_durum==='red').length;
-  set('nb-aksak', blokeCount + gecikmeliCount + dizaynRedCount + talepRedCount);
+  // Rozet, Aksakliklar sayfasiyla AYNI olcut ve TEKRARSIZ saymali:
+  // bir kayit hem gecikmede hem iadede olabilir, bir kez sayilir.
+  const aksakTekil = acikP.filter(i =>
+    i.durum !== 'bloke' &&
+    (aktifAsamaGecikmesi(i) > 0 || i.santiye_onay_durum === 'red' || i.talep_onay_durum === 'red'));
+  set('nb-aksak', aksakTekil.length);
   set('nb-arsiv', SbArchive.length);
   set('oz-ts', 'Son güncelleme: '+new Date().toLocaleString('tr-TR'));
   // Header'da proje adını güncelle
@@ -2359,18 +2378,17 @@ function rSonList() {
 // ════════════════════════════════════════════════════════════════════
 const HavuzDurumlar = new Set();
 const FD_SECENEK = [
-  { k:'hazirlik',        l:'M1 · Tasarım Kararları' },
-  { k:'dizaydan_devir',  l:'M2 · Proje Yayın' },
-  { k:'satinalma_devir', l:'M3 · Talep (SAT)' },
-  { k:'firma_davet',     l:'M4 · İhale Yayını' },
-  { k:'degerlendirme',   l:'M5 · Yönetime Sunum' },
-  { k:'yonetim_onayi',   l:'M6 · İhale Karar' },
-  { k:'sozlesme',        l:'M7 · Sözleşme İmza' },
-  { k:'aktif',           l:'M8 · İmalat Başlangıç' },
+  { k:'hazirlik',        l:'Dizayn Aşamasında (M1)' },
+  { k:'dizaydan_devir',  l:'Talep Aşamasında (M2)' },
+  { k:'satinalma_devir', l:'İhale Yayını Bekleniyor (M3)' },
+  { k:'firma_davet',     l:'Yönetime Sunum Bekleniyor (M4)' },
+  { k:'degerlendirme',   l:'İhale Kararı Bekleniyor (M5)' },
+  { k:'yonetim_onayi',   l:'Sözleşme İmza Aşamasında (M6)' },
+  { k:'sozlesme',        l:'İmalat Başlangıcı Bekleniyor (M7)' },
   { k:'-' },
   { k:'tamamlandi',      l:'Tamamlandı' },
   { k:'bloke',           l:'Bloke' },
-  { k:'iptal',           l:'İptal' },
+  { k:'iptal',           l:'İptal (varsayılan gizli)' },
 ];
 function fdMenuKur() {
   const menu = document.getElementById('fd-menu');
@@ -2383,7 +2401,7 @@ function fdMenuKur() {
     liste.map(o => o.k === '-' ? '<div class="msel-sep"></div>' :
       '<label><input type="checkbox" value="' + o.k + '"' +
       (HavuzDurumlar.has(o.k) ? ' checked' : '') + ' onchange="fdDegisti()">' +
-      esc(o.k === 'hazirlik' ? durumEtiket('hazirlik') : o.l) + '</label>').join('');
+      esc(o.k === 'hazirlik' && TASARIMSIZ ? durumEtiket('hazirlik') : o.l) + '</label>').join('');
   fdEtiket();
 }
 function fdEtiket() {
@@ -2394,7 +2412,7 @@ function fdEtiket() {
   if (n === 1) {
     const k = [...HavuzDurumlar][0];
     const o = FD_SECENEK.find(x => x.k === k);
-    metin = (k === 'hazirlik') ? durumEtiket('hazirlik') : (o ? o.l : k);
+    metin = (k === 'hazirlik' && TASARIMSIZ) ? durumEtiket('hazirlik') : (o ? o.l : k);
   } else if (n > 1) metin = n + ' durum seçili';
   btn.textContent = metin + ' ▾';
   btn.classList.toggle('on', n > 0);
@@ -2431,6 +2449,8 @@ function rHavuz() {
   // sayfaya ozel olanlar (durum, gecikme, arama) burada uygulanir.
   const rows=projeFiltre(SbData).filter(i => {
     const durumMatch = !HavuzDurumlar.size || HavuzDurumlar.has(i.durum);
+    // Iptal edilenler varsayilan listede yok; "İptal" kutusu isaretlenirse gelir
+    if (i.durum === 'iptal' && !HavuzDurumlar.has('iptal')) return false;
     const searchMatch = !fs || i.paket.toLowerCase().includes(fs) || i.id.toLowerCase().includes(fs);
     
     let delayMatch = true;
@@ -2443,11 +2463,20 @@ function rHavuz() {
     return durumMatch && searchMatch && delayMatch;
   });
 
-  // Siralama: once acik ihaleler, sonra kapanmis olanlar (tamamlandi/iptal).
-  // Her grup icinde mevcut durumun PLANLANAN tarihine gore artan;
-  // tarihi olmayan kayitlar grubun sonunda.
-  const kapali = i => ['tamamlandi','iptal'].includes(i.durum) ? 1 : 0;
-  rows.sort((a, b) => (kapali(a) - kapali(b)) || tarihSirali(durumPlanTarihi(a), durumPlanTarihi(b)));
+  // ── SIRALAMA (Doruk: sozlesme asamasi ve tamamlananlar kalabalik
+  //    yapmasin, en alta insin) ──
+  //   0: aktif takip gereken isler (M1-M5 arasi)
+  //   1: sozlesme asamasi — M6 veya M7 gerceklesmis, is fiilen yuruyor
+  //   2: tamamlananlar
+  //   3: iptal edilenler
+  // Grup icinde mevcut durumun planlanan tarihine gore artan.
+  const grup = i => {
+    if (i.durum === 'iptal') return 3;
+    if (i.durum === 'tamamlandi') return 2;
+    if (i.durum === 'yonetim_onayi' || i.durum === 'sozlesme') return 1;
+    return 0;
+  };
+  rows.sort((a, b) => (grup(a) - grup(b)) || tarihSirali(durumPlanTarihi(a), durumPlanTarihi(b)));
 
   document.getElementById('tb-havuz').innerHTML=rows.length?rows.map(i=>{
     const ms = getAktifMilestoneBilgi(i);
@@ -2458,11 +2487,9 @@ function rHavuz() {
       <td class="mono" style="color:var(--blue-l)">${esc(i.id)}
         <div style="font-size:12px;color:var(--faint);font-family:var(--font)">${esc(i.proje)}</div></td>
       <td><strong>${esc(i.paket)}</strong></td>
-      <td>${chip(i.durum)}<div style="margin-top:3px">${ms.html}</div></td>
+      <td>${chipKayit(i)}<div style="margin-top:3px">${ms.html}</div></td>
       <td class="mono" style="font-size:13px">${fmtTarih(durumPlanTarihi(i))}</td>
       <td class="mono" style="font-size:13px">${fmtTarih(i.acilis)}</td>
-      <td class="only-tasarim" style="min-width:80px">${pb(i.dizayn,pbColor(i.dizayn))}</td>
-      <td class="only-tasarim">${santiyeOnayBadge(i)}</td>
       <td>${dl(i.gecikme)}</td>
       <td><div style="display:flex;gap:3px">
         <button class="btn btn-ghost btn-sm ikon" onclick="openDetail('${i._id}')" title="Detay">🔍</button>
@@ -2470,7 +2497,7 @@ function rHavuz() {
         ${birimYetkisi('satinalma',i)&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm ikon" onclick="iptalAc('${i._id}')" title="İhaleyi iptal et">🚫</button>`:''}
       </div></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="9"><div class="empty">Kayıt bulunamadı</div></td></tr>`;
+  }).join(''):`<tr><td colspan="7"><div class="empty">Kayıt bulunamadı</div></td></tr>`;
 }
 
 function rDizayn() {
@@ -2652,14 +2679,18 @@ function santiyeOnayDurumu(i) {
   const kanit = !!(i._gm2 || i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
   return kanit ? 'kabul' : null;
 }
+// Onay bayragi hic yazilmamis olsa bile M3 (talep) girildiyse dizayn
+// santiyeye fiilen devredilmistir — Excel'den gelen kayitlarda boyle olur.
+function santiyeDevredildiMi(i) {
+  return !!(i && (i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8));
+}
 
 function santiyeOnayBadge(i) {
   if (!i) return '<span class="chip c-arc"><span class="chip-dot"></span>—</span>';
   const od = santiyeOnayDurumu(i);
   if (od === 'kabul')    return '<span class="chip c-ona"><span class="chip-dot"></span>Onaylandı</span>';
-  // M4 veya sonrasi gerceklesmisse dizayn->santiye devri fiilen olmustur
-  const m4Gecti = !!(i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
-  if (m4Gecti) return '<span class="chip c-ona"><span class="chip-dot"></span>Şantiyeye Devredildi</span>';
+  // M3 veya sonrasi gerceklesmisse dizayn->santiye devri fiilen olmustur
+  if (santiyeDevredildiMi(i)) return '<span class="chip c-ona"><span class="chip-dot"></span>Şantiyeye Devredildi</span>';
   if (od === 'bekliyor') return '<span class="chip c-deg"><span class="chip-dot"></span>Onay Bekliyor</span>';
   if (od === 'red')      return '<span class="chip c-blo"><span class="chip-dot"></span>Eksik / İade</span>';
   return '<span class="chip c-arc"><span class="chip-dot"></span>Dizaynda</span>';
@@ -2738,8 +2769,8 @@ function rSantiye() {
 async function dizaynSantiyeyeGonder() {
   if (!editId) { toast('Önce kaydı seçin', 'err'); return; }
   if (!birimYetkisi('dizayn', SbData.find(x => x._id === editId))) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
-  const dy = parseInt(document.getElementById('f-dizayn').value) || 0;
-  if (dy < 100) { toast('Dizayn ilerlemesi %100 olmadan şantiyeye gönderilemez', 'err'); return; }
+  // Santiye onayina gonderilen paketin dizayni tanim geregi bitmistir:
+  // yuzde elle cekilmeyi beklemez, otomatik %100 olur.
   const upd = {
     dizayn_yuzdesi: 100,
     dizayn_santiyeye_gonderildi: true,
@@ -2805,6 +2836,11 @@ function santiyeRed(id) {
   const it = SbData.find(x => x._id === id);
   if (!it) return;
   if (!birimYetkisi('santiye', it)) { toast('Şantiye yetkisi gerekli', 'err'); return; }
+  // Kural: dizayn iadesi M2 ile M3 arasinda santiyenin insiyatifindedir.
+  // Talep (M3) girildikten sonra top satinalmadadir, santiye iade edemez.
+  if (it._gm3) {
+    toast('Talep (M3) girildikten sonra dizayn iade edilemez — top satınalmada', 'err'); return;
+  }
   redHedefId = id;
   document.getElementById('red-sub').textContent = it.paket + ' (' + it.id + ')';
   document.getElementById('red-neden').value = '';
@@ -2880,6 +2916,13 @@ function talepRedAc(id) {
   if (!it) return;
   if (!birimYetkisi('satinalma', it)) { toast('Talebi iade etmek için satınalma yetkisi gerekli', 'err'); return; }
   if (!it._gm3) { toast('Bu ihalede girilmiş bir talep tarihi yok', 'err'); return; }
+  // Kural: ihale yayini (M4) yapildiysa satinalma dosyayi incelemis ve
+  // eksik bulmamis demektir; artik santiyeye geri gonderme hakki yoktur.
+  const ileri = ['m4','m5','m6','m7','m8'].find(m => it['_g' + m]);
+  if (ileri) {
+    toast('İhale yayını (' + ileri.toUpperCase() + ') yapılmış bir talep şantiyeye iade edilemez', 'err');
+    return;
+  }
   talepRedHedefId = id;
   document.getElementById('trd-sub').textContent = it.paket + ' (' + it.id + ')';
   document.getElementById('trd-bilgi').innerHTML =
@@ -2924,7 +2967,9 @@ function rAksaklik() {
   const acikPaketler = projeFiltre(SbData).filter(i => !['tamamlandi','iptal'].includes(i.durum));
 
   // Once TUM aksakliklari bul, sonra birim sekmesine gore suz.
-  const tumBloke     = acikPaketler.filter(i => i.durum === 'bloke');
+  // BLOKE artik aksaklik sayilmiyor (Doruk): bloke elle isaretlenen bir
+  // beklemedir, gecikme olcusu yoktur. Bloke isler Ihale Havuzu'nda
+  // "Bloke" etiketiyle ve durum filtresinden gorulur.
   // Gecikme olcutu MEVCUT ASAMAYA gore. Kumulatifte geride olan ama su anki
   // asamasini suresi icinde yuruten ihale aksaklik listesine GIRMEZ.
   const tumGecikmeli = acikPaketler.filter(i => i.durum !== 'bloke' && aktifAsamaGecikmesi(i) > 0);
@@ -2933,7 +2978,10 @@ function rAksaklik() {
 
   // Birim sekmeleri — her sekmede kac aksaklik oldugu rozette yazar
   const BIRIMLER = (TASARIMSIZ ? [] : ['Dizayn']).concat(['Şantiye','Satınalma','Üst Yönetim']);
-  const say = b => [...tumBloke, ...tumGecikmeli, ...tumRed, ...tumTalepRed].filter(i => sorumluBirim(i) === b).length;
+  // Tekrarsiz sayim: ayni kayit hem gecikmede hem iadede olabilir
+  const tekilAksak = [...new Map([...tumRed, ...tumTalepRed, ...tumGecikmeli]
+    .map(i => [i._id, i])).values()];
+  const say = b => tekilAksak.filter(i => sorumluBirim(i) === b).length;
   const secimEl = document.getElementById('ak-birim-secim');
   if (secimEl) {
     const dugme = (deger, etiket, adet) =>
@@ -2941,65 +2989,79 @@ function rAksaklik() {
       'onclick="akBirimSec(\'' + deger + '\')">' + etiket +
       ' <span style="opacity:.75">' + adet + '</span></button>';
     secimEl.innerHTML =
-      dugme('', 'Tüm birimler', tumBloke.length + tumGecikmeli.length + tumRed.length + tumTalepRed.length) +
+      dugme('', 'Tüm birimler', tekilAksak.length) +
       BIRIMLER.map(b => dugme(b, b, say(b))).join('');
   }
 
-  const suz = list => AkBirim ? list.filter(i => sorumluBirim(i) === AkBirim) : list;
-  const bloke     = suz(tumBloke);
+  // Siralama: gecikmesi en fazla olan en ustte (once mevcut asama
+  // gecikmesi, esitlikte isin net gecikmesi).
+  const gecikmeSirali = list => list.slice().sort((a, b) =>
+    (aktifAsamaGecikmesi(b) - aktifAsamaGecikmesi(a)) ||
+    ((b.gecikme || 0) - (a.gecikme || 0)));
+  const suz = list => (AkBirim ? list.filter(i => sorumluBirim(i) === AkBirim) : list);
+  // TEK LISTE: gecikme, dizayn iadesi ve talep iadesi bir arada; sira
+  // gecikmesi en fazla olandan en aza. Tur bilgisi satir basindaki
+  // etiketten ve renkten okunur.
   const gecikmeli = suz(tumGecikmeli);
   const dizaynRed = suz(tumRed);
   const talepRed  = suz(tumTalepRed);
+  // Ayni kayit hem gecikmede hem iadede olabilir. Tek listede iki kez
+  // gorunmemesi icin IADE turu one gecer, gecikme kopyasi atlanir.
+  const secilen = new Map();
+  dizaynRed.forEach(i => secilen.set(i._id, Object.assign(i, { _akTur:'dizaynred' })));
+  talepRed.forEach(i  => { if (!secilen.has(i._id)) secilen.set(i._id, Object.assign(i, { _akTur:'talepred' })); });
+  gecikmeli.forEach(i => { if (!secilen.has(i._id)) secilen.set(i._id, Object.assign(i, { _akTur:'gecikme' })); });
+  const hepsi = gecikmeSirali([...secilen.values()]);
 
   let html = '';
-  if (!bloke.length && !gecikmeli.length && !dizaynRed.length && !talepRed.length) {
+  if (!hepsi.length) {
     html = '<div class="empty" style="padding:60px">✅ ' +
            (AkBirim ? AkBirim + ' biriminde aktif aksaklık bulunmuyor' : 'Şu an aktif aksaklık bulunmuyor') +
            '</div>';
   }
 
-  bloke.forEach(i => {
-    html += `<div class="ak-item" onclick="openDetail('${i._id}')"><div class="ak-title">🔴 [BLOKE] ${i.paket}</div><div class="ak-sub">${i.proje} · ${i.id}</div><div class="ak-meta"><span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span><span>Bloke: <strong style="color:var(--red)">${i.bloken}</strong></span><span>Plan: ${fmtTarih(i.acilis)}</span></div>${i.aciklama?`<div style="font-size:13px;color:var(--text2);margin-top:7px">${i.aciklama}</div>`:''}</div>`;
-  });
-
-  gecikmeli.forEach(i => {
-    const ag = aktifAsamaGecikmesi(i);
-    const aktif = (i._asamalar || []).find(x => x.durum === 'active');
-    html += `<div class="ak-item warn" onclick="openDetail('${i._id}')">
-      <div class="ak-title">⚠️ [GECİKME] ${esc(i.paket)}</div>
-      <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chip(i.durum)}</div>
-      <div class="ak-meta">
-        <span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span>
-        <span>Bekleyen aşama: <strong>${esc(aktif ? aktif.ad : '-')}</strong></span>
-        <span>Bu aşamada: <strong style="color:var(--red)">+${ag} gün</strong></span>
-        ${i.gecikme > 0 ? `<span style="color:var(--faint)">net: +${i.gecikme} gün</span>` : ''}
-      </div></div>`;
-  });
-
-  dizaynRed.forEach(i => {
-    html += `
-      <div class="ak-item" style="border-left-color: var(--red);" onclick="openDetail('${i._id}')">
-        <div class="ak-title" style="color: var(--red);">🚫 [DİZAYN İADE — ŞANTİYE EKSİK BULDU] ${i.paket}</div>
-        <div class="ak-sub">${i.proje} · ${i.id}</div>
-        <div class="ak-meta"><span>Sorumlu: <strong>Dizayn</strong></span><span>İade sayısı: <strong>${redAdet(i)}</strong></span></div>
+  hepsi.forEach(i => {
+    if (i._akTur === 'gecikme') {
+      const ag = aktifAsamaGecikmesi(i);
+      const aktif = (i._asamalar || []).find(x => x.durum === 'active');
+      html += `<div class="ak-item warn" onclick="openDetail('${i._id}')">
+        <div class="ak-title">⚠️ [GECİKME] ${esc(i.paket)}</div>
+        <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chipKayit(i)}</div>
+        <div class="ak-meta">
+          <span>Sorumlu: <strong>${esc(sorumluBirim(i))}</strong></span>
+          <span>Bekleyen aşama: <strong>${esc(aktif ? aktif.ad : '-')}</strong></span>
+          <span>Bu aşamada: <strong style="color:var(--red)">+${ag} gün</strong></span>
+          ${i.gecikme > 0 ? `<span style="color:var(--faint)">net: +${i.gecikme} gün</span>` : ''}
+        </div></div>`;
+    } else if (i._akTur === 'dizaynred') {
+      html += `<div class="ak-item" style="border-left-color:var(--red)" onclick="openDetail('${i._id}')">
+        <div class="ak-title" style="color:var(--red)">🚫 [DİZAYN İADE — ŞANTİYE EKSİK BULDU] ${esc(i.paket)}</div>
+        <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chipKayit(i)}</div>
+        <div class="ak-meta">
+          <span>Sorumlu: <strong>Dizayn</strong></span>
+          <span>İade sayısı: <strong>${redAdet(i)}</strong></span>
+          <span>Bu aşamada: <strong style="color:var(--red)">+${aktifAsamaGecikmesi(i)} gün</strong></span>
+        </div>
         <div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(redSon(i))}</div>
       </div>`;
-  });
-
-  talepRed.forEach(i => {
-    html += `
-      <div class="ak-item" style="border-left-color: var(--gold);" onclick="openDetail('${i._id}')">
-        <div class="ak-title" style="color: var(--gold);">↩ [TALEP İADE — SATINALMA EKSİK BULDU] ${esc(i.paket)}</div>
-        <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)}</div>
-        <div class="ak-meta"><span>Sorumlu: <strong>${sorumluBirim(i)}</strong></span><span>İade sayısı: <strong>${talepRedAdet(i)}</strong></span></div>
+    } else {
+      html += `<div class="ak-item" style="border-left-color:var(--gold)" onclick="openDetail('${i._id}')">
+        <div class="ak-title" style="color:var(--gold)">↩ [TALEP İADE — SATINALMA EKSİK BULDU] ${esc(i.paket)}</div>
+        <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chipKayit(i)}</div>
+        <div class="ak-meta">
+          <span>Sorumlu: <strong>${esc(sorumluBirim(i))}</strong></span>
+          <span>İade sayısı: <strong>${talepRedAdet(i)}</strong></span>
+          <span>Bu aşamada: <strong style="color:var(--red)">+${aktifAsamaGecikmesi(i)} gün</strong></span>
+        </div>
         <div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(talepRedSon(i))}</div>
       </div>`;
+    }
   });
 
   document.getElementById('ak-list').innerHTML = html;
 
   // Sekme rozeti her zaman TUM aksakliklari sayar (secili birime bagli degil)
-  const totalAksak = tumBloke.length + tumGecikmeli.length + tumRed.length + tumTalepRed.length;
+  const totalAksak = tekilAksak.length;
   const badge = document.getElementById('nb-aksak');
   if (badge) badge.textContent = totalAksak;
 }
@@ -3326,9 +3388,9 @@ async function saveForm() {
   if (veri.ihale_tipi === 'sadece_dizayn' && (veri.dizayn_yuzdesi||0) >= 100) {
     veri.durum = 'tamamlandi';
   }
-  // NOT: eski "M7 veya M8 girilince tamamlandi" kurali kaldirildi.
-  // Durum artik durumTuret() ile son girilen tarihten belirleniyor:
-  // M7 -> Sozlesme Imza, M8 -> Tamamlandi.
+  // Durum durumTuret() ile son girilen tarihten belirleniyor:
+  // M6 -> Sozlesme Imza Asamasinda, M7 -> Imalat Baslangici Bekleniyor,
+  // M8 -> Tamamlandi. (M7 tek basina TAMAMLANDI degildir.)
 
   let error;
   if (editId) {
@@ -3758,7 +3820,7 @@ function openDetail(id, fromArchive) {
 
   document.getElementById('det-ft').innerHTML = fromArchive
     ? `<button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`
-    : `${birimYetkisi('satinalma',i)&&i._gm3&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="closeOv('ov-detay');talepRedAc('${i._id}')" title="Talebi eksik bulup şantiyeye iade et">↩ Talebi iade et</button>`:''}
+    : `${birimYetkisi('satinalma',i)&&i._gm3&&!i._gm4&&!i._gm5&&!i._gm6&&!i._gm7&&!i._gm8&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="closeOv('ov-detay');talepRedAc('${i._id}')" title="Talebi eksik bulup şantiyeye iade et">↩ Talebi iade et</button>`:''}
        ${birimYetkisi('satinalma',i)&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm" onclick="closeOv('ov-detay');iptalAc('${i._id}')">İptal Et</button>`:''}
        ${(CRole!=='izleyici')&&(tamYetki()||!['tamamlandi','iptal'].includes(i.durum))?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>`:''}
        <button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`;
@@ -4578,7 +4640,7 @@ async function importCsv() {
       'Dosya: <strong>'+(XlVeri.dosya||'-')+'</strong><br>Proje: <strong>'+proje.proje_adi+'</strong></div>' +
     satir('var(--green)', '<strong>'+yeni+'</strong> yeni ihale eklenecek') +
     satir('var(--blue-l)', '<strong>'+guncellenecek+'</strong> ihale guncellenecek') +
-    (tamamlanacak    ? satir('var(--text3)', '<strong>'+tamamlanacak+'</strong> ihale "Tamamlandı" olarak işaretlenecek (M7 Sözleşme İmza veya M8 gerçekleşmiş)') : '') +
+    (tamamlanacak    ? satir('var(--text3)', '<strong>'+tamamlanacak+'</strong> ihale "Tamamlandı" olarak işaretlenecek (M8 İmalat Başlangıç gerçekleşmiş)') : '') +
     (cift.length     ? satir('var(--red)',   '<strong>'+cift.length+'</strong> İhale No panelde <strong>birden fazla kayıtta</strong> var — bu satırlar yazılamayabilir: ' + cift.slice(0,5).join(', ')) : '') +
     (blokeOlacak     ? satir('var(--red)',   '<strong>'+blokeOlacak+'</strong> ihale <strong>BLOKE</strong> olarak işaretlenecek (Excel\'de BLOKE sütunu dolu)') : '') +
     (blokeCikacak    ? satir('var(--green)', '<strong>'+blokeCikacak+'</strong> ihale blokeden çıkacak (Excel\'de BLOKE sütunu boş)') : '') +
@@ -4890,7 +4952,6 @@ const DURUM_SIRA = [
   { k:'degerlendirme',   kisa:'M5',         birim:'Üst Yönetim', renk:'var(--s4)' },
   { k:'yonetim_onayi',   kisa:'M6',         birim:'Satınalma', renk:'var(--s4)' },
   { k:'sozlesme',        kisa:'M7',         birim:'Satınalma', renk:'var(--s2)' },
-  { k:'aktif',           kisa:'M8',         birim:'Şantiye',   renk:'var(--s2)' },
   { k:'tamamlandi',      kisa:'Tamamlandı', birim:'—',         renk:'var(--green)' },
   { k:'bloke',           kisa:'Bloke',      birim:'—',         renk:'var(--red)' },
   { k:'iptal',           kisa:'İptal',      birim:'—',         renk:'var(--red)' },
@@ -4988,19 +5049,70 @@ function sorumluBirim(i) {
 }
 
 // Durum etiketleri — panelin tamaminda tek kaynak
+// Durum etiketleri artik GERIYE degil ILERIYE bakar: "hangi milestone
+// gerceklesti" yerine "sirada ne bekleniyor" yazar. Durum KODLARI
+// (veritabani degerleri) aynen korunur, yalnizca gorunen metin degisti.
 const DM={
-  hazirlik:{l:'M1 · Tasarım Kararları'}, dizaydan_devir:{l:'M2 · Proje Yayın'},
-  satinalma_devir:{l:'M3 · Talep (SAT)'}, firma_davet:{l:'M4 · İhale Yayını'},
-  degerlendirme:{l:'M5 · Yönetime Sunum'}, yonetim_onayi:{l:'M6 · İhale Karar'},
-  sozlesme:{l:'M7 · Sözleşme İmza'}, aktif:{l:'M8 · İmalat Başlangıç'},
+  hazirlik:{l:'Dizayn Aşamasında'},            // M1 girildi (hic tarih yoksa asagida ayri metin)
+  dizaydan_devir:{l:'Talep Aşamasında'},       // M2 girildi, santiye kabul etti
+  satinalma_devir:{l:'İhale Yayını Bekleniyor'},// M3 girildi
+  firma_davet:{l:'Yönetime Sunum Bekleniyor'}, // M4 girildi
+  degerlendirme:{l:'İhale Kararı Bekleniyor'}, // M5 girildi
+  yonetim_onayi:{l:'Sözleşme İmza Aşamasında'},// M6 girildi
+  sozlesme:{l:'İmalat Başlangıcı Bekleniyor'}, // M7 girildi
+  aktif:{l:'Tamamlandı'},                      // (artik olusmuyor: M8 -> tamamlandi)
   tamamlandi:{l:'Tamamlandı'}, bloke:{l:'Bloke'}, iptal:{l:'İptal'},
-  devir:{l:'M2 · Proje Yayın'}, ilan:{l:'M4 · İhale Yayını'}
+  devir:{l:'Talep Aşamasında'}, ilan:{l:'Yönetime Sunum Bekleniyor'}
 };
-// Durum etiketi tek kaynak. Tasarimsiz modda hicbir tarihi girilmemis kayit
-// "M1 · Tasarim Kararlari" degil "Talep bekleniyor" olarak okunur.
+// Durum KODU icin etiket (filtre listesi, grafik gibi kayit disi yerler).
 function durumEtiket(d){
-  if (TASARIMSIZ && d === 'hazirlik') return 'Talep bekleniyor (M3)';
+  if (TASARIMSIZ && d === 'hazirlik') return 'Talep Bekleniyor';
   return (DM[d] && DM[d].l) || d;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// KAYIT ICIN ETIKET — sirasiyla:
+//   1) bloke / iptal / tamamlandi        -> kendi etiketi
+//   2) santiye dizayni iade etti          -> Dizayn Aşamasında (iade)
+//   3) satinalma talebi iade etti         -> Talep Aşamasında (iade)
+//   4) M3-M7 gerceklesen                  -> sirada ne bekleniyor
+//   5) M2 gerceklesen: kabul edildi mi?   -> Talep / Şantiye Onayında
+//   6) M1 gerceklesen                     -> Dizayn Aşamasında
+//   7) hicbiri                            -> Dizayn Kararı Bekleniyor
+// ════════════════════════════════════════════════════════════════════
+function durumEtiketKayit(i){
+  if (!i) return '-';
+  if (i.durum === 'bloke' || i.durum === 'iptal' || i.durum === 'tamamlandi') return DM[i.durum].l;
+  if (!TASARIMSIZ) {
+    if (i.santiye_onay_durum === 'red') return 'Dizayn Aşamasında (iade)';
+    if (i.talep_onay_durum   === 'red') return 'Talep Aşamasında (iade)';
+  }
+  if (i._gm7) return DM.sozlesme.l;
+  if (i._gm6) return DM.yonetim_onayi.l;
+  if (i._gm5) return DM.degerlendirme.l;
+  if (i._gm4) return DM.firma_davet.l;
+  if (i._gm3) return DM.satinalma_devir.l;
+  if (TASARIMSIZ) return 'Talep Bekleniyor';
+  if (i._gm2) {
+    // M2 = proje yayin. Santiye henuz kabul etmediyse top santiyede.
+    return (i.santiye_onay_durum === 'bekliyor') ? 'Şantiye Onayında' : DM.dizaydan_devir.l;
+  }
+  if (i.dizayn_santiyeye_gonderildi && i.santiye_onay_durum === 'bekliyor') return 'Şantiye Onayında';
+  if (i._gm1) return DM.hazirlik.l;                 // Dizayn Aşamasında
+  return 'Dizayn Kararı Bekleniyor';
+}
+
+// Kayit icin renkli etiket (chip). Renk durum koduna, metin kayda gore.
+function chipKayit(i){
+  if (!i) return '';
+  const m={hazirlik:'c-haz',dizaydan_devir:'c-dev',satinalma_devir:'c-dev',
+    firma_davet:'c-ila',degerlendirme:'c-deg',yonetim_onayi:'c-deg',
+    sozlesme:'c-soz',aktif:'c-soz',tamamlandi:'c-tam',bloke:'c-blo',iptal:'c-blo'};
+  let cls = m[i.durum] || 'c-arc';
+  const et = durumEtiketKayit(i);
+  if (/iade/.test(et)) cls = 'c-blo';               // iadeler kirmizi
+  if (et === 'Şantiye Onayında') cls = 'c-deg';
+  return '<span class="chip '+cls+'"><span class="chip-dot"></span>'+esc(et)+'</span>';
 }
 function chip(d){
   const m={hazirlik:'c-haz',dizaydan_devir:'c-dev',satinalma_devir:'c-dev',
@@ -5128,8 +5240,11 @@ function msYetkiliMi(m, i){
 // Durum, GIRILEN SON milestone tarihine gore belirlenir.
 // 'bloke' ve 'iptal' elle isaretlenen durumlardir, bu kuralin disindadir.
 function durumTuret(g){
-  // Ihale sureci SOZLESME IMZA ile biter. M7 veya M8 girildiyse tamamlandi.
-  if (g.m8 || g.m7) return 'tamamlandi';
+  // M8 (imalat baslangici) girildiyse is tamamlanmis sayilir.
+  // M7 (sozlesme imza) tek basina TAMAMLANDI demek DEGIL: sozlesme
+  // imzalandi, sirada imalat baslangici var.
+  if (g.m8) return 'tamamlandi';
+  if (g.m7) return 'sozlesme';
   if (g.m6) return 'yonetim_onayi';
   if (g.m5) return 'degerlendirme';
   if (g.m4) return 'firma_davet';
