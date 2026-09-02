@@ -1867,7 +1867,12 @@ async function doLogout() { await sb.auth.signOut(); }
 // ════════════════════════════════════════════
 // VERİ YÜKLEME
 // ════════════════════════════════════════════
-async function loadAllData() { await Promise.all([loadProjeler(), loadIhaleler(), loadArchive()]); renderAll(); }
+async function loadAllData() {
+  // Arsiv SbData'dan turetildigi icin once ihaleler yuklenmeli
+  await Promise.all([loadProjeler(), loadIhaleler()]);
+  arsivKur();
+  renderAll();
+}
 
 async function loadProjeler() {
   // FIX: konum ve notlar kolonlari da cekiliyor.
@@ -1948,7 +1953,9 @@ async function loadIhaleler() {
       guncel:      i.guncelleme?.split('T')[0]||'',
       firmalar:    (i.davet_firmalar||'').split(',').map(s=>s.trim()).filter(Boolean),
       aciklama:    i.ozel_notlar||'',
-      tutar:       i.sozlesme_bedeli||'',
+      // Ayni tutar iki kolonda duruyor (sozlesme_tutari_tl / sozlesme_bedeli).
+      // Tek kaynak: sozlesme_tutari_tl; eski kayitlar icin digeri yedek.
+      tutar:       i.sozlesme_tutari_tl || i.sozlesme_bedeli || '',
       sozlesme_tl:  i.sozlesme_tutari_tl||null,
       sozlesme_usd: i.sozlesme_tutari_usd||null,
       sozlesme_eur: i.sozlesme_tutari_eur||null,
@@ -1958,6 +1965,8 @@ async function loadIhaleler() {
       p6:          i.p6_aktivite_kodu||'',
       _id:         i.id,
       proje_id:    i.proje_id,
+      iptal_nedeni: i.iptal_nedeni || '',
+      iptal_tarihi: i.iptal_tarihi || '',
       // dizayn → şantiye onay akışı (yeni kolonlar)
       dizayn_santiyeye_gonderildi: i.dizayn_santiyeye_gonderildi || false,
       dizayn_gonderim_tarihi:      i.dizayn_gonderim_tarihi || null,
@@ -2211,23 +2220,39 @@ function autoTakvimNo() {
   idEl.value = prefix + yeniSira + '/1';
 }
 
-async function loadArchive() {
-  // Tamamlananlar: hem tamamlandi hem iptal edilen paketler
-  const { data } = await sb.from('ihaleler').select('*,projeler(proje_kodu,proje_adi)').in('durum',['tamamlandi','iptal']).order('guncelleme',{ascending:false});
-  SbArchive = (data||[]).map(i => ({
-    id: i.takvim_no||i.ihale_kodu,
-    proje: i.projeler?.proje_adi||'',
-    paket: i.ihale_adi,
-    durum: i.durum,
-    iptalNedeni: i.iptal_nedeni||'',
-    arsivTarihi: (i.iptal_tarihi||i.guncelleme?.split('T')[0])||'',
-    tutar: i.sozlesme_bedeli||'',
-    yuklenici: i.yuklenci_firma||'',
-    proje_id: i.proje_id,             // genel proje filtresi icin
-    ihale_kategori: i.ihale_kategori || '',   // genel kategori filtresi icin
-    ihale_bolumu:   i.ihale_bolumu   || '',   // genel bolum filtresi icin
-    _id: i.id
-  }));
+// ════════════════════════════════════════════════════════════════════
+// TAMAMLANANLAR (arsiv)
+//
+// ONEMLI: Burada AYRI BIR SORGU YOK. Eskiden arsiv, veritabanindaki
+// "durum" kolonuna gore (.in('durum',['tamamlandi','iptal'])) ayri bir
+// sorguyla cekiliyordu. Panelin geri kalani ise durumu TARIHLERDEN
+// turetiyor. Iki kaynak ayrisinca ayni kayit hem Ihale Havuzu'nda hem
+// Tamamlananlar'da gorunebiliyordu (ornegin M7'si girilmis eski kayitlar
+// veritabaninda 'tamamlandi' yaziyor ama panelde "İmalat Başlangıcı
+// Bekleniyor" durumunda).
+//
+// Artik arsiv AYNI kayit listesinden (SbData) turetiliyor: her ihale tek
+// bir karttir, o kart hangi durumdaysa yalnizca oraya dusuyor.
+// ════════════════════════════════════════════════════════════════════
+async function loadArchive() { arsivKur(); }
+
+function arsivKur() {
+  SbArchive = SbData
+    .filter(i => i.durum === 'tamamlandi' || i.durum === 'iptal')
+    .map(i => ({
+      id: i.id,
+      proje: i.proje,
+      paket: i.paket,
+      durum: i.durum,
+      iptalNedeni: i.iptal_nedeni || '',
+      arsivTarihi: i.iptal_tarihi || i.guncel || '',
+      tutar: i.tutar || '',
+      yuklenici: i.yuklenici || '',
+      proje_id: i.proje_id,
+      ihale_kategori: i.ihale_kategori || '',
+      ihale_bolumu:   i.ihale_bolumu   || '',
+      _id: i._id,
+    }));
 }
 
 function extractBloken(not) {
@@ -2279,7 +2304,7 @@ async function loadDashboard() {
   // bir kayit hem gecikmede hem iadede olabilir, bir kez sayilir.
   const aksakTekil = acikP.filter(i =>
     i.durum !== 'bloke' && i.durum !== 'sozlesme' && !i._gm7 &&
-    (aktifAsamaGecikmesi(i) > 0 || i.santiye_onay_durum === 'red' || i.talep_onay_durum === 'red'));
+    (aktifAsamaGecikmesi(i) > 0 || santiyeOnayDurumu(i) === 'red' || talepIadesiAcik(i)));
   set('nb-aksak', aksakTekil.length);
   set('nb-arsiv', SbArchive.length);
   set('oz-ts', 'Son güncelleme: '+new Date().toLocaleString('tr-TR'));
@@ -2365,10 +2390,19 @@ const MS_ADI = { m1:'M1 · Tasarım Kararları', m2:'M2 · Proje Yayın', m3:'M3
                  m4:'M4 · İhale Yayını', m5:'M5 · Yönetime Sunum', m6:'M6 · İhale Karar',
                  m7:'M7 · Sözleşme İmza', m8:'M8 · İmalat Başlangıç' };
 
-// Bir isin BEKLEYEN (ilk gerceklesmemis) milestone anahtari
+// Bir isin BEKLEYEN milestone anahtari.
+// DIKKAT: "ilk bos milestone" DEGIL, "en son gerceklesenden SONRAKI" olmali.
+// Excel'de M1/M2 tarihi bos ama M3-M4 dolu kayitlar cok yaygin; ilk bosa
+// bakan bir hesap bu isleri Dizayn'a yaziyor ve butun rapor kayiyordu
+// (Dizayn 60 / Şantiye 0 / Satınalma 1 gorunumu bundan cikmisti).
+// Son gerceklesenden onceki bos asamalar GECILMIS sayilir — tarih zinciri
+// hesabindaki (hesaplaIhaleTarihleriV2) "gecildi" kuraliyla ayni.
 function bekleyenMs(i) {
   const gorunur = msGorunur();
-  return gorunur.find(m => !i['_g' + m]) || null;
+  let sonIx = -1;
+  gorunur.forEach((m, ix) => { if (i['_g' + m]) sonIx = ix; });
+  const hedefIx = sonIx + 1;
+  return hedefIx < gorunur.length ? gorunur[hedefIx] : null;
 }
 
 function rSonList() {
@@ -2581,7 +2615,7 @@ function rDizayn() {
   // Siralama: 1) santiyenin iade ettikleri en uste (aksiyon bekliyor),
   // 2) dizayni bitmis (M2 gerceklesmis) olanlar en alta,
   // 3) kalanlar M2 PLANLANAN tarihine gore en yakin en ustte.
-  const oncelik = i => (i.santiye_onay_durum === 'red') ? 0 : (i._gm2 ? 2 : 1);
+  const oncelik = i => (santiyeOnayDurumu(i) === 'red') ? 0 : (i._gm2 ? 2 : 1);
   rows.sort((a, b) => (oncelik(a) - oncelik(b))
                    || tarihSirali(a._plan?.m2_proje_yayin, b._plan?.m2_proje_yayin));
   document.getElementById('tb-dizayn').innerHTML = rows.length ? rows.map(i => {
@@ -2778,7 +2812,7 @@ function rPipeline() {
                   <div class="pc-name mono" style="color:var(--blue-l)">${esc(i.id)}</div>
                   <div style="font-weight:600;color:var(--text);font-size:13.5px;margin-top:2px">${esc(i.paket)}</div>
                   <div class="pc-proj">${esc(i.proje)}</div>
-                  ${i.talep_onay_durum === 'red' ? '<div style="margin-top:5px;font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}
+                  ${talepIadesiAcik(i) ? '<div style="margin-top:5px;font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}
                   <div class="kart-tarih">
                     <span title="Gerçekleşen talep tarihi (M3)">Talep Tarihi</span>
                     <span class="mono">${fmtTarih(i._gm3)}</span>
@@ -2807,7 +2841,7 @@ function rPipeline() {
           <td class="mono" style="color:var(--blue-l)">${esc(i.id)}
             <div style="font-size:12px;color:var(--faint);font-family:var(--font)">${esc(i.proje)}</div></td>
           <td><strong>${esc(i.paket)}</strong>
-            ${i.talep_onay_durum === 'red' ? '<div style="font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}</td>
+            ${talepIadesiAcik(i) ? '<div style="font-size:12px;color:var(--red);font-weight:600">⚠ Talep iade edildi</div>' : ''}</td>
           <td>${chip(i.durum)}</td>
           <td class="mono" style="font-size:13px">${fmtTarih(i._gm3)}</td>
           <td class="mono" style="font-size:13px">${fmtTarih(hedefBitisTarihi(i))}</td>
@@ -2829,9 +2863,25 @@ function rPipeline() {
 // hicbir tarihi olmayan bir paket detayda "Onaylandi" gorunuyordu.
 // Kabulun fiili kaniti M2 (Proje Yayin) veya sonrasindaki bir tarihtir;
 // hicbiri yoksa onay yok sayilir. Iade (red) gecmisi bundan etkilenmez.
+// Bir iade HALA BEKLIYOR mu? Iade edildiginde talep tarihi (M3) silinir ve
+// kayit onceki birimin kuyruguna doner. M3 ya da sonrasi tekrar girilmisse
+// iade cozulmustur; bayrak veritabaninda kalmis olabilir (ozellikle Excel
+// yuklemesi bu bayraklara dokunmaz). Bu kontrol olmadan bir kayit sonsuza
+// kadar "iade" gorunur ve yanlis birimde listelenir.
+function iadeAcikMi(i) {
+  if (!i) return false;
+  return !(i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
+}
+// Satinalma -> santiye talep iadesi hala acik mi?
+function talepIadesiAcik(i) {
+  return !!(i && i.talep_onay_durum === 'red' && iadeAcikMi(i));
+}
+
 function santiyeOnayDurumu(i) {
   if (!i) return null;
   const od = i.santiye_onay_durum || null;
+  // Cozulmus dizayn iadesi: M3+ girilmisse santiye kabul etmis demektir
+  if (od === 'red') return iadeAcikMi(i) ? 'red' : 'kabul';
   if (od !== 'kabul') return od;
   const kanit = !!(i._gm2 || i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
   return kanit ? 'kabul' : null;
@@ -2888,10 +2938,12 @@ function rSantiye() {
       </div>`;
     } else if (od === 'kabul') {
       if (i._gm3 || i.talep_giris_tarihi) {
+        // Tek kaynak M3 (gercek_m3). talep_giris_tarihi ayni bilgiyi
+        // tutan ikinci kolon; yalnizca eski kayitlarda yedek olarak.
         islem = '<span class="chip c-soz"><span class="chip-dot"></span>Talep girildi · ' + fmtTarih(i._gm3 || i.talep_giris_tarihi) + '</span>';
       } else {
         const hedef = (i.santiye_onay_tarihi && i._s_talep) ? addGun(i.santiye_onay_tarihi, i._s_talep) : '';
-        const iade = i.talep_onay_durum === 'red'
+        const iade = talepIadesiAcik(i)
           ? '<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:4px">⚠ Satınalma talebi iade etti'
             + (talepRedAdet(i) > 1 ? ' (' + talepRedAdet(i) + ' kez)' : '') + '</div>'
             + '<div style="font-size:13px;color:var(--text2);white-space:pre-wrap;margin-bottom:5px">' + esc(talepRedSon(i)) + '</div>'
@@ -3134,8 +3186,8 @@ function rAksaklik() {
   // Gecikme olcutu MEVCUT ASAMAYA gore. Kumulatifte geride olan ama su anki
   // asamasini suresi icinde yuruten ihale aksaklik listesine GIRMEZ.
   const tumGecikmeli = acikPaketler.filter(i => i.durum !== 'bloke' && aktifAsamaGecikmesi(i) > 0);
-  const tumRed       = acikPaketler.filter(i => i.santiye_onay_durum === 'red');
-  const tumTalepRed  = acikPaketler.filter(i => i.talep_onay_durum === 'red');
+  const tumRed       = acikPaketler.filter(i => santiyeOnayDurumu(i) === 'red');
+  const tumTalepRed  = acikPaketler.filter(i => talepIadesiAcik(i));
 
   // Birim sekmeleri — her sekmede kac aksaklik oldugu rozette yazar
   const BIRIMLER = (TASARIMSIZ ? [] : ['Dizayn']).concat(['Şantiye','Satınalma','Üst Yönetim']);
@@ -4895,6 +4947,12 @@ async function xlYaz(proje, rows, iptaleGidecek) {
             veri.dizayn_santiyeye_gonderildi = false; veri.dizayn_gonderim_tarihi = null;
           }
           if (!veri.gercek_m3) veri.talep_giris_tarihi = null;
+          // Excel'de M3 (talep) dolu geldiyse bekleyen iadeler cozulmustur:
+          // bayraklari temizle, nedenleri (gecmis) oldugu gibi birak.
+          if (veri.gercek_m3) {
+            if (v.talep_onay_durum   === 'red') veri.talep_onay_durum   = null;
+            if (v.santiye_onay_durum === 'red') veri.santiye_onay_durum = 'kabul';
+          }
           const { error } = await sb.from('ihaleler').update(veri).eq('id', v._id);
           if (error) throw error;
           guncellendi++;
@@ -5213,11 +5271,12 @@ const MS_BEKLEYEN_BIRIM = { m1:'Dizayn', m2:'Dizayn', m3:'Şantiye', m4:'Satına
 function sorumluBirim(i) {
   if (!i) return MS_BEKLEYEN_BIRIM.m1;
   // Iade durumlari kuralin onunde gelir: top, eksigi gidermesi gereken birimde
-  if (i.santiye_onay_durum === 'red') return 'Dizayn';    // santiye dizayni iade etti
-  if (i.talep_onay_durum   === 'red') return 'Şantiye';   // satinalma talebi iade etti
-  // Bekleyen (ilk gerceklesmemis) milestone'u bul; onu uretecek birim sorumludur
-  const gorunur = msGorunur();
-  const bekleyen = gorunur.find(m => !i['_g' + m]);
+  if (santiyeOnayDurumu(i) === 'red') return 'Dizayn';   // santiye dizayni iade etti
+  if (talepIadesiAcik(i))             return 'Şantiye';  // satinalma talebi iade etti
+  // Bekleyen milestone'u uretecek birim sorumludur. bekleyenMs() en son
+  // GERCEKLESEN tarihten sonraki asamayi verir; aradaki bos asamalar
+  // gecilmis sayilir (Excel'de M1/M2 sik sik bos gelir).
+  const bekleyen = bekleyenMs(i);
   if (bekleyen) return MS_BEKLEYEN_BIRIM[bekleyen];
   // Butun tarihler girilmis (is bitti): son asamanin birimi
   return MS_BEKLEYEN_BIRIM.m8;
@@ -5259,8 +5318,8 @@ function durumEtiketKayit(i){
   if (!i) return '-';
   if (i.durum === 'bloke' || i.durum === 'iptal' || i.durum === 'tamamlandi') return DM[i.durum].l;
   if (!TASARIMSIZ) {
-    if (i.santiye_onay_durum === 'red') return 'Dizayn Aşamasında (iade)';
-    if (i.talep_onay_durum   === 'red') return 'Talep Aşamasında (iade)';
+    if (santiyeOnayDurumu(i) === 'red') return 'Dizayn Aşamasında (iade)';
+    if (talepIadesiAcik(i))             return 'Talep Aşamasında (iade)';
   }
   if (i._gm7) return DM.sozlesme.l;
   if (i._gm6) return DM.yonetim_onayi.l;
