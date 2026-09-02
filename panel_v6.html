@@ -2336,72 +2336,82 @@ function rCharts() {
 // gosteriliyor: en yakin tarihli olan en ustte.
 // Tarihi gecmis olanlar buraya DEGIL, Aksakliklar sayfasina dusuyor.
 // ════════════════════════════════════════════════════════════════════
-// Rol -> Ozet sayfasinda takip ettigi PLANLANAN milestone'lar
-//   dizayn      : M2 Proje Yayin
-//   santiye     : M3 Talep (SAT)
-//   admin/satinalma : M4 Ihale Yayini
-//   ust_yonetim : M4 Ihale Yayini + M6 Ihale Karar
-//   elektrik/mekanik: M4 — yalnizca kendi bolumunun (ELK/MEK) ihaleleri
-//   planlama/izleyici: hepsi (gozlemci)
-const ROL_YAKLASAN = {
-  dizayn:      ['m2'],
-  santiye:     ['m3'],
-  satinalma:   ['m4'],
-  admin:       ['m4'],
-  ust_yonetim: ['m4','m6'],
-  elektrik:    ['m4'],
-  mekanik:     ['m4'],
+// ════════════════════════════════════════════════════════════════════
+// OZET > "BIRIMIMIN YAKLASAN TARIHLERI"
+//
+// TEK KURAL: bir birim yalnizca TOPUN SU AN KENDISINDE oldugu isleri
+// gorur. Doruk'un uc kurali bundan cikar:
+//   · Dizayn   -> dizayni bitmis is listede yok (top artik onda degil)
+//   · Şantiye  -> satinalmaya aktarilan (M3 girilmis) is listede yok
+//   · Satınalma-> dizaynda bekleyen is listede yok
+// Boylece kimse "henuz kendisiyle ilgili olmayan" ya da "isi bitmis"
+// bir kaydi gormez.
+//
+// Sorumluluk sorumluBirim() ile belirlenir (bekleyen milestone'u uretecek
+// birim), hedef tarih o bekleyen milestone'un PLANLANAN tarihidir.
+// Admin, planlama ve izleyici butun birimleri gorur.
+// Elektrik / Mekanik butun asamalari gorur ama yalniz kendi bolumunde.
+// Ust Yonetim: ihale yayini (M4) ve ihale karari (M6) bekleyenler.
+// Sureci bitmis (M7 girilmis), tamamlanmis, iptal ve bloke isler yok.
+// ════════════════════════════════════════════════════════════════════
+const ROL_BIRIMLER = {
+  dizayn:      ['Dizayn'],
+  santiye:     ['Şantiye'],
+  satinalma:   ['Satınalma'],
+  ust_yonetim: ['Satınalma', 'Üst Yönetim'],
+  // admin / planlama / izleyici / elektrik / mekanik -> hepsi
 };
 const MS_ADI = { m1:'M1 · Tasarım Kararları', m2:'M2 · Proje Yayın', m3:'M3 · Talep (SAT)',
                  m4:'M4 · İhale Yayını', m5:'M5 · Yönetime Sunum', m6:'M6 · İhale Karar',
                  m7:'M7 · Sözleşme İmza', m8:'M8 · İmalat Başlangıç' };
 
+// Bir isin BEKLEYEN (ilk gerceklesmemis) milestone anahtari
+function bekleyenMs(i) {
+  const gorunur = msGorunur();
+  return gorunur.find(m => !i['_g' + m]) || null;
+}
+
 function rSonList() {
   const bugun = today();
-  // Takip edilecek milestone'lar role gore; tanimsiz rol (planlama/izleyici)
-  // butun zinciri gorur. Tasarimsiz modda M1-M2 listeden tamamen duser.
-  let takip = ROL_YAKLASAN[CRole] || MS_LISTE.slice();
-  if (TASARIMSIZ) takip = takip.filter(m => m !== 'm1' && m !== 'm2');
+  const birimler = ROL_BIRIMLERI_ROL();          // null = hepsi
 
   const satirlar = [];
   projeFiltre(SbData)
     .filter(i => !['tamamlandi','iptal','bloke'].includes(i.durum))
-    // elektrik/mekanik yalnizca kendi bolumunu takip eder
-    .filter(i => !rolBolumu() || bolumumMu(i))
+    .filter(i => !i._gm7)                        // ihale sureci bitti
+    .filter(i => !rolBolumu() || bolumumMu(i))   // elektrik/mekanik kendi bolumu
+    .filter(i => !birimler || birimler.indexOf(sorumluBirim(i)) >= 0)
     .forEach(i => {
-      takip.forEach(m => {
-        if (i['_g' + m]) return;                                  // GERCEKLESTI -> listeden dus
-        const plan = i._plan && i._plan[MS_PLANKEY[m]];
-        if (!plan) return;
-        satirlar.push({ i: i, key: m, ad: MS_ADI[m], hedef: plan,
-                        gun: Math.round((new Date(bugun+'T00:00:00') - new Date(plan+'T00:00:00'))/86400000) });
-      });
+      const m = bekleyenMs(i);
+      if (!m) return;
+      const plan = i._plan && i._plan[MS_PLANKEY[m]];
+      if (!plan) return;
+      satirlar.push({ i:i, key:m, ad:MS_ADI[m], birim:sorumluBirim(i), hedef:plan,
+                      gun: Math.round((new Date(bugun+'T00:00:00') - new Date(plan+'T00:00:00'))/86400000) });
     });
   satirlar.sort((a,b) => a.hedef.localeCompare(b.hedef));
   const toplam = satirlar.length;
   const gosterilen = satirlar.slice(0, 12);
 
-  // Kart alt basligi: hangi rolun neyi gordugunu yazar
   const altEl = document.getElementById('son-list-alt');
   if (altEl) {
-    altEl.textContent = takip.length
-      ? (ROL_ETIKET[CRole] || CRole) + ' · takip edilen planlanan tarihler: '
-        + takip.map(m => MS_ADI[m]).join(' ve ')
-        + (rolBolumu() ? ' · yalnız ' + rolBolumu() + ' bölümü' : '')
-        + '. Gerçekleşen aşama listeden düşer.'
-      : 'Bu rol için takip edilen planlanan aşama yok.';
+    altEl.textContent = (ROL_ETIKET[CRole] || CRole) + ' · '
+      + (birimler ? birimler.join(' + ') + ' biriminde bekleyen işler' : 'tüm birimlerde bekleyen işler')
+      + (rolBolumu() ? ' · yalnız ' + rolBolumu() + ' bölümü' : '')
+      + '. Aşama tamamlandığında iş listeden düşer; sözleşmesi imzalanan işler listede yer almaz.';
   }
 
   const el = document.getElementById('son-list');
   if (!gosterilen.length) {
-    el.innerHTML = '<div class="empty">Takip edilen planlanan tarih bulunmuyor</div>';
+    el.innerHTML = '<div class="empty">Biriminizde bekleyen iş bulunmuyor</div>';
     return;
   }
 
   el.innerHTML =
     '<div class="tw"><table><thead><tr>' +
       '<th>İhale No</th><th>İhale adı</th><th>Proje</th>' +
-      '<th>Bekleyen aşama</th><th>Bölüm</th><th>Planlanan tarih</th><th>Durum</th>' +
+      '<th>Bekleyen aşama</th><th>Sorumlu</th><th>Bölüm</th>' +
+      '<th>Planlanan tarih</th><th>Durum</th>' +
     '</tr></thead><tbody>' +
     gosterilen.map(x => {
       const i = x.i;
@@ -2416,6 +2426,7 @@ function rSonList() {
         '<td><strong>' + esc(i.paket) + '</strong></td>' +
         '<td style="font-size:13px;color:var(--text2)">' + esc(i.proje) + '</td>' +
         '<td>' + esc(x.ad) + '</td>' +
+        '<td style="font-size:13px">' + esc(x.birim) + '</td>' +
         '<td style="font-size:13px">' + esc(i.ihale_bolumu || '-') + '</td>' +
         '<td class="mono" style="font-size:13px">' + fmtTarih(x.hedef) + '</td>' +
         '<td>' + durumHtml + '</td>' +
@@ -2428,10 +2439,16 @@ function rSonList() {
       : '');
 }
 
+// Giris yapan rolun gordugu birimler; null = hepsi
+function ROL_BIRIMLERI_ROL() {
+  if (rolBolumu()) return null;                  // elektrik/mekanik: butun asamalar, kendi bolumu
+  return ROL_BIRIMLER[CRole] || null;            // admin / planlama / izleyici: hepsi
+}
+
 // ════════════════════════════════════════════════════════════════════
 // IHALE HAVUZU — COKLU DURUM FILTRESI
-// Eskiden tek secimli bir <select> vardi. Artik tiklenebilir kutularla
-// birden fazla durum secilebiliyor; hicbiri secilmezse TUMU gosterilir.
+// Tiklenebilir kutularla birden fazla durum secilebilir; hicbiri
+// secilmezse TUMU gosterilir.
 // ════════════════════════════════════════════════════════════════════
 const HavuzDurumlar = new Set();
 const FD_SECENEK = [
