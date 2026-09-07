@@ -302,7 +302,31 @@ td strong{color:var(--text);font-weight:600;}
 .dl-crit{color:var(--red);background:var(--red-glow);}
 
 /* PIPELINE */
-.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+.pipeline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+@media (max-width:1250px){.pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ── SANTIYE: iki yarim (sol talep girisi, sag imalat baslangici) ──
+   minmax(0,1fr) SART: normal `1fr` kolonun asgari genisligi "auto"dur,
+   yani icindeki tablonun min-content genisliginin (~920px) altina inemez
+   ve daraldiginda SAYFAYI tasirir. minmax(0,...) ile kolon kucultulebilir,
+   tablo da kendi .tw kutusu icinde yatay kayar (orijinal davranis). */
+.st-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;}
+/* Iki yarim ancak SOL TABLONUN SIGDIGI genislikte anlamli: tablo 4 kolonla
+   ~572px istiyor, yarim genislik 1500px'in altinda bunun altina duşuyor.
+   Olculdu: 1500px -> 593px yarim (sigiyor), 1400px -> 543px (31px kayiyor).
+   Bu esigin altinda alt alta inip tam genislik kullaniyor. */
+@media (max-width:1500px){.st-split{grid-template-columns:minmax(0,1fr)}}
+.st-yarim-bas{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;padding:0 2px;}
+.st-yarim-sayi{background:var(--border);border-radius:8px;padding:1px 8px;font-size:12px;color:var(--text2);}
+/* Imalat baslangici kartlari */
+.im-kart{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);}
+.im-kart:hover{border-color:var(--border-strong);}
+.im-tarih{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin-top:8px;
+  font-size:13px;color:var(--text2);}
+.im-tarih span:nth-child(odd){color:var(--text3);}
+.im-giris{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.im-giris input[type=date]{font-size:13px;padding:5px 8px;}
 .pipe-col{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--shadow);}
 .pipe-hd{padding:0 12px;height:40px;background:var(--surface2);border-bottom:1px solid var(--border);
   font-size:12px;font-weight:500;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;
@@ -739,16 +763,40 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 
 <!-- ŞANTİYE — Dizayn Onay & Talep Kuyruğu -->
 <div class="view" id="view-santiye">
-  <div class="sh"><div class="st">Şantiye — Dizayn Onayı &amp; Talep Girişi</div>
+  <div class="sh"><div class="st">Şantiye — Talep Girişi &amp; İmalat Başlangıcı</div>
   </div>
   <div class="arc-banner" style="background:var(--blue-glow);border-color:var(--border2)">
     <div style="font-size:20px">🏗</div>
     <div><div class="arc-title" style="color:var(--blue-l)">Şantiye Yetkisi</div>
     <div class="arc-sub" id="santiye-alt">Dizayn paketlerini <strong>kabul</strong> edebilir, eksikse <strong>red</strong> edebilir ve onayladıktan sonra <strong>talep girip</strong> ihale &amp; satınalma birimine iletebilirsiniz.</div></div>
   </div>
-  <div class="tw"><table><thead><tr>
-    <th>Paket</th><th>Proje</th><th class="only-tasarim">Dizayn %</th><th class="only-tasarim">Şantiyeye Gönderim</th><th class="only-tasarim">Onay Durumu</th><th>Talep Tarihi</th><th>İşlem</th>
-  </tr></thead><tbody id="tb-santiye"></tbody></table></div>
+  <!-- Sayfa iki yarim: SOL talep girisi (mevcut), SAG imalat baslangici.
+       1250 px altinda alt alta iner. -->
+  <div class="st-split">
+    <div>
+      <div class="st-yarim-bas">
+        <span>📨 Talep Girişi</span>
+        <span class="st-yarim-sayi" id="st-sol-sayi">0</span>
+      </div>
+      <!-- Sayfa tam ortadan bolundugu icin tablo YARIM genislige sigmali.
+           7 kolon ~924px istiyordu ve "Islem" kolonu (Talep Gir dugmesi)
+           yatay kaydirmanin arkasinda kaliyordu. Cozum: Proje bilgisi Paket
+           hucresine tasindi; "Santiyeye Gonderim" ve "Talep Tarihi" kolonlari
+           kaldirildi (ikisi de detay penceresinde ve Islem hucresinde duruyor). -->
+      <div class="tw"><table><thead><tr>
+        <th>Paket</th><th class="only-tasarim">Dizayn %</th><th class="only-tasarim">Onay Durumu</th><th>İşlem</th>
+      </tr></thead><tbody id="tb-santiye"></tbody></table></div>
+    </div>
+    <div>
+      <div class="st-yarim-bas">
+        <span>🏭 İmalat Başlangıcı Bekleniyor</span>
+        <span class="st-yarim-sayi" id="st-sag-sayi">0</span>
+      </div>
+      <!-- Sozlesmesi imzalanmis (M7) isler. Ihale sureci M7 ile bittigi icin
+           bu kayitlar GECIKME URETMEZ; tarihler yalnizca bilgi olarak durur. -->
+      <div id="santiye-imalat"></div>
+    </div>
+  </div>
 </div>
 
 <!-- VERİ GİRİŞİ -->
@@ -2670,11 +2718,54 @@ function toggleSAView() {
   rPipeline();
 }
 
+// ════════════════════════════════════════════════════════════════════
+// SATIN ALMA PIPELINE — SÜRÜKLE / BIRAK
+// ────────────────────────────────────────────────────────────────────
+// ESKI HALI IKI YERDEN BOZUKTU:
+//  1) Yalnizca `durum` kolonunu yaziyordu, TARIH yazmiyordu. Durum ise
+//     panelin her acilisinda tarihlerden yeniden turetiliyor
+//     (bkz. loadIhaleler) — yani kart bir sonraki yenilemede eski
+//     kolonuna geri donuyordu. "Durum guncellendi" diyor ama
+//     kaydetmiyordu, ustelik veritabaninda tarihlerle celisen bir
+//     durum degeri birakiyordu.
+//  2) HIC YETKI DENETIMI YOKTU. izleyici (salt okunur) ve dizayn rolu
+//     de kart surukleyerek veritabanina yazabiliyordu; oysa normal
+//     yolda ikisinin de hicbir milestone yazma yetkisi yok.
+//
+// YENI KURAL: bir kolona birakmak "O MILESTONE GERCEKLESTI" demektir,
+// dolayisiyla TARIH yazilir. Kolon -> milestone eslemesi yeni bir kural
+// degil, panelde zaten duran DURUM_MS tablosu.
+//
+// Doruk'un kararlari:
+//  - Onay penceresi YOK: bugunun tarihi dogrudan yazilir (hiz onemli).
+//    Karsiligi olarak islem sonrasi bildirim NE OLDUGUNU acikca yazar,
+//    ozellikle geri surukleme tarih SILDIGI icin.
+//  - Kolon atlanirsa aradaki milestone'lar da AYNI tarihle doldurulur.
+//    Not: uydurma tarihler Raporlar > Birim Performansi'ndaki
+//    "zamaninda orani" / "ortalama sapma" degerlerini etkiler.
+//    Net gecikme etkilenmez (o, son gerceklesen milestone'dan hesaplanir).
+// ════════════════════════════════════════════════════════════════════
+
+// Pipeline kolonlari (sira onemli). "Imalat Baslangici Bekleniyor"
+// (sozlesme = M7 gerceklesmis) kolonu Santiye sekmesine tasindi.
+const SA_KOLONLAR = ['satinalma_devir', 'firma_davet', 'degerlendirme', 'yonetim_onayi'];
+
+// Bu karti surukleyebilir miyim? Kolonlara karsilik gelen milestone'lardan
+// en az birini yazma yetkisi + bolum kisiti. Yetkisi yoksa kart hic
+// suruklenemez (kilit aksiyonda degil, en basta uygulanir).
+function saSuruklenebilir(i) {
+  if (!i || i.durum === 'bloke' || i.durum === 'iptal') return false;
+  if (!bolumumMu(i)) return false;
+  return SA_KOLONLAR.some(s => msYetkiliMi(DURUM_MS[s], i));
+}
+
 function saAllowDrop(ev) {
   ev.preventDefault();
 }
 
 function saDrag(ev, dbId) {
+  const i = SbData.find(x => x._id === dbId);
+  if (!saSuruklenebilir(i)) { ev.preventDefault(); return; }
   ev.dataTransfer.setData("text/plain", dbId);
 }
 
@@ -2682,18 +2773,84 @@ async function saDrop(ev, targetStatus) {
   ev.preventDefault();
   const dbId = ev.dataTransfer.getData("text/plain");
   if (!dbId) return;
-  
-  toast('Durum güncelleniyor...', 'info');
-  
-  const { error } = await sb.from('ihaleler').update({ durum: targetStatus }).eq('id', dbId);
-  if (error) {
-    toast('Güncelleme hatası: ' + error.message, 'err');
+  const it = SbData.find(x => x._id === dbId);
+  if (!it) { toast('Kayıt bulunamadı', 'err'); return; }
+
+  if (it.durum === 'bloke' || it.durum === 'iptal') {
+    toast('Bloke / iptal kayıtlar sürüklenemez', 'err'); return;
+  }
+  if (!bolumumMu(it)) {
+    toast('Bu ihale ' + (it.ihale_bolumu || '?') + ' bölümünde — yetkiniz yalnız ' + rolBolumu(), 'err');
     return;
   }
-  
-  toast('Durum güncellendi', 'ok');
+  if (it.durum === targetStatus) return;              // aynı kolon: iş yok
+
+  const hedefMs = DURUM_MS[targetStatus];
+  if (!hedefMs) return;
+  const hedefIx = MS_LISTE.indexOf(hedefMs);
+
+  // Kaydın şu andaki SON gerçekleşen milestone'u
+  let sonIx = -1;
+  MS_LISTE.forEach((m, ix) => { if (it['_g' + m]) sonIx = ix; });
+
+  const t = today();
+  const upd = {}, yazilan = [], silinen = [];
+
+  if (hedefIx > sonIx) {
+    // ── İLERİ ──
+    // Hedef dahil, aradaki BOŞ milestone'lar da aynı tarihle doldurulur.
+    // Başlangıç M3'ten önceye inmez: M1/M2 dizayn ve şantiye onay akışının
+    // işi, Satın Alma panosundan yazılmamalı (m2 zaten elle yazılamaz).
+    const basla = Math.max(sonIx + 1, MS_LISTE.indexOf('m3'));
+    for (let ix = basla; ix <= hedefIx; ix++) {
+      const m = MS_LISTE[ix];
+      if (it['_g' + m]) continue;
+      upd['gercek_' + m] = t; yazilan.push(m.toUpperCase());
+    }
+  } else {
+    // ── GERİ ──
+    // Hedeften SONRAKİ gerçekleşen tarihler silinir ("o aşamalar olmadı").
+    for (let ix = hedefIx + 1; ix < MS_LISTE.length; ix++) {
+      const m = MS_LISTE[ix];
+      if (!it['_g' + m]) continue;
+      upd['gercek_' + m] = null; silinen.push(m.toUpperCase());
+    }
+    if (!it['_g' + hedefMs]) { upd['gercek_' + hedefMs] = t; yazilan.push(hedefMs.toUpperCase()); }
+  }
+
+  if (!Object.keys(upd).length) return;
+
+  // ── YETKİ: değişen HER milestone için ayrı ayrı ──
+  const yetkisiz = Object.keys(upd)
+    .map(k => k.replace('gercek_', ''))
+    .filter(m => !msYetkiliMi(m, it));
+  if (yetkisiz.length) {
+    toast(yetkisiz.map(m => m.toUpperCase()).join(', ') + ' tarihini girme yetkiniz yok', 'err');
+    return;
+  }
+
+  // M3 için tek kaynak eşlemesi (talep_giris_tarihi aynı bilgiyi tutan ikinci kolon)
+  if (upd.gercek_m3 === t)                       upd.talep_giris_tarihi = t;
+  if ('gercek_m3' in upd && upd.gercek_m3 === null) upd.talep_giris_tarihi = null;
+
+  // Durum ortak kuralla yeniden türetilir (tek kaynak = tarihler)
+  const g = {};
+  MS_LISTE.forEach(m => { g[m] = ('gercek_' + m in upd) ? upd['gercek_' + m] : it['_g' + m]; });
+  upd.durum = durumTuret(g);
+
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', dbId);
+  if (error) { toast('Güncelleme hatası: ' + error.message, 'err'); return; }
+
+  // ── NE OLDUĞUNU AÇIKÇA YAZ ──
+  // Onay penceresi olmadığı için tek geri bildirim bu. Özellikle silme
+  // işleminde kullanıcı ne kaybettiğini anında görmeli.
+  const parca = [];
+  if (yazilan.length) parca.push(yazilan.join(', ') + ' → ' + fmtTarih(t));
+  if (silinen.length) parca.push(silinen.join(', ') + ' tarihi SİLİNDİ');
+  toast(it.id + ': ' + parca.join(' · '), silinen.length ? 'err' : 'ok');
+
   await loadIhaleler();
-  rPipeline();
+  renderAll();
 }
 
 // Mevcut durumun planlanan hedefine gore kalan/gecen gun metni
@@ -2795,7 +2952,10 @@ function rPipeline() {
     btnToggle.textContent = saViewMode === 'pipeline' ? '📋 Liste Görünümü' : '⚡ Pipeline Görünümü';
   }
 
-  const stages = ['satinalma_devir', 'firma_davet', 'degerlendirme', 'yonetim_onayi', 'sozlesme'];
+  // Kolonlar tek yerden: SA_KOLONLAR (bkz. surukle/birak blogu).
+  // "Imalat Baslangici Bekleniyor" (M7 gerceklesmis) kolonu Santiye
+  // sekmesine tasindi — M8'i santiye giriyor.
+  const stages = SA_KOLONLAR;
   const todayStr = today();
   
   const veri = projeFiltre(SbData);   // genel proje filtresi
@@ -2814,7 +2974,9 @@ function rPipeline() {
           <div class="pipe-body" style="min-height:250px;">
             ${items.length ? items.map(i => {
               return `
-                <div class="pipe-card" draggable="true" ondragstart="saDrag(event, '${i._id}')" onclick="openDetail('${i._id}')">
+                <div class="pipe-card" draggable="${saSuruklenebilir(i) ? 'true' : 'false'}"
+                     ${saSuruklenebilir(i) ? `ondragstart="saDrag(event, '${i._id}')"` : 'title="Bu kaydı sürükleme yetkiniz yok"'}
+                     onclick="openDetail('${i._id}')">
                   <div class="pc-name mono" style="color:var(--blue-l)">${esc(i.id)}</div>
                   <div style="font-weight:600;color:var(--text);font-size:13.5px;margin-top:2px">${esc(i.paket)}</div>
                   <div class="pc-proj">${esc(i.proje)}</div>
@@ -2934,9 +3096,11 @@ function rSantiye() {
   // Tasarimsiz modda dizayn->santiye onay akisi HIC YOK. Santiye sekmesi
   // dogrudan "talep girilecek isler" kuyruguna doner: acik butun paketler.
   const altEl = document.getElementById('santiye-alt');
-  if (altEl) altEl.innerHTML = TASARIMSIZ
+  if (altEl) altEl.innerHTML = (TASARIMSIZ
     ? 'Tasarım aşaması kapalı: dizayn onayı beklenmez, açık paketler için doğrudan <strong>talep girilir</strong>.'
-    : 'Dizayn paketlerini <strong>kabul</strong> edebilir, eksikse <strong>red</strong> edebilir ve onayladıktan sonra <strong>talep girip</strong> ihale &amp; satınalma birimine iletebilirsiniz.';
+    : 'Dizayn paketlerini <strong>kabul</strong> edebilir, eksikse <strong>red</strong> edebilir ve onayladıktan sonra <strong>talep girip</strong> ihale &amp; satınalma birimine iletebilirsiniz.')
+    + ' Sağ yarımda sözleşmesi imzalanmış işler var; <strong>imalat başlangıç tarihini (M8)</strong> oradan giriyorsunuz. '
+    + 'O tarihler yalnızca bilgi amaçlıdır, gecikme üretmez.';
 
   const rows = projeFiltre(SbData).filter(i => {
     if (i.durum === 'tamamlandi' || i.durum === 'iptal') return false;
@@ -2998,15 +3162,112 @@ function rSantiye() {
 
     return `
       <tr>
-        <td><strong>${i.paket}</strong><div class="mono" style="color:var(--text3);font-size:13px">${i.id}</div>${redNot}</td>
-        <td style="font-size:13px;color:var(--text2)">${i.proje}</td>
-        <td class="only-tasarim" style="min-width:90px">${pb(i.dizayn, pbColor(i.dizayn))}</td>
-        <td class="only-tasarim" class="mono" style="font-size:13px">${fmtTarih(i.dizayn_gonderim_tarihi)}</td>
+        <td><strong>${esc(i.paket)}</strong>
+          <div class="mono" style="color:var(--text3);font-size:13px">${esc(i.id)}</div>
+          <div style="font-size:13px;color:var(--text3)">${esc(i.proje)}${i.ihale_bolumu ? ' · ' + esc(i.ihale_bolumu) : ''}</div>
+          ${redNot}</td>
+        <td class="only-tasarim" style="min-width:84px">${pb(i.dizayn, pbColor(i.dizayn))}</td>
         <td class="only-tasarim">${santiyeOnayBadge(i)}</td>
-        <td class="mono" style="font-size:13px">${fmtTarih(i.talep_giris_tarihi)}</td>
         <td>${islem}</td>
       </tr>`;
-  }).join('') : `<tr><td colspan="7"><div class="empty">Şantiye onayı bekleyen dizayn paketi yok</div></td></tr>`;
+  }).join('') : `<tr><td colspan="4"><div class="empty">Şantiye onayı bekleyen dizayn paketi yok</div></td></tr>`;
+
+  const solSayi = document.getElementById('st-sol-sayi');
+  if (solSayi) solSayi.textContent = rows.length;
+  // Sag yarim (imalat baslangici) ayni cagriyla tazelenir; boylece
+  // rSantiye()'yi cagiran butun mevcut yerler iki yarimi da guncelller.
+  rSantiyeImalat();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ŞANTİYE — SAĞ YARIM: İMALAT BAŞLANGICI BEKLENİYOR
+// ────────────────────────────────────────────────────────────────────
+// Satin Alma panosundan buraya tasindi: sozlesmesi imzalanmis (M7) ama
+// imalati baslamamis (M8 bos) isler. M8'i santiye giriyor (MS_SAHIP.m8
+// zaten 'santiye'ydi, yeni bir yetki kurali degil).
+//
+// TARIHLER YALNIZCA BILGI (Doruk'un karari):
+// Ihale sureci M7 ile biter (bkz. hesaplaIhaleTarihleriV2 -> surecBitti),
+// bu kayitlar GECIKME URETMEZ ve Ozet/Aksakliklar/Yonetim Raporu'nda
+// kasten yer almaz. Bu yuzden burada da kirmizi "X gun gecti" YAZILMAZ;
+// planlanan tarih notr renkte, bilgi olarak gosterilir.
+// ════════════════════════════════════════════════════════════════════
+function rSantiyeImalat() {
+  const el = document.getElementById('santiye-imalat');
+  if (!el) return;
+
+  const rows = projeFiltre(SbData)
+    .filter(i => i._gm7 && !i._gm8)                    // sözleşme imzalı, imalat başlamamış
+    .filter(i => i.durum !== 'iptal' && i.durum !== 'bloke')
+    .filter(i => !rolBolumu() || bolumumMu(i))         // elektrik/mekanik kendi bölümü
+    .sort((a, b) => tarihSirali(a._plan?.m8_imalat_baslangic, b._plan?.m8_imalat_baslangic));
+
+  const sayiEl = document.getElementById('st-sag-sayi');
+  if (sayiEl) sayiEl.textContent = rows.length;
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">Sözleşmesi imzalanmış, imalat başlangıcı bekleyen iş yok</div>';
+    return;
+  }
+
+  el.innerHTML = rows.map(i => {
+    const planM8 = i._plan && i._plan.m8_imalat_baslangic;
+    // NOTR bilgi notu — gecikme DEGIL. Renk kullanilmiyor.
+    let not = '';
+    if (planM8) {
+      const g = Math.round((new Date(planM8 + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
+      not = g > 0 ? g + ' gün sonra' : (g === 0 ? 'bugün' : Math.abs(g) + ' gün önceydi');
+    }
+    const yetkili = msYetkiliMi('m8', i) && bolumumMu(i);
+    return '<div class="im-kart">'
+      + '<div style="display:flex;align-items:start;justify-content:space-between;gap:8px">'
+        + '<div class="mono" style="color:var(--blue-l);font-size:13px">' + esc(i.id) + '</div>'
+        + '<button class="btn btn-ghost btn-sm ikon" onclick="openDetail(\'' + i._id + '\')" title="Detay">🔍</button>'
+      + '</div>'
+      + '<div style="font-weight:600;font-size:13.5px;margin-top:2px">' + esc(i.paket) + '</div>'
+      + '<div style="font-size:13px;color:var(--text3)">' + esc(i.proje)
+        + (i.ihale_bolumu ? ' · ' + esc(i.ihale_bolumu) : '') + '</div>'
+      + '<div class="im-tarih">'
+        + '<span>Sözleşme İmza</span><span class="mono">' + fmtTarih(i._gm7) + '</span>'
+        + '<span>Yüklenici</span><span>' + (esc(i.yuklenici) || '—') + '</span>'
+        + '<span>Planlanan İmalat Başlangıcı</span><span class="mono">' + fmtTarih(planM8)
+          + (not ? ' <span style="color:var(--text3)">(' + not + ')</span>' : '') + '</span>'
+      + '</div>'
+      + '<div class="im-giris">'
+        + (yetkili
+            ? '<input type="date" id="im8-' + i._id + '" value="' + today() + '" '
+              + 'title="Gerçekleşen imalat başlangıç tarihi (M8)">'
+              + '<button class="btn btn-primary btn-sm" onclick="santiyeImalatBasladi(\'' + i._id + '\')">'
+              + '🏭 İmalat Başladı</button>'
+            : '<span style="font-size:13px;color:var(--text3)">M8 girme yetkiniz yok</span>')
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// M8 (imalat baslangici) girisi — santiye. Girilince durum 'tamamlandi'
+// olur ve kayit Tamamlananlar sekmesine gecer.
+async function santiyeImalatBasladi(id) {
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!msYetkiliMi('m8', it) || !bolumumMu(it)) {
+    toast('İmalat başlangıç tarihini girme yetkiniz yok', 'err'); return;
+  }
+  const el = document.getElementById('im8-' + id);
+  const tarih = (el && el.value) || today();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tarih)) { toast('Geçerli bir tarih seçin', 'err'); return; }
+  if (it._gm7 && tarih < it._gm7) {
+    toast('İmalat başlangıcı sözleşme imza tarihinden (' + fmtTarih(it._gm7) + ') önce olamaz', 'err');
+    return;
+  }
+  const upd = { gercek_m8: tarih };
+  const g = {};
+  MS_LISTE.forEach(m => { g[m] = (m === 'm8') ? tarih : it['_g' + m]; });
+  if (it.durum !== 'bloke' && it.durum !== 'iptal') upd.durum = durumTuret(g);
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  toast(it.id + ': imalat başlangıcı ' + fmtTarih(tarih) + ' olarak girildi — iş tamamlandı', 'ok');
+  await loadIhaleler(); renderAll();
 }
 
 // ── Dizayn → Şantiye onay akışı aksiyonları ──
