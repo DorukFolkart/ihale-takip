@@ -2399,6 +2399,12 @@ const MS_ADI = { m1:'M1 · Tasarım Kararları', m2:'M2 · Proje Yayın', m3:'M3
 // hesabindaki (hesaplaIhaleTarihleriV2) "gecildi" kuraliyla ayni.
 function bekleyenMs(i) {
   const gorunur = msGorunur();
+  // Satinalma talebi iade ettiyse beklenen sey M3'un TEKRAR girilmesidir.
+  // Tarih zincirine bakan hesap burada yaniltir: iade M3'u sildigi icin
+  // (ve Excel kayitlarinda M1/M2 sik sik bos oldugu icin) "hic tarih yok"
+  // haline dusen kayitta bekleyen asama M1 cikiyordu. Sonuc: sorumlu
+  // Santiye yazarken bekleyen asama "M1 · Tasarim Kararlari" gorunuyordu.
+  if (talepIadesiAcik(i) && gorunur.indexOf('m3') >= 0) return 'm3';
   let sonIx = -1;
   gorunur.forEach((m, ix) => { if (i['_g' + m]) sonIx = ix; });
   const hedefIx = sonIx + 1;
@@ -2880,6 +2886,25 @@ function talepIadesiAcik(i) {
 function santiyeOnayDurumu(i) {
   if (!i) return null;
   const od = i.santiye_onay_durum || null;
+  // ══════════════════════════════════════════════════════════════════
+  // SATINALMA IADESI, DIZAYN IADESININ ONUNE GECER
+  // Satinalma bir talebi ANCAK M3 girilmis bir kayitta iade edebilir
+  // (bkz. talepRedAc: M3 yoksa dugme calismaz). Yani talep_onay_durum
+  // 'red' ise M3 bir zamanlar GIRILMISTIR ve dizayn santiyeye fiilen
+  // devredilmistir — eski bir dizayn iadesi bayragi varsa o COZULMUSTUR.
+  //
+  // Bu kontrol olmadan: satinalma iade edince M3 silinir, iadeAcikMi()
+  // tekrar true olur ve COK ESKI bir dizayn iadesi yeniden "acik"
+  // gorunur. Sonuc: is Dizayn'a dusuyor, Dizayn sekmesinde "Iade
+  // edildi" cikiyor ve santiye talebi bir daha giremiyor (santiye
+  // kuyrugunda ya hic gorunmuyor ya da "Talep Gir" dugmesi olmuyor).
+  //
+  // Not: yeni bir dizayn iadesine ulasmak icin bayrak once 'bekliyor'a
+  // gecmek zorunda (dizayn tekrar gonderir) — o da bu durumu siler.
+  // Dolayisiyla ikisi birlikte 'red' ise dizayn iadesi HER ZAMAN eskidir.
+  // Excel yolu (xlYaz) ayni kurali zaten uyguluyordu; panel yolunda eksikti.
+  // ══════════════════════════════════════════════════════════════════
+  if (i.talep_onay_durum === 'red' && (od === null || od === 'red')) return 'kabul';
   // Cozulmus dizayn iadesi: M3+ girilmisse santiye kabul etmis demektir
   if (od === 'red') return iadeAcikMi(i) ? 'red' : 'kabul';
   if (od !== 'kabul') return od;
@@ -2953,10 +2978,20 @@ function rSantiye() {
               + (hedef ? '<div style="font-size:13px;color:var(--text3);margin-top:3px">Hedef: ' + fmtTarih(hedef) + '</div>' : '');
       }
     } else if (od === 'red') {
-      islem = `<button class="btn btn-ghost btn-sm" onclick="openDetail('${i._id}')">Detay</button>`;
+      islem = '<span style="font-size:13px;color:var(--red);font-weight:600">Dizayna iade edildi</span>';
     } else {
       islem = '<span style="font-size:13px;color:var(--text3)">Dizayn devam ediyor</span>';
     }
+
+    // ── DETAY ERISIMI (her satirda) ──────────────────────────────────
+    // Onceden yalnizca "iade edilmis" satirlarda Detay dugmesi vardi ve
+    // satirlar tiklanabilir degildi; yani santiye kayitlarin detayini
+    // hicbir sekilde acamiyordu. Ihale Havuzu'ndaki 🔍 deseninin aynisi.
+    // Satirin tamamini tiklanabilir YAPMIYORUZ: hucrede Kabul/Red/Talep
+    // Gir dugmeleri var, satir tiklamasi onlarla cakisirdi.
+    islem = '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">'
+          + '<button class="btn btn-ghost btn-sm ikon" onclick="openDetail(\'' + i._id + '\')" title="Detay">🔍</button>'
+          + '<div>' + islem + '</div></div>';
 
     const redNot = (od === 'red' && i.santiye_red_nedeni)
       ? `<div style="font-size:13px;color:var(--red);margin-top:3px;white-space:pre-wrap">Son iade${redAdet(i)>1?' ('+redAdet(i)+' iade)':''}: ${esc(redSon(i))}</div>` : '';
