@@ -2365,7 +2365,13 @@ async function loadDashboard() {
 // ════════════════════════════════════════════
 // Veri her yenilendiginde butun sekmeler ayni filtreye gore yeniden cizilir.
 // Boylece hangi sekmede olursan ol, ust bardaki proje secimi ile tutarli kalir.
-function renderAll() { tumSekmeleriCiz(); }
+// Arsiv (Tamamlananlar) SbData'dan TURETILIR, ayri sorgu yoktur — ama
+// turetme arsivKur() ile yapiliyor ve renderAll onu cagirmiyordu: yalnizca
+// cizen rArsiv() cagriliyordu. Sonuc: M8 girilince kart her ekrandan
+// dusuyor ama Tamamlananlar'da SAYFA YENILENENE KADAR gorunmuyordu.
+// (loadAllData ve iptal yollarinda ayrica cagriliyordu, o yuzden fark
+//  edilmesi zordu.) Tek yerden cozuluyor: her cizimde arsiv de tazelenir.
+function renderAll() { arsivKur(); tumSekmeleriCiz(); }
 
 function rCharts() {
   const rows = projeFiltre(SbData);
@@ -3069,6 +3075,17 @@ function santiyeOnayDurumu(i) {
   if (i.talep_onay_durum === 'red' && (od === null || od === 'red')) return 'kabul';
   // Cozulmus dizayn iadesi: M3+ girilmisse santiye kabul etmis demektir
   if (od === 'red') return iadeAcikMi(i) ? 'red' : 'kabul';
+  // ══════════════════════════════════════════════════════════════════
+  // M3-M7'DEN BIRI TAMAMLANMISSA KABUL ARANMAZ (Doruk, 17.09.2026)
+  // Bir paket M3 (talep), M4, M5, M6 ya da M7 asamalarindan birini
+  // tamamladiysa is fiilen santiyeden gecmistir; ayrica "Kabul" dugmesi
+  // beklenmez, OTOMATIK kabul edilmis sayilir.
+  // Bu, Excel'den gelen kayitlarin onay bayragi hic tasimamasi sorununu
+  // cozer: dosyadan M3+ dolu gelen bir paket artik devir kapisina takilmaz.
+  // NOT: kabul edilmemis ve HENUZ M3'e gelmemis paketlerde kural aynen
+  // duruyor — santiye once kabul edip ustune almali, eksikse iade etmeli.
+  // ══════════════════════════════════════════════════════════════════
+  if (od !== 'kabul' && santiyeDevredildiMi(i)) return 'kabul';
   if (od !== 'kabul') return od;
   const kanit = !!(i._gm2 || i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8);
   return kanit ? 'kabul' : null;
@@ -3104,6 +3121,18 @@ function rSantiye() {
 
   const rows = projeFiltre(SbData).filter(i => {
     if (i.durum === 'tamamlandi' || i.durum === 'iptal') return false;
+    // ══════════════════════════════════════════════════════════════
+    // BU LISTE BIR IS KUYRUGU: yalnizca SANTIYENIN YAPACAK ISI OLAN
+    // paketler durur. Talep girildiyse (M3 ya da sonrasi gerceklesmisse)
+    // top satinalmadadir; santiyenin burada yapacagi bir sey kalmaz.
+    // Onceden dusmuyordu: paket kabul edildikten sonra sonuna kadar
+    // listede kaliyordu ve kuyruk hic bosalmiyordu.
+    // TEK ISTISNA: satinalma talebi IADE ettiyse (M3 silinir) top geri
+    // santiyeye doner ve paket tekrar listeye girer.
+    // Ayrica M3 bos ama M4+ dolu (Excel'den boyle gelebilir) paketlerde
+    // "Talep Gir" dugmesi cikmasini da bu kural engeller.
+    // ══════════════════════════════════════════════════════════════
+    if (santiyeDevredildiMi(i) && !talepIadesiAcik(i)) return false;
     if (TASARIMSIZ) return true;                 // dizayn onayi yok -> hepsi kuyrukta
     const od = santiyeOnayDurumu(i);
     if (od) return true;
@@ -3196,6 +3225,8 @@ function rSantiyeImalat() {
   const el = document.getElementById('santiye-imalat');
   if (!el) return;
 
+  // M8 girilince kayit bu listeden duser. Girilmis bir M8'i duzeltmek ya da
+  // geri almak icin yol: Ihale Havuzu / Tamamlananlar > Detay > Duzenle.
   const rows = projeFiltre(SbData)
     .filter(i => i._gm7 && !i._gm8)                    // sözleşme imzalı, imalat başlamamış
     .filter(i => i.durum !== 'iptal' && i.durum !== 'bloke')
@@ -3245,8 +3276,9 @@ function rSantiyeImalat() {
   }).join('');
 }
 
-// M8 (imalat baslangici) girisi — santiye. Girilince durum 'tamamlandi'
-// olur ve kayit Tamamlananlar sekmesine gecer.
+// M8 (imalat baslangici) girisi — santiye/elektrik/mekanik/admin.
+// Girilince durum 'tamamlandi' olur ve kayit Tamamlananlar'a gecer.
+// Girilmis bir M8'i DEGISTIRMEK icin: Detay > Duzenle penceresi.
 async function santiyeImalatBasladi(id) {
   const it = SbData.find(x => x._id === id);
   if (!it) return;
@@ -3645,11 +3677,18 @@ function openForm(id) {
     bslk.textContent = id ? 'İhale Düzenle' : 'Yeni İhale Ekle';
     alt.textContent  = id ? '' : 'Tüm alanları doldurun';
   }
-  // Tamamlanan/iptal paketlerde admin disinda duzenleme yok
+  // Duzenleme kapisi — detay penceresindekiyle AYNI kural (detayDuzenlenebilir).
+  // Iki yerde ayri kosul tutulmuyor: detayda "Duzenle" dugmesi gorunup form
+  // acilmamasi (ya da tersi) bu yuzden olamaz.
+  // Tamamlanmis kayit: M8'i yazabilenler (santiye + kendi bolumunde
+  // elektrik/mekanik) yanlis girilen tarihi duzeltebilsin diye acik.
+  // Iptal edilmis kayit: yalniz admin / ust yonetim.
   if (id) {
     const kayit = SbData.find(i => i._id === id);
-    if (kayit && ['tamamlandi','iptal'].includes(kayit.durum) && !tamYetki()) {
-      toast('Tamamlanan/iptal edilen paketleri sadece admin düzenleyebilir', 'err');
+    if (kayit && !detayDuzenlenebilir(kayit)) {
+      toast(kayit.durum === 'iptal'
+        ? 'İptal edilen paketleri sadece admin düzenleyebilir'
+        : 'Bu paketi düzenleme yetkiniz yok', 'err');
       return;
     }
   }
@@ -3839,6 +3878,10 @@ async function saveForm() {
   // Talep/İhale aşamasına (M3+) ancak şantiye dizaynı KABUL ettiyse geçilebilir.
   const yeniDurum = document.getElementById('f-durum').value;
   const ileriDurumlar = ['satinalma_devir','firma_davet','degerlendirme','yonetim_onayi','sozlesme','aktif','tamamlandi'];
+  // KURAL (Doruk, kasitli): santiye paketi KABUL edip ustune almadan M3+
+  // asamasina gecilemez. Eksik bir paket kabul edilmeden IADE edilmelidir.
+  // Excel'den gelen M3 tarihi kabul yerine GECMEZ — dosyadan gelen bir tarih,
+  // santiyenin paketi inceleyip sorumlulugu ustlendigi anlamina gelmiyor.
   if (!TASARIMSIZ && editId && ileriDurumlar.includes(yeniDurum) && orig && santiyeOnayDurumu(orig) !== 'kabul' && !tamYetki() && CRole!=='planlama') {
     toast('Bu aşamaya geçmek için önce şantiyenin dizaynı KABUL etmesi gerekir.','err');
     return;
@@ -4183,6 +4226,21 @@ function deleteItem(id) {
   openOv('ov-confirm');
 }
 
+// Detay penceresinde "Duzenle" dugmesi gorunsun mu?
+//  - izleyici: asla
+//  - admin / ust yonetim: her zaman
+//  - tamamlanmis kayit: M8'i yazma yetkisi olanlar (santiye + kendi bolumunde
+//    elektrik/mekanik) — yanlis girilen M8'i duzeltebilsinler diye
+//  - iptal edilmis kayit: yalniz admin / ust yonetim
+//  - digerleri: mevcut kural aynen
+function detayDuzenlenebilir(i) {
+  if (!i || CRole === 'izleyici') return false;
+  if (tamYetki()) return true;
+  if (i.durum === 'iptal') return false;
+  if (i.durum === 'tamamlandi') return msYetkiliMi('m8', i) && bolumumMu(i);
+  return true;
+}
+
 function openDetail(id, fromArchive) {
   const i = fromArchive ? SbArchive.find(x=>x._id===id) : SbData.find(x=>x._id===id);
   if (!i) return;
@@ -4327,11 +4385,16 @@ function openDetail(id, fromArchive) {
     '<div style="font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">' + (TASARIMSIZ ? 'M3–M8' : 'M1–M8') + ' aşama performansı</div>' +
     '<div class="tl">' + tlHtml + '</div>' + redHtml + talepRedHtml + notHtml;
 
+  // TAMAMLANANLAR sekmesinden acilan detayda hic "Duzenle" yoktu; tamamlanmis
+  // bir isin M8 tarihini duzeltmenin yolu kapaliydi. Ayni yetki kosuluyla
+  // burada da gosteriliyor (duzenlenecek kayit SbData'da duruyor, arsivKur
+  // ayni _id'yi tasiyor).
   document.getElementById('det-ft').innerHTML = fromArchive
-    ? `<button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`
+    ? `${detayDuzenlenebilir(i) ? `<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>` : ''}
+       <button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`
     : `${birimYetkisi('satinalma',i)&&i._gm3&&!i._gm4&&!i._gm5&&!i._gm6&&!i._gm7&&!i._gm8&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="closeOv('ov-detay');talepRedAc('${i._id}')" title="Talebi eksik bulup şantiyeye iade et">↩ Talebi iade et</button>`:''}
        ${birimYetkisi('satinalma',i)&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm" onclick="closeOv('ov-detay');iptalAc('${i._id}')">İptal Et</button>`:''}
-       ${(CRole!=='izleyici')&&(tamYetki()||!['tamamlandi','iptal'].includes(i.durum))?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>`:''}
+       ${detayDuzenlenebilir(i)?`<button class="btn btn-ghost" onclick="closeOv('ov-detay');openForm('${i._id}')">Düzenle</button>`:''}
        <button class="btn btn-ghost" onclick="closeOv('ov-detay')">Kapat</button>`;
   openOv('ov-detay');
 }
@@ -5759,7 +5822,12 @@ const MS_SAHIP = {
 };
 // elektrik/mekanik kendi bolumunde bu milestone'lari girer
 // (M2 her rolde otomatiktir, M8 santiyenin isidir)
-const MS_BOLUM_ROL = ['m1','m3','m4','m5','m6','m7'];
+// Elektrik/mekanik kendi bolumunde bu milestone'lari girebilir.
+// m8 SONRADAN eklendi (Doruk: "Ayni durum Elektrik ve Mekanik icin de
+// gecerli"): imalat baslangicini ELK isinde elektrik, MEK isinde mekanik
+// girebilsin. Onceden yalniz santiye girebiliyordu.
+// m2 listede YOK: santiye kabulüyle otomatik olusur, elle yazilmaz.
+const MS_BOLUM_ROL = ['m1','m3','m4','m5','m6','m7','m8'];
 function msYetkiliMi(m, i){
   if (tamYetki()) return true;
   if (TASARIMSIZ && (m === 'm1' || m === 'm2')) return false;   // asama yok
