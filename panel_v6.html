@@ -162,6 +162,7 @@ body.tasarimsiz .only-tasarim{display:none !important}
   font-size:12px;font-weight:600;color:#fff;flex-shrink:0;background:var(--neutral);}
 .u-av.admin{background:var(--red);}.u-av.satinalma{background:var(--blue);}
 .u-av.dizayn{background:var(--purple);}.u-av.santiye{background:var(--green);}
+.u-av.ozel_proje{background:var(--orange,#EA580C);}
 .u-av.planlama{background:var(--gold);}.u-av.izleyici{background:var(--neutral);}
 .role-pill{font-size:12px;padding:2px 8px;border-radius:999px;font-weight:500;white-space:nowrap;}
 .role-pill.admin{background:var(--red-glow);color:var(--red);}
@@ -173,6 +174,7 @@ body.tasarimsiz .only-tasarim{display:none !important}
 .role-pill.ust_yonetim{background:var(--red-glow);color:var(--red);}
 .role-pill.elektrik{background:var(--gold-glow);color:var(--gold);}
 .role-pill.mekanik{background:var(--blue-glow);color:var(--blue-l);}
+.role-pill.ozel_proje{background:rgba(234,88,12,.12);color:var(--orange,#EA580C);}
 
 /* GOVDE YERLESIMI */
 .app-container{display:flex;flex-direction:row;min-height:calc(100vh - 60px);}
@@ -310,6 +312,12 @@ td strong{color:var(--text);font-weight:600;}
    ve daraldiginda SAYFAYI tasirir. minmax(0,...) ile kolon kucultulebilir,
    tablo da kendi .tw kutusu icinde yatay kayar (orijinal davranis). */
 .st-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;}
+/* Dizayn sayfasinin bolmesi: tablo yalniz 4 kolon oldugu icin santiyeden
+   daha dar bir yarima sigar, bu yuzden esik daha dusuk. 1440/1366 gibi
+   yaygin dizustu genisliklerinde yan yana KALMALI — alt alta inerse
+   sayfayi bolmenin anlami kalmaz. Esik olcumle secildi. */
+.dz-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;}
+@media (max-width:1330px){.dz-split{grid-template-columns:minmax(0,1fr)}}
 /* Iki yarim ancak SOL TABLONUN SIGDIGI genislikte anlamli: tablo 4 kolonla
    ~572px istiyor, yarim genislik 1500px'in altinda bunun altina duşuyor.
    Olculdu: 1500px -> 593px yarim (sigiyor), 1400px -> 543px (31px kayiyor).
@@ -326,6 +334,19 @@ td strong{color:var(--text);font-weight:600;}
   font-size:13px;color:var(--text2);}
 .im-tarih span:nth-child(odd){color:var(--text3);}
 .im-giris{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.op-notlar{margin-top:8px;border-top:1px dashed var(--border);padding-top:7px;
+  max-height:170px;overflow-y:auto;}
+.op-not{font-size:12.5px;color:var(--text2);white-space:pre-wrap;padding:4px 0;
+  border-bottom:1px dotted var(--border);}
+.op-not:last-child{border-bottom:none;}
+.op-yaz{width:100%;margin-top:8px;font-family:var(--font);font-size:13px;padding:6px 8px;
+  border-radius:5px;border:1px solid var(--border);background:var(--surface2);
+  color:var(--text);resize:vertical;box-sizing:border-box;}
+/* Detay penceresindeki OP seridi — bilgi kartlarinin hemen altinda */
+.op-serit{display:flex;align-items:center;gap:10px;margin:10px 0 2px;padding:10px 14px;
+  border-radius:7px;font-size:14px;font-weight:600;}
+.op-serit .op-serit-ik{font-size:17px;line-height:1;}
+.op-serit-tar{font-family:var(--mono);font-weight:500;opacity:.85;}
 .im-giris input[type=date]{font-size:13px;padding:5px 8px;}
 .pipe-col{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--shadow);}
 .pipe-hd{padding:0 12px;height:40px;background:var(--surface2);border-bottom:1px solid var(--border);
@@ -573,6 +594,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <option value="santiye">Şantiye</option>
           <option value="elektrik">Elektrik (yalnız ELK ihaleleri)</option>
           <option value="mekanik">Mekanik (yalnız MEK ihaleleri)</option>
+          <option value="ozel_proje">Özel Projeler</option>
           <option value="ust_yonetim">Üst Yönetim</option>
           <option value="planlama">Planlama</option>
           <option value="izleyici">İzleyici (Salt Okunur)</option>
@@ -756,9 +778,33 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 <!-- DİZAYN -->
 <div class="view" id="view-dizayn">
   <div class="sh"><div class="st">Dizayn Paketleri Takibi</div></div>
-  <div class="tw"><table><thead><tr>
-    <th>Paket</th><th>Proje</th><th>Dizayn İlerlemesi</th><th>Çalışma Durumu</th><th>M2 Hedef</th><th>M2 Gerçekleşen</th><th>Güncelleme</th><th>İşlem</th>
-  </tr></thead><tbody id="tb-dizayn"></tbody></table></div>
+  <!-- Sayfa iki yarim: SOL dizayn takibi (mevcut), SAG Ozel Projeler.
+       Santiye sayfasindaki .st-split yapisinin aynisi kullaniliyor;
+       1500 px altinda alt alta iner. -->
+  <div class="dz-split">
+    <div>
+      <div class="st-yarim-bas">
+        <span>📐 Dizayn Paketleri</span>
+        <span class="st-yarim-sayi" id="dz-sol-sayi">0</span>
+      </div>
+      <!-- Yarim genislige sigmasi icin 8 kolon 4'e indirildi: Proje, M2
+           hedef/gerceklesen ve guncelleme tarihi Paket hucresinin altina
+           tasindi. Hicbir bilgi kaybolmadi, yalnizca yeri degisti. -->
+      <div class="tw"><table><thead><tr>
+        <th>Paket</th><th>İlerleme</th><th>Durum</th><th>İşlem</th>
+      </tr></thead><tbody id="tb-dizayn"></tbody></table></div>
+    </div>
+    <div>
+      <div class="st-yarim-bas">
+        <span>◈ Özel Projeler</span>
+        <span class="st-yarim-sayi" id="dz-sag-sayi">0</span>
+      </div>
+      <!-- Dizaynin OP'ye attigi ve OP'nin henuz tamamlamadigi paketler.
+           OP "Tamamlandi" deyince kart buradan duser, paket solda kalir
+           ve eski akis kaldigi yerden yurur. -->
+      <div id="dizayn-op"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ŞANTİYE — Dizayn Onay & Talep Kuyruğu -->
@@ -1099,7 +1145,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <div>Versiyon: <span style="color:var(--blue-l)">v3.0 — Aşama bazlı gecikme + Dizayn/Şantiye onay akışı</span></div>
         </div>
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="openCsvModal()">📥 Excel Veri Aktar</button>
+          <button class="btn btn-ghost btn-sm" onclick="if(tamYetki()||CRole==='satinalma'){openCsvModal();}else{toast('Excel içe aktarma yetkiniz yok','err');}">📥 Excel Veri Aktar</button>
           <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Veriyi Dışa Aktar</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadTemplate()">📥 Şablon İndir</button>
         </div>
@@ -1356,6 +1402,28 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
   </div>
 </div></div>
 
+<!-- OZEL PROJELERE TEKRAR GONDERME — NOT ZORUNLU -->
+<div class="overlay" id="ov-op-tekrar">
+<div class="modal" style="width:560px">
+  <div class="modal-hd">
+    <div><div class="modal-title" style="color:var(--orange,#EA580C)">↪ Tekrar Özel Projeler'e gönder</div>
+    <div class="modal-sub">Eksik ya da ilave varsa paket yeniden Özel Projeler'e düşer</div></div>
+    <button class="close-btn" onclick="closeOv('ov-op-tekrar')">✕</button>
+  </div>
+  <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+    <div class="fl"><label>Gerekçe * (ne eksik, ne ilave edilecek)</label>
+      <textarea id="op-tekrar-neden" rows="8" placeholder="Örn:&#10;1) Cephe alternatifi işveren onayından döndü&#10;2) Lobi aydınlatma detayı ilave edilecek"></textarea></div>
+    <div style="font-size:13px;color:var(--faint);margin-top:6px">
+      Bu gerekçe tarih ve adınızla not geçmişine eklenir. Önceki notlar silinmez.
+      Paket tekrar Özel Projeler'e düştüğü için tamamlanana kadar şantiye onayına gönderilemez.
+    </div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeOv('ov-op-tekrar')">Vazgeç</button>
+    <button class="btn btn-primary" onclick="opTekrarGonderOnayla()">↪ Tekrar gönder</button>
+  </div>
+</div></div>
+
 <!-- PROJE EKLEME MODALI -->
 <div class="overlay" id="ov-proje">
 <div class="modal" style="width:520px">
@@ -1386,6 +1454,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <option value="satinalma">Satın Alma</option>
           <option value="dizayn">Dizayn</option>
           <option value="santiye">Şantiye</option>
+          <option value="ozel_proje">Özel Projeler</option>
           <option value="planlama">Planlama</option>
           <option value="izleyici">İzleyici (Salt Okunur)</option>
         </select>
@@ -1639,7 +1708,7 @@ function projeFiltre(rows) {
 // Acik olan sekme hangisi olursa olsun hepsini guncelle.
 function tumSekmeleriCiz() {
   loadDashboard();
-  rHavuz(); rYRapor(); rPipeline(); rDizayn(); rSantiye(); rAksaklik(); rArsiv(); rRapor();
+  rHavuz(); rYRapor(); rPipeline(); rDizayn(); rDizaynOP(); rSantiye(); rAksaklik(); rArsiv(); rRapor();
 }
 
 // ════════════════════════════════════════════
@@ -1704,6 +1773,7 @@ async function loadProfile() {
     santiye:'✅ Dizaynı kabul / eksik-red\n📨 Talep girme (satınalmaya iletme)\n🔍 Diğerleri okuma',
     planlama:'✅ Planlama + P6 + SAP\n🔍 Diğerleri okuma',
     izleyici:'🔍 Tüm birimler salt okunur',
+    ozel_proje:'✅ Özel Projeler: kendisine atanan işi tamamlama + not\n🔍 Panelin tamamı salt okunur',
     ust_yonetim:'✅ Tüm birimlere tam erişim (admin ile aynı)',
     elektrik:'✅ ELK bölümü: dizayn + talep + satınalma\n🔍 Diğer bölümler salt okunur',
     mekanik:'✅ MEK bölümü: dizayn + talep + satınalma\n🔍 Diğer bölümler salt okunur',
@@ -2025,6 +2095,14 @@ async function loadIhaleler() {
       // satinalma -> santiye talep iadesi
       talep_onay_durum:            i.talep_onay_durum  || null,   // null | 'red'
       talep_red_nedeni:            i.talep_red_nedeni  || null,
+      // ── OZEL PROJELER (OP) — dizaynla PARALEL yurur, M1-M8 zincirine
+      //    ve gecikme hesabina HIC girmez. Yalnizca op_* kolonlari.
+      op_durum:            i.op_durum || null,          // null | 'atandi' | 'tamamlandi'
+      op_atama_tarihi:     i.op_atama_tarihi || null,
+      op_tamamlanma_tarihi:i.op_tamamlanma_tarihi || null,
+      op_notlar:           i.op_notlar || null,
+      op_atayan_id:        i.op_atayan_id || null,
+      op_tur:              i.op_tur || 0,               // kacinci gonderim
       // eski uyumluluk
       dizayn:      i.dizayn_yuzdesi||0,
       santiye:     i.santiye_yuzdesi||0,
@@ -2439,6 +2517,8 @@ const ROL_BIRIMLER = {
   satinalma:   ['Satınalma'],
   ust_yonetim: ['Satınalma', 'Üst Yönetim'],
   // admin / planlama / izleyici / elektrik / mekanik -> hepsi
+  // ozel_proje BURADA YOK: OP'nin listesi milestone sorumlulugundan degil,
+  // "bu paket OP'de acik mi" sorusundan cikar. rSonList() ayri ele alir.
 };
 const MS_ADI = { m1:'M1 · Tasarım Kararları', m2:'M2 · Proje Yayın', m3:'M3 · Talep (SAT)',
                  m4:'M4 · İhale Yayını', m5:'M5 · Yönetime Sunum', m6:'M6 · İhale Karar',
@@ -2469,12 +2549,22 @@ function rSonList() {
   const bugun = today();
   const birimler = ROL_BIRIMLERI_ROL();          // null = hepsi
 
+  // ── OZEL PROJELER (Doruk, 17.09.2026) ──
+  // OP'nin listesi milestone sorumlulugundan CIKMAZ: sorumluBirim() bu
+  // paketlerde "Dizayn" der ve oyle kalmalidir (paket dizaynin listelerinden
+  // dusmesin diye). OP'nin kuyrugu tek bir soruya bakar: bu paket su an
+  // OP'DE ACIK MI? Bu yuzden asagidaki birim susgeci OP rolunde devre disi
+  // birakilip yerine op susgeci konuyor. Hedef tarih ve siralama aynen
+  // digerlerindeki gibi bekleyen milestone'un planlanan tarihine gore.
+  const opKipi = (CRole === 'ozel_proje');
+
   const satirlar = [];
   projeFiltre(SbData)
     .filter(i => !['tamamlandi','iptal','bloke'].includes(i.durum))
     .filter(i => !i._gm7)                        // ihale sureci bitti
     .filter(i => !rolBolumu() || bolumumMu(i))   // elektrik/mekanik kendi bolumu
-    .filter(i => !birimler || birimler.indexOf(sorumluBirim(i)) >= 0)
+    .filter(i => opKipi ? opAcikMi(i)
+                        : (!birimler || birimler.indexOf(sorumluBirim(i)) >= 0))
     .forEach(i => {
       const m = bekleyenMs(i);
       if (!m) return;
@@ -2489,7 +2579,11 @@ function rSonList() {
 
   const altEl = document.getElementById('son-list-alt');
   if (altEl) {
-    altEl.textContent = (ROL_ETIKET[CRole] || CRole) + ' · '
+    altEl.textContent = opKipi
+      ? 'Özel Projeler · size atanan ve henüz tamamlanmamış işler'
+        + (rolBolumu() ? ' · yalnız ' + rolBolumu() + ' bölümü' : '')
+        + '. "Tamamlandı" işaretlediğinizde iş listeden düşer.'
+      : (ROL_ETIKET[CRole] || CRole) + ' · '
       + (birimler ? birimler.join(' + ') + ' biriminde bekleyen işler' : 'tüm birimlerde bekleyen işler')
       + (rolBolumu() ? ' · yalnız ' + rolBolumu() + ' bölümü' : '')
       + '. Aşama tamamlandığında iş listeden düşer; sözleşmesi imzalanan işler listede yer almaz.';
@@ -2497,7 +2591,9 @@ function rSonList() {
 
   const el = document.getElementById('son-list');
   if (!gosterilen.length) {
-    el.innerHTML = '<div class="empty">Biriminizde bekleyen iş bulunmuyor</div>';
+    el.innerHTML = '<div class="empty">' + (opKipi
+      ? 'Özel Projeler\'e atanmış açık iş bulunmuyor'
+      : 'Biriminizde bekleyen iş bulunmuyor') + '</div>';
     return;
   }
 
@@ -2661,7 +2757,7 @@ function rHavuz() {
       <td>${dl(i.gecikme)}</td>
       <td><div style="display:flex;gap:3px">
         <button class="btn btn-ghost btn-sm ikon" onclick="openDetail('${i._id}')" title="Detay">🔍</button>
-        ${CRole!=='izleyici'?`<button class="btn btn-ghost btn-sm ikon" onclick="openForm('${i._id}')" title="Düzenle">✏</button>`:''}
+        ${!saltOkur()?`<button class="btn btn-ghost btn-sm ikon" onclick="openForm('${i._id}')" title="Düzenle">✏</button>`:''}
         ${birimYetkisi('satinalma',i)&&!['tamamlandi','iptal'].includes(i.durum)?`<button class="btn btn-danger btn-sm ikon" onclick="iptalAc('${i._id}')" title="İhaleyi iptal et">🚫</button>`:''}
       </div></td>
     </tr>`;
@@ -2700,6 +2796,32 @@ function rDizayn() {
       statusBadge = '<span class="chip c-tam"><span class="chip-dot"></span>Bitmiş</span>';
     }
 
+    // ── OZEL PROJELER rozeti ve dugmesi ──
+    // Rozet: paketin OP durumu bir bakista gorunsun.
+    // Dugme: yalnizca is HALA DIZAYNDAYKEN ve dizayn yetkisi varken cikar.
+    let opRozet = '';
+    if (opAcikMi(i)) {
+      opRozet = '<div style="margin-top:4px"><span class="chip" style="background:rgba(234,88,12,.12);color:var(--orange,#EA580C)">'
+              + '<span class="chip-dot" style="background:var(--orange,#EA580C)"></span>Özel Projeler\'de'
+              + (i.op_tur > 1 ? ' (' + i.op_tur + '. gönderim)' : '') + '</span></div>';
+    } else if (opSecimYapildiMi(i)) {
+      opRozet = '<div style="margin-top:4px"><span class="chip c-tam"><span class="chip-dot"></span>'
+              + 'Özel Projeler seçimi yapıldı</span></div>';
+    }
+    let opDugme = '';
+    if (opAtamaYetkisi(i) && opAtanabilirMi(i)) {
+      if (opAcikMi(i)) {
+        opDugme = '<button class="btn btn-ghost btn-sm" onclick="opGeriAl(\'' + i._id + '\')" '
+                + 'title="Özel Projeler atamasını geri çek">↩ ÖP</button>';
+      } else if (opSecimYapildiMi(i)) {
+        opDugme = '<button class="btn btn-ghost btn-sm" onclick="opTekrarGonderAc(\'' + i._id + '\')" '
+                + 'title="Eksik ya da ilave varsa tekrar gönder">↪ ÖP</button>';
+      } else {
+        opDugme = '<button class="btn btn-ghost btn-sm" onclick="opAta(\'' + i._id + '\')" '
+                + 'title="Paketi Özel Projeler birimine ata">◈ ÖP</button>';
+      }
+    }
+
     // Iade edilmisse nedeni de gorunsun — dizayn ne duzeltecegini bilsin
     const iadeNot = (od === 'red')
       ? `<div style="font-size:13px;color:var(--red);margin-top:3px;white-space:pre-wrap">Son iade${redAdet(i)>1?' ('+redAdet(i)+' iade)':''}: ${esc(redSon(i))}</div>`
@@ -2707,16 +2829,132 @@ function rDizayn() {
 
     return `
       <tr>
-        <td><strong>${esc(i.paket)}</strong><div class="mono" style="color:var(--text3);font-size:13px">${esc(i.id)}</div>${iadeNot}</td>
-        <td style="font-size:13px;color:var(--text2)">${esc(i.proje)}</td>
-        <td style="min-width:110px">${pb(pct, pbColor(pct))}</td>
+        <td><strong>${esc(i.paket)}</strong>
+          <div class="mono" style="color:var(--text3);font-size:13px">${esc(i.id)}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${esc(i.proje)}</div>
+          <div class="mono" style="font-size:12px;color:var(--faint);margin-top:2px">
+            M2 hedef ${fmtTarih(i._plan?.m2_proje_yayin)}
+            ${i._gm2 ? ' · <span style="color:var(--green)">gerçekleşen ' + fmtTarih(i._gm2) + '</span>' : ''}
+          </div>
+          ${opRozet}${iadeNot}</td>
+        <td style="min-width:70px">${pb(pct, pbColor(pct))}</td>
         <td>${statusBadge}</td>
-        <td class="mono" style="font-size:13px">${fmtTarih(i._plan?.m2_proje_yayin)}</td>
-        <td class="mono" style="font-size:13px;color:${i._gm2?'var(--green)':'var(--text3)'}">${fmtTarih(i._gm2)}</td>
-        <td class="mono" style="font-size:13px">${fmtTarih(i.guncel)}</td>
-        <td><button class="btn btn-ghost btn-sm" onclick="openForm('${i._id}')">✏ Güncelle</button></td>
+        <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${saltOkur() ? '' : `<button class="btn btn-ghost btn-sm ikon" onclick="openForm('${i._id}')" title="Güncelle">✏</button>`}
+          ${opDugme}
+        </div></td>
       </tr>`;
-  }).join('') : `<tr><td colspan="8"><div class="empty">Dizayn aşamasında ihale yok</div></td></tr>`;
+  }).join('') : `<tr><td colspan="4"><div class="empty">Dizayn aşamasında ihale yok</div></td></tr>`;
+  const solSayi = document.getElementById('dz-sol-sayi');
+  if (solSayi) solSayi.textContent = rows.length;
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// DIZAYN SAYFASI — SAG YARIM: OZEL PROJELER
+// Yalnizca OP'DE ACIK paketler. OP "Tamamlandi" deyince kart buradan
+// duser; paket SOL listede kalir ve eski akis kaldigi yerden yurur.
+// Iptal/tamamlanan paketler (M8 girilmis) OP acik olsa bile gorunmez.
+// ════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+// DETAY PENCERESI — OZEL PROJELER SERIDI
+// Bilgi kartlarinin (Dizayn ilerleme dahil) hemen ALTINDA, tam
+// genislikte ve belirgin. Uc hal:
+//   acik    : OP'ye atandi, henuz tamamlanmadi
+//   tekrar  : bir kez tamamlanmisti, dizayn TEKRAR gonderdi
+//   yapildi : OP isini bitirdi -> "Özel Projeler seçimi yapıldı"
+// Altinda not gecmisi okunur. OP'ye hic girmemis paketlerde serit CIZILMEZ.
+// ════════════════════════════════════════════════════════════════════
+function opSerit(i) {
+  const hal = opSeritDurumu(i);
+  if (!hal) return '';
+  const T = {
+    acik:    { ik:'◈', ad:'Özel Projeler\'de',
+               tar:i.op_atama_tarihi, on:'atandı',
+               bg:'rgba(37,99,235,.10)',  yz:'var(--blue-l)' },
+    tekrar:  { ik:'↪', ad:'Özel Projeler\'de — tekrar gönderildi',
+               tar:i.op_atama_tarihi, on:'',
+               bg:'rgba(242,165,22,.12)', yz:'var(--gold)' },
+    yapildi: { ik:'◈', ad:'Özel Projeler seçimi yapıldı',
+               tar:i.op_tamamlanma_tarihi, on:'',
+               bg:'rgba(22,163,74,.12)',  yz:'var(--green)' },
+  }[hal];
+
+  const oncekiSecim = (hal === 'tekrar' && i.op_tamamlanma_tarihi)
+    ? '<div style="font-size:12.5px;color:var(--text3);margin-top:-2px;margin-bottom:6px">'
+      + 'Önceki Özel Projeler seçimi: ' + fmtTarih(i.op_tamamlanma_tarihi) + '</div>'
+    : '';
+
+  const notlar = opNotKayitlari(i);
+  const gecmis = notlar.length
+    ? '<div class="op-notlar" style="max-height:200px;margin-top:0">'
+      + notlar.map(n => '<div class="op-not">' + esc(n) + '</div>').join('')
+      + '</div>'
+    : '';
+
+  return '<div class="op-serit" style="background:' + T.bg + ';color:' + T.yz + '">'
+       +   '<span class="op-serit-ik">' + T.ik + '</span>'
+       +   '<span>' + T.ad + '</span>'
+       +   (T.tar ? '<span class="op-serit-tar">' + (T.on ? T.on + ' ' : '') + fmtTarih(T.tar) + '</span>' : '')
+       + '</div>'
+       + oncekiSecim + gecmis;
+}
+
+function rDizaynOP() {
+  const el = document.getElementById('dizayn-op');
+  if (!el) return;
+
+  const rows = projeFiltre(SbData)
+    .filter(i => opAcikMi(i))
+    .filter(i => !['tamamlandi','iptal'].includes(i.durum))
+    .filter(i => !rolBolumu() || bolumumMu(i))       // elektrik/mekanik kendi bolumu
+    .sort((a, b) => tarihSirali(a.op_atama_tarihi, b.op_atama_tarihi));
+
+  const sayiEl = document.getElementById('dz-sag-sayi');
+  if (sayiEl) sayiEl.textContent = rows.length;
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty">Özel Projeler\'e atanmış açık iş yok</div>';
+    return;
+  }
+
+  const yazabilir = opYetkisi();
+  el.innerHTML = rows.map(i => {
+    const notlar = opNotKayitlari(i);
+    const gecmis = notlar.length
+      ? '<div class="op-notlar">' + notlar.map(n =>
+          '<div class="op-not">' + esc(n) + '</div>').join('') + '</div>'
+      : '';
+    const gun = i.op_atama_tarihi
+      ? Math.round((new Date(today() + 'T00:00:00') - new Date(i.op_atama_tarihi + 'T00:00:00')) / 86400000)
+      : null;
+    return '<div class="im-kart" style="border-left:3px solid var(--orange,#EA580C)">'
+      + '<div style="display:flex;align-items:start;justify-content:space-between;gap:8px">'
+        + '<div class="mono" style="color:var(--orange,#EA580C);font-size:13px">' + esc(i.id) + '</div>'
+        + '<button class="btn btn-ghost btn-sm ikon" onclick="openDetail(\'' + i._id + '\')" title="Detay">🔍</button>'
+      + '</div>'
+      + '<div style="font-weight:600;font-size:13.5px;margin-top:2px">' + esc(i.paket) + '</div>'
+      + '<div style="font-size:13px;color:var(--text3)">' + esc(i.proje)
+        + (i.ihale_bolumu ? ' · ' + esc(i.ihale_bolumu) : '') + '</div>'
+      + '<div class="im-tarih">'
+        + '<span>Atanma</span><span class="mono">' + fmtTarih(i.op_atama_tarihi)
+          + (gun !== null ? ' <span style="color:var(--text3)">(' + (gun === 0 ? 'bugün' : gun + ' gün önce') + ')</span>' : '')
+          + '</span>'
+        + (i.op_tur > 1 ? '<span>Gönderim</span><span>' + i.op_tur + '. kez</span>' : '')
+      + '</div>'
+      + gecmis
+      + (yazabilir
+          ? '<textarea class="op-yaz" id="opnot-' + i._id + '" rows="2" '
+            + 'placeholder="Not yazın… (Tamamlandı için zorunlu)"></textarea>'
+            + '<div class="im-giris">'
+              + '<button class="btn btn-ghost btn-sm" onclick="opNotEkle(\'' + i._id + '\')">💬 Not ekle</button>'
+              + '<button class="btn btn-primary btn-sm" onclick="opTamamla(\'' + i._id + '\')">✓ Tamamlandı</button>'
+            + '</div>'
+          : '<div style="font-size:12px;color:var(--faint);margin-top:8px">'
+            + 'Yalnızca Özel Projeler birimi işlem yapabilir</div>')
+      + '</div>';          // im-kart kapanisi — eksikti, kartlar ic ice giriyordu
+  }).join('');
 }
 
 function toggleSAView() {
@@ -3096,6 +3334,60 @@ function santiyeDevredildiMi(i) {
   return !!(i && (i._gm3 || i._gm4 || i._gm5 || i._gm6 || i._gm7 || i._gm8));
 }
 
+// ════════════════════════════════════════════════════════════════════
+// OZEL PROJELER (OP)  —  Doruk, 17.09.2026
+//
+// OP, dizaynla PARALEL calisan ayri bir dizayn birimidir. Bir paketi
+// dizayn "OP'ye Ata" der; paket dizayn listesinden DUSMEZ, yalnizca
+// sagdaki OP listesinde de gorunur. OP isini bitirince (not zorunlu)
+// paket OP listesinden duser ve eski akis kaldigi yerden yurur.
+//
+// OP ACIKKEN PAKET SANTIYE ONAYINA GONDERILEMEZ. Bu yuzden OP bir
+// bilgi serdi degil, bir KAPIDIR. Kapiyi yalniz tam yetkili (admin /
+// ust yonetim) zorlayabilir.
+//
+// OP, M1-M8 zincirine, plana, gecikme hesabina ve 'durum' alanina
+// HIC dokunmaz. Excel yoluna da girmez (ne yazilir ne okunur).
+// ════════════════════════════════════════════════════════════════════
+
+// Su an OP'de acik bekliyor mu?
+function opAcikMi(i) { return !!(i && i.op_durum === 'atandi'); }
+// OP bu pakette bir kez "Tamamlandi" dedi mi?
+function opSecimYapildiMi(i) { return !!(i && i.op_durum === 'tamamlandi'); }
+
+// OP'YE ATAMA / TEKRAR GONDERME yalnizca is HALA DIZAYNDAYKEN yapilir.
+// Paket santiye onayina gonderildiyse, santiye kabul ettiyse ya da talep
+// girildiyse dugme hic cikmaz (Doruk: "Atanamasin, dugme kapansin").
+// Santiye iade edince panel dizayn_santiyeye_gonderildi'yi false yapar,
+// is dizayna doner — dugme o an yeniden acilir.
+function opAtanabilirMi(i) {
+  if (!i) return false;
+  if (TASARIMSIZ) return false;                        // dizayn asamasi yok
+  if (['tamamlandi','iptal','bloke'].includes(i.durum)) return false;
+  if (santiyeDevredildiMi(i)) return false;            // M3+ girilmis
+  if (santiyeOnayDurumu(i) === 'kabul') return false;  // santiye kabul etti
+  if (i.dizayn_santiyeye_gonderildi) return false;     // santiye onayinda
+  return true;
+}
+
+// OP seridine YAZMA yetkisi (Tamamlandi + not). Yalniz OP birimi ve admin.
+function opYetkisi() { return CRole === 'ozel_proje' || tamYetki(); }
+// OP'ye atama / geri alma / tekrar gonderme dizaynin isidir.
+function opAtamaYetkisi(i) { return birimYetkisi('dizayn', i); }
+
+// Not gecmisi — santiye iade nedenleriyle AYNI bicim:
+// [GG.AA.YYYY - Ad Soyad (rol)]: serbest metin, '---' ile ayrilir.
+function opNotKayitlari(i) { return redAyir(i && i.op_notlar); }
+function opNotAdet(i) { return opNotKayitlari(i).length; }
+function opNotSon(i)  { const k = opNotKayitlari(i); return k.length ? k[k.length - 1] : ''; }
+
+// Detay penceresindeki serit metni (null = serit cizilmez)
+function opSeritDurumu(i) {
+  if (!i || !i.op_durum) return null;
+  if (opAcikMi(i)) return (i.op_tur > 1) ? 'tekrar' : 'acik';
+  return 'yapildi';
+}
+
 function santiyeOnayBadge(i) {
   if (!i) return '<span class="chip c-arc"><span class="chip-dot"></span>—</span>';
   const od = santiyeOnayDurumu(i);
@@ -3305,7 +3597,20 @@ async function santiyeImalatBasladi(id) {
 // ── Dizayn → Şantiye onay akışı aksiyonları ──
 async function dizaynSantiyeyeGonder() {
   if (!editId) { toast('Önce kaydı seçin', 'err'); return; }
-  if (!birimYetkisi('dizayn', SbData.find(x => x._id === editId))) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
+  const _it = SbData.find(x => x._id === editId);
+  if (!birimYetkisi('dizayn', _it)) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
+  // ── OZEL PROJELER KAPISI (Doruk, 17.09.2026) ──
+  // OP acikken paket santiye onayina GONDERILEMEZ. Yalniz tam yetkili
+  // (admin / ust yonetim) zorlayabilir — OP birimi unutursa ya da izinli
+  // olursa is butunuyle kilitlenmesin diye.
+  if (opAcikMi(_it)) {
+    if (!tamYetki()) {
+      toast('Bu paket Özel Projeler\'de açık. Önce Özel Projeler tamamlamalı.', 'err');
+      return;
+    }
+    if (!confirm('Bu paket Özel Projeler\'de AÇIK.\n\nYetkiniz gereği bu kuralı aşabilirsiniz.'
+               + '\nŞantiye onayına yine de gönderilsin mi?')) return;
+  }
   // Santiye onayina gonderilen paketin dizayni tanim geregi bitmistir:
   // yuzde elle cekilmeyi beklemez, otomatik %100 olur.
   const upd = {
@@ -3320,6 +3625,134 @@ async function dizaynSantiyeyeGonder() {
   toast('Dizayn şantiye onayına gönderildi', 'ok');
   closeOv('ov-form');
   await loadIhaleler(); renderAll(); rHavuz(); rSantiye();
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// OZEL PROJELER — ISLEMLER
+// Hepsi YALNIZCA op_* kolonlarina yazar. Tarih, durum, tutar, yuzde
+// alanlarina bu fonksiyonlarin hicbiri dokunmaz; veritabanindaki
+// kolon kilidi trigger'i da OP rolu icin bunu zorlar.
+// ════════════════════════════════════════════════════════════════════
+
+// Not gecmisine bir satir ekler (uzerine YAZMAZ). Bos metin eklenmez.
+async function opNotEkle_metin(it, metin) {
+  const t = String(metin || '').trim();
+  if (!t) return it.op_notlar || null;
+  const basi = await redImza();
+  const eski = String(it.op_notlar || '').trim();
+  return eski ? eski + RED_AYRAC + basi + t : basi + t;
+}
+
+// ── Dizayn: pakete OP damgasi vurur ──
+async function opAta(id) {
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!opAtamaYetkisi(it)) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
+  if (!opAtanabilirMi(it))  { toast('Bu paket artık dizaynda değil — Özel Projeler\'e atanamaz', 'err'); return; }
+  if (opAcikMi(it))         { toast('Bu paket zaten Özel Projeler\'de', 'err'); return; }
+  const upd = {
+    op_durum: 'atandi',
+    op_atama_tarihi: today(),
+    op_tamamlanma_tarihi: null,
+    op_atayan_id: CU.id,
+    op_tur: (it.op_tur || 0) + 1,
+  };
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  toast('Paket Özel Projeler\'e atandı. Şantiye onayına gönderilemez.', 'ok');
+  await loadIhaleler(); renderAll(); rHavuz();
+}
+
+// ── Dizayn: yanlis atamayi geri ceker ──
+async function opGeriAl(id) {
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!opAtamaYetkisi(it)) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
+  if (!opAcikMi(it)) { toast('Bu paket Özel Projeler\'de açık değil', 'err'); return; }
+  // Gecmisi silmiyoruz: tur sayisi ve notlar duruyor, yalniz durum sifirlanir.
+  // Daha once bir kez tamamlanmissa o damga geri gelir (op_tamamlanma_tarihi
+  // duruyorsa 'tamamlandi'), hic tamamlanmamissa hic atanmamis hale doner.
+  const upd = it.op_tamamlanma_tarihi
+    ? { op_durum: 'tamamlandi' }
+    : { op_durum: null, op_atama_tarihi: null, op_atayan_id: null };
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  toast('Özel Projeler ataması geri alındı', 'ok');
+  await loadIhaleler(); renderAll(); rHavuz();
+}
+
+// ── OP: isi bitirir. NOT ZORUNLU, geri alinamaz. ──
+async function opTamamla(id) {
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!opYetkisi()) { toast('Bu işlem için Özel Projeler yetkisi gerekli', 'err'); return; }
+  if (!opAcikMi(it)) { toast('Bu paket Özel Projeler\'de açık değil', 'err'); return; }
+  const kutu = document.getElementById('opnot-' + id);
+  const metin = kutu ? kutu.value.trim() : '';
+  if (!metin) {
+    toast('Tamamlamak için not yazmanız zorunlu', 'err');
+    if (kutu) kutu.focus();
+    return;
+  }
+  const upd = {
+    op_durum: 'tamamlandi',
+    op_tamamlanma_tarihi: today(),
+    op_notlar: await opNotEkle_metin(it, metin),
+  };
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  toast('Özel Projeler seçimi tamamlandı', 'ok');
+  await loadIhaleler(); renderAll(); rHavuz();
+}
+
+// ── OP: serbest not (tamamlamadan) ──
+async function opNotEkle(id) {
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!opYetkisi()) { toast('Bu işlem için Özel Projeler yetkisi gerekli', 'err'); return; }
+  const kutu = document.getElementById('opnot-' + id);
+  const metin = kutu ? kutu.value.trim() : '';
+  if (!metin) { toast('Önce not yazın', 'err'); if (kutu) kutu.focus(); return; }
+  const { error } = await sb.from('ihaleler')
+    .update({ op_notlar: await opNotEkle_metin(it, metin) }).eq('id', id);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  toast('Not eklendi', 'ok');
+  await loadIhaleler(); renderAll();
+}
+
+// ── Dizayn: tamamlanmis isi eksik/ilaveli bulup TEKRAR gonderir (not zorunlu) ──
+let opTekrarHedef = null;
+function opTekrarGonderAc(id) {
+  const it = SbData.find(x => x._id === id);
+  if (!it) return;
+  if (!opAtamaYetkisi(it)) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
+  if (!opAtanabilirMi(it)) { toast('Bu paket artık dizaynda değil — tekrar gönderilemez', 'err'); return; }
+  opTekrarHedef = id;
+  const el = document.getElementById('op-tekrar-neden');
+  if (el) el.value = '';
+  openOv('ov-op-tekrar');
+  if (el) el.focus();
+}
+
+async function opTekrarGonderOnayla() {
+  if (!opTekrarHedef) return;
+  const metin = (document.getElementById('op-tekrar-neden') || {}).value || '';
+  if (!metin.trim()) { toast('Tekrar göndermek için not zorunlu', 'err'); return; }
+  const it = SbData.find(x => x._id === opTekrarHedef);
+  if (!it) return;
+  const upd = {
+    op_durum: 'atandi',
+    op_atama_tarihi: today(),
+    op_atayan_id: CU.id,
+    op_tur: (it.op_tur || 0) + 1,
+    op_notlar: await opNotEkle_metin(it, 'TEKRAR GÖNDERİLDİ — ' + metin.trim()),
+  };
+  const { error } = await sb.from('ihaleler').update(upd).eq('id', opTekrarHedef);
+  if (error) { toast('Hata: ' + error.message, 'err'); return; }
+  closeOv('ov-op-tekrar'); opTekrarHedef = null;
+  toast('Paket tekrar Özel Projeler\'e gönderildi', 'ok');
+  await loadIhaleler(); renderAll(); rHavuz();
 }
 
 async function santiyeKabul(id) {
@@ -3540,6 +3973,15 @@ function rAksaklik() {
     (aktifAsamaGecikmesi(b) - aktifAsamaGecikmesi(a)) ||
     ((b.gecikme || 0) - (a.gecikme || 0)));
   const suz = list => (AkBirim ? list.filter(i => sorumluBirim(i) === AkBirim) : list);
+  // ── SORUMLU METNI (Doruk, 17.09.2026) ──
+  // Paket ayni anda OP'de acikken sorumluluk tek birimde degildir: is
+  // dizaynda durur ama OP de calisiyordur. Bu durumda iki birim YAN YANA
+  // yazilir. sorumluBirim() DEGISMEZ — sayim, siralama, birim susme
+  // dugmeleri ve diger butun ekranlar eskisi gibi calisir; degisen
+  // yalnizca bu satirda okunan metindir.
+  const akSorumlu = i => opAcikMi(i)
+    ? esc(sorumluBirim(i)) + ' <span style="color:var(--orange,#EA580C)">+ Özel Projeler</span>'
+    : esc(sorumluBirim(i));
   // TEK LISTE: gecikme, dizayn iadesi ve talep iadesi bir arada; sira
   // gecikmesi en fazla olandan en aza. Tur bilgisi satir basindaki
   // etiketten ve renkten okunur.
@@ -3569,7 +4011,7 @@ function rAksaklik() {
         <div class="ak-title">⚠️ [GECİKME] ${esc(i.paket)}</div>
         <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chipKayit(i)}</div>
         <div class="ak-meta">
-          <span>Sorumlu: <strong>${esc(sorumluBirim(i))}</strong></span>
+          <span>Sorumlu: <strong>${akSorumlu(i)}</strong></span>
           <span>Bekleyen aşama: <strong>${esc(aktif ? aktif.ad : '-')}</strong></span>
           <span>Bu aşamada: <strong style="color:var(--red)">+${ag} gün</strong></span>
           ${i.gecikme > 0 ? `<span style="color:var(--faint)">net: +${i.gecikme} gün</span>` : ''}
@@ -3579,7 +4021,7 @@ function rAksaklik() {
         <div class="ak-title" style="color:var(--red)">🚫 [DİZAYN İADE — ŞANTİYE EKSİK BULDU] ${esc(i.paket)}</div>
         <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chipKayit(i)}</div>
         <div class="ak-meta">
-          <span>Sorumlu: <strong>Dizayn</strong></span>
+          <span>Sorumlu: <strong>${akSorumlu(i)}</strong></span>
           <span>İade sayısı: <strong>${redAdet(i)}</strong></span>
           <span>Bu aşamada: <strong style="color:var(--red)">+${aktifAsamaGecikmesi(i)} gün</strong></span>
         </div>
@@ -3590,7 +4032,7 @@ function rAksaklik() {
         <div class="ak-title" style="color:var(--gold)">↩ [TALEP İADE — SATINALMA EKSİK BULDU] ${esc(i.paket)}</div>
         <div class="ak-sub">${esc(i.proje)} · ${esc(i.id)} · ${chipKayit(i)}</div>
         <div class="ak-meta">
-          <span>Sorumlu: <strong>${esc(sorumluBirim(i))}</strong></span>
+          <span>Sorumlu: <strong>${akSorumlu(i)}</strong></span>
           <span>İade sayısı: <strong>${talepRedAdet(i)}</strong></span>
           <span>Bu aşamada: <strong style="color:var(--red)">+${aktifAsamaGecikmesi(i)} gün</strong></span>
         </div>
@@ -3745,7 +4187,7 @@ function openForm(id) {
     const el = document.getElementById('f-gm-'+m);
     if (!el) return;
     el.value = (f && f['_g'+m]) || '';
-    el.disabled = !msYetkiliMi(m, f) || CRole === 'izleyici';
+    el.disabled = !msYetkiliMi(m, f) || saltOkur();
   });
   // M3 icin hedef talep tarihi: santiye kabulu + talep hazirlik suresi
   const m3h = document.getElementById('m3-hedef');
@@ -3838,7 +4280,7 @@ async function saveForm() {
 
   // ── Append-only not mekanizması ──
   // Not ekleme: izleyici disinda herkes ekleyebilir
-  if (document.getElementById('f-aciklama-yeni').value.trim() && CRole === 'izleyici') {
+  if (document.getElementById('f-aciklama-yeni').value.trim() && saltOkur()) {
     toast('Not ekleme yetkiniz yok', 'err'); return;
   }
   const yeniNot = document.getElementById('f-aciklama-yeni').value.trim();
@@ -4160,7 +4602,7 @@ function vgIhaleYetkiUygula() {
   const bolum = document.getElementById('vf-ih-bolum')?.value || rolBolumu() || '';
   MS_LISTE.forEach(m => {
     const el = document.getElementById('vf-gm-'+m);
-    if (el) el.disabled = !msYetkiliMi(m, {ihale_bolumu: bolum}) || CRole === 'izleyici';
+    if (el) el.disabled = !msYetkiliMi(m, {ihale_bolumu: bolum}) || saltOkur();
   });
   const yaz = tamYetki() || CRole==='satinalma' || !!rolBolumu();
   ['vf-ih-sat','vf-ih-sas','vf-ih-yuklenici','vf-ih-tutar','vf-ih-usd','vf-ih-eur']
@@ -4234,7 +4676,7 @@ function deleteItem(id) {
 //  - iptal edilmis kayit: yalniz admin / ust yonetim
 //  - digerleri: mevcut kural aynen
 function detayDuzenlenebilir(i) {
-  if (!i || CRole === 'izleyici') return false;
+  if (!i || saltOkur()) return false;
   if (tamYetki()) return true;
   if (i.durum === 'iptal') return false;
   if (i.durum === 'tamamlandi') return msYetkiliMi('m8', i) && bolumumMu(i);
@@ -4269,7 +4711,7 @@ function openDetail(id, fromArchive) {
     '<div class="di"><div class="di-k">Projeksiyon (gerçekleşene göre M8)</div><div class="di-v" style="font-family:var(--mono);color:' + (i.gecikme>0?'var(--red)':'var(--green)') + '">' + fmt(kaym?.m8_imalat_baslangic) + '</div></div>' +
     (i.tutar ? '<div class="di"><div class="di-k">Sözleşme tutarı</div><div class="di-v" style="color:var(--green)">\u20ba' + formatTutar(i.tutar) + '</div></div>' : '') +
     (i.yuklenici ? '<div class="di"><div class="di-k">Yüklenici</div><div class="di-v">' + i.yuklenici + '</div></div>' : '') +
-    '</div>';
+    '</div>' + opSerit(i);
 
   // ── M1-M8 Aşama Bazlı Gecikme Zaman Çizelgesi ──
   // Her aşamanın gecikmesi orijinal planına göre BAĞIMSIZ gösterilir.
@@ -5745,6 +6187,11 @@ const MS_LISTE = ['m1','m2','m3','m4','m5','m6','m7','m8'];
 // ROLLER
 //  admin, ust_yonetim   : tam yetki (ust yonetim admin ile ayni)
 //  satinalma, dizayn, santiye, planlama, izleyici : mevcut roller
+//  ozel_proje           : "Ozel Projeler" birimi. Paneli izleyici gibi
+//                         SALT OKUR; tek istisna kendi seridi (op_* alanlari):
+//                         OP notu yazar ve "Tamamlandi" isaretler. Bunu her
+//                         projede ve her ihalede yapabilir, proje yetkisi
+//                         aranmaz (Doruk, 17.09.2026).
 //  elektrik, mekanik    : YALNIZ kendi bolumunun (ELK / MEK) ihalelerinde
 //                         dizayn + santiye talep + satinalma yetkisi tasir.
 //                         Diger bolumleri gorur ama duzenleyemez.
@@ -5754,8 +6201,19 @@ const ROL_BOLUM = { elektrik: 'ELK', mekanik: 'MEK' };
 const ROL_ETIKET = { admin:'Admin', ust_yonetim:'Üst Yönetim', satinalma:'Satın Alma',
                      dizayn:'Dizayn', santiye:'Şantiye', elektrik:'Elektrik',
                      mekanik:'Mekanik', planlama:'Planlama', izleyici:'İzleyici',
+                     ozel_proje:'Özel Projeler',
                      reddedildi:'Reddedildi' };
 function tamYetki()  { return ROL_TAM.indexOf(CRole) >= 0; }
+// ════════════════════════════════════════════════════════════════════
+// SALT OKUR ROLLER — ihale kaydinin HICBIR alanina yazamazlar.
+// Panelde bugune kadar bu kontrol "CRole === 'izleyici'" diye elle
+// yaziliyordu; ozel_proje eklenince ayni denetimin unutuldugu tek bir
+// nokta bile OP'ye tarih/tutar yazdirirdi. Tek kaynak: bu fonksiyon.
+// DIKKAT: ozel_proje'nin KENDI seridi (op_* alanlari) bunun DISINDADIR;
+// onu opYetkisi() belirler.
+// ════════════════════════════════════════════════════════════════════
+const ROL_SALT_OKUR = ['izleyici', 'ozel_proje'];
+function saltOkur() { return ROL_SALT_OKUR.indexOf(CRole) >= 0; }
 function rolBolumu() { return ROL_BOLUM[CRole] || ''; }          // '' = kisitsiz
 // Kayit, rolun yetkili oldugu bolumde mi? (kisitsiz roller icin her zaman true)
 function bolumumMu(i) {
@@ -6154,6 +6612,7 @@ async function rOnayBekleyenler() {
         <option value="satinalma"   ${u.rol==='satinalma'?'selected':''}>Satın Alma</option>
         <option value="dizayn"      ${u.rol==='dizayn'?'selected':''}>Dizayn</option>
         <option value="santiye"     ${u.rol==='santiye'?'selected':''}>Şantiye</option>
+        <option value="ozel_proje"  ${u.rol==='ozel_proje'?'selected':''}>Özel Projeler</option>
         <option value="elektrik"    ${u.rol==='elektrik'?'selected':''}>Elektrik (ELK)</option>
         <option value="mekanik"     ${u.rol==='mekanik'?'selected':''}>Mekanik (MEK)</option>
         <option value="ust_yonetim" ${u.rol==='ust_yonetim'?'selected':''}>Üst Yönetim</option>
@@ -6218,6 +6677,7 @@ async function rKullanicilar() {
     admin:'var(--red)', ust_yonetim:'var(--red)', satinalma:'var(--blue-l)',
     dizayn:'var(--purple)', santiye:'var(--green)', elektrik:'var(--gold)',
     mekanik:'var(--blue-l)', planlama:'var(--gold)', izleyici:'var(--text3)',
+    ozel_proje:'var(--orange,#EA580C)',
     reddedildi:'var(--text3)'
   };
   const isAdmin = tamYetki();
@@ -6232,6 +6692,7 @@ async function rKullanicilar() {
           <option value="satinalma"   ${u.rol==='satinalma'  ?'selected':''}>Satın Alma</option>
           <option value="dizayn"      ${u.rol==='dizayn'     ?'selected':''}>Dizayn</option>
           <option value="santiye"     ${u.rol==='santiye'    ?'selected':''}>Şantiye</option>
+          <option value="ozel_proje"  ${u.rol==='ozel_proje' ?'selected':''}>Özel Projeler</option>
           <option value="elektrik"    ${u.rol==='elektrik'   ?'selected':''}>Elektrik (ELK)</option>
           <option value="mekanik"     ${u.rol==='mekanik'    ?'selected':''}>Mekanik (MEK)</option>
           <option value="planlama"    ${u.rol==='planlama'   ?'selected':''}>Planlama</option>
