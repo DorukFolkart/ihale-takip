@@ -594,7 +594,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <option value="santiye">Şantiye</option>
           <option value="elektrik">Elektrik (yalnız ELK ihaleleri)</option>
           <option value="mekanik">Mekanik (yalnız MEK ihaleleri)</option>
-          <option value="ozel_proje">Özel Projeler</option>
+          <option value="ozel_proje">Özel Projeler ve İç Mekan</option>
           <option value="ust_yonetim">Üst Yönetim</option>
           <option value="planlama">Planlama</option>
           <option value="izleyici">İzleyici (Salt Okunur)</option>
@@ -796,7 +796,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
     </div>
     <div>
       <div class="st-yarim-bas">
-        <span>◈ Özel Projeler</span>
+        <span>◈ Özel Projeler ve İç Mekan</span>
         <span class="st-yarim-sayi" id="dz-sag-sayi">0</span>
       </div>
       <!-- Dizaynin OP'ye attigi ve OP'nin henuz tamamlamadigi paketler.
@@ -1406,8 +1406,8 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
 <div class="overlay" id="ov-op-tekrar">
 <div class="modal" style="width:560px">
   <div class="modal-hd">
-    <div><div class="modal-title" style="color:var(--orange,#EA580C)">↪ Tekrar Özel Projeler'e gönder</div>
-    <div class="modal-sub">Eksik ya da ilave varsa paket yeniden Özel Projeler'e düşer</div></div>
+    <div><div class="modal-title" style="color:var(--orange,#EA580C)">↪ Tekrar Özel Projeler ve İç Mekan birimine gönder</div>
+    <div class="modal-sub">Eksik ya da ilave varsa paket yeniden bu birime düşer</div></div>
     <button class="close-btn" onclick="closeOv('ov-op-tekrar')">✕</button>
   </div>
   <div class="modal-body" style="max-height:70vh;overflow-y:auto">
@@ -1415,7 +1415,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
       <textarea id="op-tekrar-neden" rows="8" placeholder="Örn:&#10;1) Cephe alternatifi işveren onayından döndü&#10;2) Lobi aydınlatma detayı ilave edilecek"></textarea></div>
     <div style="font-size:13px;color:var(--faint);margin-top:6px">
       Bu gerekçe tarih ve adınızla not geçmişine eklenir. Önceki notlar silinmez.
-      Paket tekrar Özel Projeler'e düştüğü için tamamlanana kadar şantiye onayına gönderilemez.
+      Paket tekrar bu birime düştüğü için tamamlanana kadar şantiye onayına gönderilemez.
     </div>
   </div>
   <div class="modal-ft">
@@ -1454,7 +1454,7 @@ input[type="date"]:disabled,input:disabled,select:disabled,textarea:disabled{opa
           <option value="satinalma">Satın Alma</option>
           <option value="dizayn">Dizayn</option>
           <option value="santiye">Şantiye</option>
-          <option value="ozel_proje">Özel Projeler</option>
+          <option value="ozel_proje">Özel Projeler ve İç Mekan</option>
           <option value="planlama">Planlama</option>
           <option value="izleyici">İzleyici (Salt Okunur)</option>
         </select>
@@ -1773,7 +1773,7 @@ async function loadProfile() {
     santiye:'✅ Dizaynı kabul / eksik-red\n📨 Talep girme (satınalmaya iletme)\n🔍 Diğerleri okuma',
     planlama:'✅ Planlama + P6 + SAP\n🔍 Diğerleri okuma',
     izleyici:'🔍 Tüm birimler salt okunur',
-    ozel_proje:'✅ Özel Projeler: kendisine atanan işi tamamlama + not\n🔍 Panelin tamamı salt okunur',
+    ozel_proje:'✅ Özel Projeler ve İç Mekan: kendisine atanan işi tamamlama + not\n🔍 Panelin tamamı salt okunur',
     ust_yonetim:'✅ Tüm birimlere tam erişim (admin ile aynı)',
     elektrik:'✅ ELK bölümü: dizayn + talep + satınalma\n🔍 Diğer bölümler salt okunur',
     mekanik:'✅ MEK bölümü: dizayn + talep + satınalma\n🔍 Diğer bölümler salt okunur',
@@ -2580,7 +2580,7 @@ function rSonList() {
   const altEl = document.getElementById('son-list-alt');
   if (altEl) {
     altEl.textContent = opKipi
-      ? 'Özel Projeler · size atanan ve henüz tamamlanmamış işler'
+      ? 'Özel Projeler ve İç Mekan · size atanan ve henüz tamamlanmamış işler'
         + (rolBolumu() ? ' · yalnız ' + rolBolumu() + ' bölümü' : '')
         + '. "Tamamlandı" işaretlediğinizde iş listeden düşer.'
       : (ROL_ETIKET[CRole] || CRole) + ' · '
@@ -2592,7 +2592,7 @@ function rSonList() {
   const el = document.getElementById('son-list');
   if (!gosterilen.length) {
     el.innerHTML = '<div class="empty">' + (opKipi
-      ? 'Özel Projeler\'e atanmış açık iş bulunmuyor'
+      ? 'Özel Projeler ve İç Mekan birimine atanmış açık iş bulunmuyor'
       : 'Biriminizde bekleyen iş bulunmuyor') + '</div>';
     return;
   }
@@ -2801,24 +2801,24 @@ function rDizayn() {
     // Dugme: yalnizca is HALA DIZAYNDAYKEN ve dizayn yetkisi varken cikar.
     let opRozet = '';
     if (opAcikMi(i)) {
-      opRozet = '<div style="margin-top:4px"><span class="chip" style="background:rgba(234,88,12,.12);color:var(--orange,#EA580C)">'
-              + '<span class="chip-dot" style="background:var(--orange,#EA580C)"></span>Özel Projeler\'de'
+      opRozet = '<div style="margin-top:4px"><span class="chip" style="background:rgba(234,88,12,.12);color:var(--orange,#EA580C);white-space:normal;text-align:left">'
+              + '<span class="chip-dot" style="background:var(--orange,#EA580C)"></span>Özel Projeler ve İç Mekan biriminde'
               + (i.op_tur > 1 ? ' (' + i.op_tur + '. gönderim)' : '') + '</span></div>';
     } else if (opSecimYapildiMi(i)) {
-      opRozet = '<div style="margin-top:4px"><span class="chip c-tam"><span class="chip-dot"></span>'
-              + 'Özel Projeler seçimi yapıldı</span></div>';
+      opRozet = '<div style="margin-top:4px"><span class="chip c-tam" style="white-space:normal;text-align:left">'
+              + '<span class="chip-dot"></span>Özel Projeler ve İç Mekan seçimi yapıldı</span></div>';
     }
     let opDugme = '';
     if (opAtamaYetkisi(i) && opAtanabilirMi(i)) {
       if (opAcikMi(i)) {
         opDugme = '<button class="btn btn-ghost btn-sm" onclick="opGeriAl(\'' + i._id + '\')" '
-                + 'title="Özel Projeler atamasını geri çek">↩ ÖP</button>';
+                + 'title="Özel Projeler ve İç Mekan atamasını geri çek">↩ Ö. Prj.</button>';
       } else if (opSecimYapildiMi(i)) {
         opDugme = '<button class="btn btn-ghost btn-sm" onclick="opTekrarGonderAc(\'' + i._id + '\')" '
-                + 'title="Eksik ya da ilave varsa tekrar gönder">↪ ÖP</button>';
+                + 'title="Eksik ya da ilave varsa tekrar gönder">↪ Ö. Prj.</button>';
       } else {
         opDugme = '<button class="btn btn-ghost btn-sm" onclick="opAta(\'' + i._id + '\')" '
-                + 'title="Paketi Özel Projeler birimine ata">◈ ÖP</button>';
+                + 'title="Paketi Özel Projeler ve İç Mekan birimine ata">◈ Ö. Prj.</button>';
       }
     }
 
@@ -2863,27 +2863,27 @@ function rDizayn() {
 // genislikte ve belirgin. Uc hal:
 //   acik    : OP'ye atandi, henuz tamamlanmadi
 //   tekrar  : bir kez tamamlanmisti, dizayn TEKRAR gonderdi
-//   yapildi : OP isini bitirdi -> "Özel Projeler seçimi yapıldı"
+//   yapildi : OP isini bitirdi -> "Özel Projeler ve İç Mekan seçimi yapıldı"
 // Altinda not gecmisi okunur. OP'ye hic girmemis paketlerde serit CIZILMEZ.
 // ════════════════════════════════════════════════════════════════════
 function opSerit(i) {
   const hal = opSeritDurumu(i);
   if (!hal) return '';
   const T = {
-    acik:    { ik:'◈', ad:'Özel Projeler\'de',
+    acik:    { ik:'◈', ad:'Özel Projeler ve İç Mekan biriminde',
                tar:i.op_atama_tarihi, on:'atandı',
                bg:'rgba(37,99,235,.10)',  yz:'var(--blue-l)' },
-    tekrar:  { ik:'↪', ad:'Özel Projeler\'de — tekrar gönderildi',
+    tekrar:  { ik:'↪', ad:'Özel Projeler ve İç Mekan birimine tekrar gönderildi',
                tar:i.op_atama_tarihi, on:'',
                bg:'rgba(242,165,22,.12)', yz:'var(--gold)' },
-    yapildi: { ik:'◈', ad:'Özel Projeler seçimi yapıldı',
+    yapildi: { ik:'◈', ad:'Özel Projeler ve İç Mekan seçimi yapıldı',
                tar:i.op_tamamlanma_tarihi, on:'',
                bg:'rgba(22,163,74,.12)',  yz:'var(--green)' },
   }[hal];
 
   const oncekiSecim = (hal === 'tekrar' && i.op_tamamlanma_tarihi)
     ? '<div style="font-size:12.5px;color:var(--text3);margin-top:-2px;margin-bottom:6px">'
-      + 'Önceki Özel Projeler seçimi: ' + fmtTarih(i.op_tamamlanma_tarihi) + '</div>'
+      + 'Önceki Özel Projeler ve İç Mekan seçimi: ' + fmtTarih(i.op_tamamlanma_tarihi) + '</div>'
     : '';
 
   const notlar = opNotKayitlari(i);
@@ -2915,7 +2915,7 @@ function rDizaynOP() {
   if (sayiEl) sayiEl.textContent = rows.length;
 
   if (!rows.length) {
-    el.innerHTML = '<div class="empty">Özel Projeler\'e atanmış açık iş yok</div>';
+    el.innerHTML = '<div class="empty">Özel Projeler ve İç Mekan birimine atanmış açık iş yok</div>';
     return;
   }
 
@@ -2952,7 +2952,7 @@ function rDizaynOP() {
               + '<button class="btn btn-primary btn-sm" onclick="opTamamla(\'' + i._id + '\')">✓ Tamamlandı</button>'
             + '</div>'
           : '<div style="font-size:12px;color:var(--faint);margin-top:8px">'
-            + 'Yalnızca Özel Projeler birimi işlem yapabilir</div>')
+            + 'Yalnızca Özel Projeler ve İç Mekan birimi işlem yapabilir</div>')
       + '</div>';          // im-kart kapanisi — eksikti, kartlar ic ice giriyordu
   }).join('');
 }
@@ -3605,10 +3605,10 @@ async function dizaynSantiyeyeGonder() {
   // olursa is butunuyle kilitlenmesin diye.
   if (opAcikMi(_it)) {
     if (!tamYetki()) {
-      toast('Bu paket Özel Projeler\'de açık. Önce Özel Projeler tamamlamalı.', 'err');
+      toast('Bu paket Özel Projeler ve İç Mekan biriminde açık. Önce o birim tamamlamalı.', 'err');
       return;
     }
-    if (!confirm('Bu paket Özel Projeler\'de AÇIK.\n\nYetkiniz gereği bu kuralı aşabilirsiniz.'
+    if (!confirm('Bu paket Özel Projeler ve İç Mekan biriminde AÇIK.\n\nYetkiniz gereği bu kuralı aşabilirsiniz.'
                + '\nŞantiye onayına yine de gönderilsin mi?')) return;
   }
   // Santiye onayina gonderilen paketin dizayni tanim geregi bitmistir:
@@ -3649,8 +3649,8 @@ async function opAta(id) {
   const it = SbData.find(x => x._id === id);
   if (!it) return;
   if (!opAtamaYetkisi(it)) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
-  if (!opAtanabilirMi(it))  { toast('Bu paket artık dizaynda değil — Özel Projeler\'e atanamaz', 'err'); return; }
-  if (opAcikMi(it))         { toast('Bu paket zaten Özel Projeler\'de', 'err'); return; }
+  if (!opAtanabilirMi(it))  { toast('Bu paket artık dizaynda değil — Özel Projeler ve İç Mekan birimine atanamaz', 'err'); return; }
+  if (opAcikMi(it))         { toast('Bu paket zaten Özel Projeler ve İç Mekan biriminde', 'err'); return; }
   const upd = {
     op_durum: 'atandi',
     op_atama_tarihi: today(),
@@ -3660,7 +3660,7 @@ async function opAta(id) {
   };
   const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
-  toast('Paket Özel Projeler\'e atandı. Şantiye onayına gönderilemez.', 'ok');
+  toast('Paket Özel Projeler ve İç Mekan birimine atandı. Şantiye onayına gönderilemez.', 'ok');
   await loadIhaleler(); renderAll(); rHavuz();
 }
 
@@ -3669,7 +3669,7 @@ async function opGeriAl(id) {
   const it = SbData.find(x => x._id === id);
   if (!it) return;
   if (!opAtamaYetkisi(it)) { toast('Bu işlem için dizayn yetkisi gerekli', 'err'); return; }
-  if (!opAcikMi(it)) { toast('Bu paket Özel Projeler\'de açık değil', 'err'); return; }
+  if (!opAcikMi(it)) { toast('Bu paket Özel Projeler ve İç Mekan biriminde açık değil', 'err'); return; }
   // Gecmisi silmiyoruz: tur sayisi ve notlar duruyor, yalniz durum sifirlanir.
   // Daha once bir kez tamamlanmissa o damga geri gelir (op_tamamlanma_tarihi
   // duruyorsa 'tamamlandi'), hic tamamlanmamissa hic atanmamis hale doner.
@@ -3678,7 +3678,7 @@ async function opGeriAl(id) {
     : { op_durum: null, op_atama_tarihi: null, op_atayan_id: null };
   const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
-  toast('Özel Projeler ataması geri alındı', 'ok');
+  toast('Özel Projeler ve İç Mekan ataması geri alındı', 'ok');
   await loadIhaleler(); renderAll(); rHavuz();
 }
 
@@ -3686,8 +3686,8 @@ async function opGeriAl(id) {
 async function opTamamla(id) {
   const it = SbData.find(x => x._id === id);
   if (!it) return;
-  if (!opYetkisi()) { toast('Bu işlem için Özel Projeler yetkisi gerekli', 'err'); return; }
-  if (!opAcikMi(it)) { toast('Bu paket Özel Projeler\'de açık değil', 'err'); return; }
+  if (!opYetkisi()) { toast('Bu işlem için Özel Projeler ve İç Mekan yetkisi gerekli', 'err'); return; }
+  if (!opAcikMi(it)) { toast('Bu paket Özel Projeler ve İç Mekan biriminde açık değil', 'err'); return; }
   const kutu = document.getElementById('opnot-' + id);
   const metin = kutu ? kutu.value.trim() : '';
   if (!metin) {
@@ -3702,7 +3702,7 @@ async function opTamamla(id) {
   };
   const { error } = await sb.from('ihaleler').update(upd).eq('id', id);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
-  toast('Özel Projeler seçimi tamamlandı', 'ok');
+  toast('Özel Projeler ve İç Mekan seçimi tamamlandı', 'ok');
   await loadIhaleler(); renderAll(); rHavuz();
 }
 
@@ -3710,7 +3710,7 @@ async function opTamamla(id) {
 async function opNotEkle(id) {
   const it = SbData.find(x => x._id === id);
   if (!it) return;
-  if (!opYetkisi()) { toast('Bu işlem için Özel Projeler yetkisi gerekli', 'err'); return; }
+  if (!opYetkisi()) { toast('Bu işlem için Özel Projeler ve İç Mekan yetkisi gerekli', 'err'); return; }
   const kutu = document.getElementById('opnot-' + id);
   const metin = kutu ? kutu.value.trim() : '';
   if (!metin) { toast('Önce not yazın', 'err'); if (kutu) kutu.focus(); return; }
@@ -3751,7 +3751,7 @@ async function opTekrarGonderOnayla() {
   const { error } = await sb.from('ihaleler').update(upd).eq('id', opTekrarHedef);
   if (error) { toast('Hata: ' + error.message, 'err'); return; }
   closeOv('ov-op-tekrar'); opTekrarHedef = null;
-  toast('Paket tekrar Özel Projeler\'e gönderildi', 'ok');
+  toast('Paket tekrar Özel Projeler ve İç Mekan birimine gönderildi', 'ok');
   await loadIhaleler(); renderAll(); rHavuz();
 }
 
@@ -3980,7 +3980,7 @@ function rAksaklik() {
   // dugmeleri ve diger butun ekranlar eskisi gibi calisir; degisen
   // yalnizca bu satirda okunan metindir.
   const akSorumlu = i => opAcikMi(i)
-    ? esc(sorumluBirim(i)) + ' <span style="color:var(--orange,#EA580C)">+ Özel Projeler</span>'
+    ? esc(sorumluBirim(i)) + ' <span style="color:var(--orange,#EA580C)">+ Özel Projeler ve İç Mekan</span>'
     : esc(sorumluBirim(i));
   // TEK LISTE: gecikme, dizayn iadesi ve talep iadesi bir arada; sira
   // gecikmesi en fazla olandan en aza. Tur bilgisi satir basindaki
@@ -6201,7 +6201,7 @@ const ROL_BOLUM = { elektrik: 'ELK', mekanik: 'MEK' };
 const ROL_ETIKET = { admin:'Admin', ust_yonetim:'Üst Yönetim', satinalma:'Satın Alma',
                      dizayn:'Dizayn', santiye:'Şantiye', elektrik:'Elektrik',
                      mekanik:'Mekanik', planlama:'Planlama', izleyici:'İzleyici',
-                     ozel_proje:'Özel Projeler',
+                     ozel_proje:'Özel Projeler ve İç Mekan',
                      reddedildi:'Reddedildi' };
 function tamYetki()  { return ROL_TAM.indexOf(CRole) >= 0; }
 // ════════════════════════════════════════════════════════════════════
@@ -6612,7 +6612,7 @@ async function rOnayBekleyenler() {
         <option value="satinalma"   ${u.rol==='satinalma'?'selected':''}>Satın Alma</option>
         <option value="dizayn"      ${u.rol==='dizayn'?'selected':''}>Dizayn</option>
         <option value="santiye"     ${u.rol==='santiye'?'selected':''}>Şantiye</option>
-        <option value="ozel_proje"  ${u.rol==='ozel_proje'?'selected':''}>Özel Projeler</option>
+        <option value="ozel_proje"  ${u.rol==='ozel_proje'?'selected':''}>Özel Projeler ve İç Mekan</option>
         <option value="elektrik"    ${u.rol==='elektrik'?'selected':''}>Elektrik (ELK)</option>
         <option value="mekanik"     ${u.rol==='mekanik'?'selected':''}>Mekanik (MEK)</option>
         <option value="ust_yonetim" ${u.rol==='ust_yonetim'?'selected':''}>Üst Yönetim</option>
@@ -6692,7 +6692,7 @@ async function rKullanicilar() {
           <option value="satinalma"   ${u.rol==='satinalma'  ?'selected':''}>Satın Alma</option>
           <option value="dizayn"      ${u.rol==='dizayn'     ?'selected':''}>Dizayn</option>
           <option value="santiye"     ${u.rol==='santiye'    ?'selected':''}>Şantiye</option>
-          <option value="ozel_proje"  ${u.rol==='ozel_proje' ?'selected':''}>Özel Projeler</option>
+          <option value="ozel_proje"  ${u.rol==='ozel_proje' ?'selected':''}>Özel Projeler ve İç Mekan</option>
           <option value="elektrik"    ${u.rol==='elektrik'   ?'selected':''}>Elektrik (ELK)</option>
           <option value="mekanik"     ${u.rol==='mekanik'    ?'selected':''}>Mekanik (MEK)</option>
           <option value="planlama"    ${u.rol==='planlama'   ?'selected':''}>Planlama</option>
